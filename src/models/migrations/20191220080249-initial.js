@@ -2,7 +2,7 @@
 
 module.exports = {
   up: (queryInterface, Sequelize) =>
-    queryInterface.createTable('Users', {
+    queryInterface.createTable('Accesses', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -10,8 +10,6 @@ module.exports = {
       },
       created: Sequelize.DATE,
       updated: Sequelize.DATE,
-      username: { type: Sequelize.STRING, allowNull: false },
-      type: { type: Sequelize.INTEGER, allowNull: false },
-      birthday: Sequelize.DATE,
+      key: { type: Sequelize.STRING, allowNull: false },
     }),
 }

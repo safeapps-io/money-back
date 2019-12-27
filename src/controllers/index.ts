@@ -2,14 +2,13 @@ import { Router, NextFunction, Request, Response } from 'express'
 import bodyParser from 'body-parser'
 import ash from 'express-async-handler'
 
-import itWorks from './itWorks'
 import { RequestError } from '@/core/errors'
+import auth from './auth'
 
 const apiRouter = Router().use(bodyParser.json())
 
 apiRouter
-  .get('/itWorks', itWorks.get)
-  .post('/itWorks', ash(itWorks.post))
+  .post('/auth', ash(auth))
   .use((_, res) =>
     res
       .status(404)

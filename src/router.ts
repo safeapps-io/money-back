@@ -1,9 +1,6 @@
 import { Router } from 'express'
-import apiRouter from '@/controllers/api'
-import adminRouter from '@/controllers/admin'
+import apiRouter from '@/controllers'
 
-const router = Router()
-  .use('/api', apiRouter)
-  .use('/admin', adminRouter)
+const router = Router().use('/api', apiRouter)
 
 export default router
