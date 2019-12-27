@@ -1,11 +1,12 @@
 import { Table, Column } from 'sequelize-typescript'
-import BaseModel from './base.model'
-import nanoid = require('nanoid')
+import nanoid from 'nanoid'
+
+import BaseModel from './base'
 
 @Table
 export default class Access extends BaseModel<Access> {
   @Column
-  public key!: string
+  key!: string
 }
 
 export const isAccessValid = async (key: string) =>
