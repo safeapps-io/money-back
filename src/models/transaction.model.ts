@@ -37,6 +37,9 @@ export default class Transaction extends BaseModel<Transaction> {
   @Column
   owner!: string
 
+  @Column
+  isDraft!: boolean
+
   @Column(DataType.JSON)
   tags!: string[]
 

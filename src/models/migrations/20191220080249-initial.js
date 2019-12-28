@@ -54,6 +54,7 @@ module.exports = {
         allowNull: false,
       },
       tags: { type: Sequelize.JSON, allowNull: false },
+      isDraft: { type: Sequelize.BOOLEAN, allowNull: false },
     })
   },
 }
