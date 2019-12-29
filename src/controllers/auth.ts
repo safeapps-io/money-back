@@ -6,13 +6,12 @@ const checkValue =
   'x2MfHTTIC3ra2jimQ/aWiNzWTNq/ntapQ1KzNeir9AeFvxY3G7xEj9bxTeoQLxZQAdAbq0kYsqWFglRCIs9p+neZZBts66dEeEvnny67HHcCIWJVAsg2aFZhGIO8IL50PZpkhbuK6Vo+I/lUKoHHOVff+kt3QfOYqFpu06f6nMsSXb7LPw0nkBVZCi5mnuH0'
 
 export default async (req: Request, res: Response) => {
-  if (req.cookies && req.cookies.key) {
-    if (req.body.secret === checkValue) {
-      const access = await createAccess()
-      return res
-        .cookie('key', access.key, { expires: new Date(2100, 1) })
-        .status(200)
-    }
+  if (req.body.secret === checkValue) {
+    const access = await createAccess()
+    return res
+      .cookie('key', access.key, { expires: new Date(2100, 1) })
+      .status(200)
+      .end()
   }
   await delay(1500)
   res.status(403).end()

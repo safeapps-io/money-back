@@ -4,8 +4,7 @@ dotenv.config()
 import express from 'express'
 import expressWs from 'express-ws'
 
-const app = express()
-expressWs(app)
+const { app } = expressWs(express())
 
 import cors from 'cors'
 import helmet from 'helmet'

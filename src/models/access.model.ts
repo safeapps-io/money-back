@@ -12,4 +12,4 @@ export default class Access extends BaseModel<Access> {
 export const isAccessValid = async (key: string) =>
   !!(await Access.findOne({ where: { key } }))
 
-export const createAccess = () => Access.create({ hex: nanoid(35) })
+export const createAccess = () => Access.create({ key: nanoid(35) })

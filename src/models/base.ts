@@ -6,10 +6,11 @@ import {
   Column,
 } from 'sequelize-typescript'
 import { inspect } from 'util'
+import nanoid = require('nanoid')
 
 export default class BaseModel<T> extends Model<T> {
   @PrimaryKey
-  @Column
+  @Column({ defaultValue: nanoid })
   id!: string
 
   @CreatedAt
