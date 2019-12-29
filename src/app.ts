@@ -2,6 +2,11 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 import express from 'express'
+import expressWs from 'express-ws'
+
+const app = express()
+expressWs(app)
+
 import cors from 'cors'
 import helmet from 'helmet'
 
@@ -13,7 +18,6 @@ import router from '@/router'
 const constructApp = async () => {
   await sync()
 
-  const app = express()
   app
     .set('x-powered-by', false)
     .set('trust proxy', true)

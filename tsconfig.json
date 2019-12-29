@@ -12,6 +12,9 @@
         "src/*"
       ]
     },
+    "typeRoots": [
+      "./src/@types"
+    ],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   }

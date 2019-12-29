@@ -22,5 +22,11 @@ apiRouter
     }
     next(err)
   })
+  // @ts-ignore
+  .ws('/test', ws => {
+    console.log(ws)
+    // @ts-ignore
+    ws.on('message', data => console.log(data))
+  })
 
 export default apiRouter
