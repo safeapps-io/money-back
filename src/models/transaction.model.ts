@@ -6,8 +6,9 @@ import {
   DataType,
   AllowNull,
 } from 'sequelize-typescript'
+import yup from 'yup'
 
-import BaseModel, { syncronizableGetUpdates } from './base'
+import BaseModel, { syncronizableGetUpdates, baseScheme } from './base'
 import Category from './category.model'
 
 @Table
@@ -53,5 +54,44 @@ export default class Transaction extends BaseModel<Transaction> {
   @BelongsTo(() => Category)
   category!: Category
 }
+
+export const transactionScheme = yup.object({
+  ...baseScheme,
+  isIncome: yup.bool().required(),
+  isDraft: yup.bool().required(),
+  amount: yup.string().required(),
+  originalAmount: yup.string().notRequired(),
+  currency: yup
+    .string()
+    .notRequired()
+    .trim()
+    .max(256),
+  description: yup
+    .string()
+    .notRequired()
+    .trim()
+    .max(256),
+  mcc: yup.number().notRequired(),
+  datetime: yup.date().required(),
+  owner: yup
+    .string()
+    .required()
+    .min(1)
+    .max(256),
+  tags: yup
+    .array()
+    .default([])
+    .of(
+      yup
+        .string()
+        .trim()
+        .min(1),
+    ),
+  categoryId: yup
+    .string()
+    .required()
+    .min(1)
+    .max(256),
+})
 
 export const getTransactionUpdates = syncronizableGetUpdates(Transaction)

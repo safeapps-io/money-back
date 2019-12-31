@@ -35,7 +35,8 @@
     "sequelize-typescript": "^1.1.0",
     "supertest": "^4.0.2",
     "ts-node": "^8.5.4",
-    "tsconfig-paths": "^3.9.0"
+    "tsconfig-paths": "^3.9.0",
+    "yup": "^0.28.0"
   },
   "devDependencies": {
     "@types/bluebird": "^3.5.29",
@@ -53,6 +54,7 @@
     "@types/pug": "^2.0.4",
     "@types/supertest": "^2.0.8",
     "@types/validator": "^12.0.1",
+    "@types/yup": "^0.26.27",
     "@typescript-eslint/parser": "^2.12.0",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.7.0",

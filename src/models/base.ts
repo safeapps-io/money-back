@@ -8,6 +8,7 @@ import {
 import { Op } from 'sequelize'
 import { inspect } from 'util'
 import nanoid from 'nanoid'
+import yup from 'yup'
 
 export default class BaseModel<T> extends Model<T> {
   @PrimaryKey
@@ -23,6 +24,12 @@ export default class BaseModel<T> extends Model<T> {
   [inspect.custom]() {
     return this.toJSON()
   }
+}
+
+export const baseScheme = {
+  id: yup.string().required(),
+  updated: yup.date().notRequired(),
+  clientUpdated: yup.date().notRequired(),
 }
 
 export function syncronizableGetUpdates(model: any) {
