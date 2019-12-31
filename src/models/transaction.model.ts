@@ -7,13 +7,16 @@ import {
   AllowNull,
 } from 'sequelize-typescript'
 
-import BaseModel from './base'
+import BaseModel, { syncronizableGetUpdates } from './base'
 import Category from './category.model'
 
 @Table
 export default class Transaction extends BaseModel<Transaction> {
   @Column
   amount!: number
+
+  @Column
+  isIncome!: boolean
 
   @AllowNull
   @Column(DataType.DECIMAL)
@@ -50,3 +53,5 @@ export default class Transaction extends BaseModel<Transaction> {
   @BelongsTo(() => Category)
   category!: Category
 }
+
+export const getTransactionUpdates = syncronizableGetUpdates(Transaction)

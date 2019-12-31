@@ -1,6 +1,6 @@
 import { Table, Column } from 'sequelize-typescript'
 
-import BaseModel from './base'
+import BaseModel, { syncronizableGetUpdates } from './base'
 
 @Table
 export default class SearchFilter extends BaseModel<SearchFilter> {
@@ -10,3 +10,5 @@ export default class SearchFilter extends BaseModel<SearchFilter> {
   @Column
   query!: string
 }
+
+export const getSearchFilterUpdates = syncronizableGetUpdates(SearchFilter)

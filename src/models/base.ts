@@ -5,8 +5,9 @@ import {
   PrimaryKey,
   Column,
 } from 'sequelize-typescript'
+import { Op } from 'sequelize'
 import { inspect } from 'util'
-import nanoid = require('nanoid')
+import nanoid from 'nanoid'
 
 export default class BaseModel<T> extends Model<T> {
   @PrimaryKey
@@ -22,4 +23,12 @@ export default class BaseModel<T> extends Model<T> {
   [inspect.custom]() {
     return this.toJSON()
   }
+}
+
+export function syncronizableGetUpdates(model: any) {
+  return (dt?: Date) =>
+    model.findAll({
+      where: dt && { updated: { [Op.gte]: dt } },
+      order: [['updated', 'ASC']],
+    })
 }
