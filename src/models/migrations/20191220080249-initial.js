@@ -39,6 +39,7 @@ module.exports = {
     return queryInterface.createTable('Transactions', {
       ...baseModel,
       amount: { type: Sequelize.DECIMAL, allowNull: false },
+      isIncome: { type: Sequelize.BOOLEAN, allowNull: false },
       originalAmount: Sequelize.DECIMAL,
       currency: Sequelize.STRING,
       description: Sequelize.STRING,
