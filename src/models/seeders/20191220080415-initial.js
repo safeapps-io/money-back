@@ -1,6 +1,6 @@
 'use strict'
 
-const key = ''
+const key = '9dJFMZADdoYhJ8E2SUxC0KLW2qYW3EaOyv6'
 
 module.exports = {
   up: (queryInterface, Sequelize) =>
