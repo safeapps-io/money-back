@@ -5,14 +5,13 @@ import nanoid from 'nanoid'
 import * as ws from 'ws'
 
 import { isWsAuth } from '@/middlewares/isAuth'
-import Category, { getCategoryUpdates } from '@/models/category.model'
-import Transaction, { getTransactionUpdates } from '@/models/transaction.model'
-import SearchFilter, {
-  getSearchFilterUpdates,
-} from '@/models/searchFilter.model'
+import Category from '@/models/category.model'
+import Transaction from '@/models/transaction.model'
+import SearchFilter from '@/models/searchFilter.model'
+import { syncMap, ObjectTypes } from '@/core/syncEngine'
 import chunk from '@/utils/chunk'
 
-/** A map of id to websockets */
+/** A map of id to websocket objects */
 const wsClients = {} as { [id: string]: ws }
 
 /**
@@ -38,53 +37,98 @@ const sendToAllExceptId = (id: string, data: Object) =>
  * @param items An array of arrays that needs to be sent
  * @param startIndex Starting index for the sending. If it is not passed, then the whole process starts from 0 index
  */
-function sequentialSend<T>(ws: ws, items: Array<T[]>, startIndex = 0) {
-  ws.send(JSON.stringify(items[startIndex]), () => {
+const sequentialSend = (ws: ws, items: Array<EntityItem[]>, startIndex = 0) =>
+  ws.send(JSON.stringify(getServerDataChunkObject(items[startIndex])), () => {
     if (items[startIndex + 1]) sequentialSend(ws, items, startIndex + 1)
   })
-}
+
+/**
+ * Forms an object of type `serverDataChunk` (just for reusability)
+ * @param items List of items to be decorated
+ */
+const getServerDataChunkObject = (
+  items: EntityItem[] = [],
+): ServerDataChunk => ({
+  type: MessageTypes.serverDataChunk,
+  data: items,
+})
 
 const syncRouter = (Router() as WSRouter).use(cookieParser())
-syncRouter.ws('/sync', isWsAuth, (ws, req) => {
-  const id = nanoid()
+syncRouter.ws('/sync', isWsAuth, ws => {
+  const wsId = nanoid()
+  wsClients[wsId] = ws
 
-  ws.on('message', async (raw: string) => {
+  ws.on('message', async raw => {
     let parsed
     try {
-      parsed = JSON.parse(raw) as ClientChangesData
-      if (parsed.type !== 'clientChanges') throw new Error()
+      parsed = JSON.parse(raw as string) as ClientChangesData
+      if (parsed.type !== MessageTypes.clientChanges)
+        throw new Error(`Unknown message type: ${parsed.type}`)
+
+      const { latestUpdated = 0, entities = [] } = parsed.data || {}
+
+      const changedItems = (
+        await Promise.all(
+          entities.map(({ type, ent }) => syncMap[type].syncRunner(ent)),
+        )
+      ).filter(Boolean) as EntityItem[]
+
+      if (changedItems.length)
+        sendToAllExceptId(wsId, getServerDataChunkObject(changedItems))
+
+      const changedDate = new Date(latestUpdated)
+      const items = (
+        await Promise.all(
+          Object.values(ObjectTypes).map(type =>
+            syncMap[type].getUpdates(changedDate),
+          ),
+        )
+      ).flatMap(i => i)
+
+      sequentialSend(ws, chunk(items, 100))
     } catch (e) {
+      send(ws, { type: MessageTypes.error, data: e.message })
+      console.log(e)
       return ws.terminate()
     }
-    wsClients[id] = ws
-
-    const { latestUpdated = 0, entities = [] } = parsed.data || {}
-    if (entities.length) {
-      // Здесь логика про сохранение данных
-    }
-
-    const changedDate = new Date(latestUpdated)
-    const items = (
-      await Promise.all([
-        getSearchFilterUpdates(changedDate),
-        getCategoryUpdates(changedDate),
-        getTransactionUpdates(changedDate),
-      ])
-    ).flatMap(i => i)
-
-    // Sending all the data split in chunks of 100 items
-    sequentialSend(ws, chunk(items, 100))
   })
 
-  ws.on('close', () => delete wsClients[id])
+  ws.on('close', () => delete wsClients[wsId])
 })
 
 export default syncRouter
 
+type EntityItem = {
+  type: ObjectTypes
+  ent: Transaction | Category | SearchFilter
+}
+
+enum MessageTypes {
+  /** Client -> Backend: set of updated data */
+  clientChanges = 'clientChanges',
+  /** Backend -> Client: set of updated data */
+  serverDataChunk = 'serverDataChunk',
+  /** Backend -> Client: error message */
+  error = 'error',
+}
+
 type ClientChangesData = {
-  type: 'clientChanges'
+  type: MessageTypes.clientChanges
   data: {
     latestUpdated?: string | number
-    entities: Array<Category | Transaction | SearchFilter>
+    entities: EntityItem[]
   }
 }
+type ServerDataChunk = {
+  type: MessageTypes.serverDataChunk
+  data: EntityItem[]
+}
+
+/**
+ * TODO: Напрашивается закрыть чистый ws.send и ws.on какими-то промежуточными интерфейсами.
+ * Из очевидного:
+ * - автоматическое формирование объекта заданной формы: `{type: '', data: { ответ }}`
+ * - обработка ошибок, отлов ошибок и формирование текста ошибки
+ * - автоматическая сериализация в и из JSON
+ * - многофункциональные хелперы, типа `sequentialSend` в одном общем месте
+ */
