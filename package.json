@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "migrate": "sequelize-cli db:migrate",
+    "testEnvMigrate": "rm db.sqlite && yarn migrate && yarn sequelize-cli db:seed:all",
     "migrate:unsafeReset": "rm db.test.sqlite && sequelize-cli db:migrate && sequelize-cli db:seed:all",
     "shell": "ts-node -T -r tsconfig-paths/register -r ./src/shell.ts",
     "pretest": "NODE_ENV=test yarn migrate:unsafeReset",

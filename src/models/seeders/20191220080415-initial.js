@@ -2,20 +2,56 @@
 
 const key = '9dJFMZADdoYhJ8E2SUxC0KLW2qYW3EaOyv6'
 
+const trId1 = '6hVbgZBREFjdSJ1vuY4YT'
+const catId = 'EaIYQnjW5o-twjHhriSsF'
+
+const updated = new Date(2019, 1, 1, 1, 1, 1)
+
 module.exports = {
-  up: (queryInterface, Sequelize) =>
-    queryInterface.bulkInsert(
+  up: async (queryInterface, Sequelize) => {
+    await queryInterface.bulkInsert(
       'Accesses',
       [
         {
-          id: 1,
+          id: '1',
           created: new Date(),
           updated: new Date(),
           key,
         },
       ],
       {},
-    ),
-  down: (queryInterface, Sequelize) =>
-    queryInterface.bulkDelete('Accesses', { where: { key } }),
+    )
+
+    await queryInterface.bulkInsert('Categories', [
+      {
+        id: catId,
+        created: new Date(),
+        updated,
+        title: 'Test category',
+        color: '#123456',
+        isIncome: false,
+      },
+    ])
+
+    return queryInterface.bulkInsert('Transactions', [
+      {
+        id: trId1,
+        created: new Date(),
+        updated,
+        amount: '12.21',
+        isIncome: false,
+        datetime: new Date(2019, 1, 2),
+        owner: 'Dan',
+        isDraft: false,
+        tags: JSON.stringify([]),
+        categoryId: catId,
+      },
+    ])
+  },
+
+  down: async (queryInterface, Sequelize) => {
+    await queryInterface.bulkDelete('Accesses', { where: { id: '1' } })
+    await queryInterface.bulkDelete('Categories', { where: { id: catId } })
+    return queryInterface.bulkDelete('Transactions', { where: { id: trId1 } })
+  },
 }
