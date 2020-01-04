@@ -9,7 +9,10 @@ export default async (req: Request, res: Response) => {
   await delay(Math.random() * 500 + 500)
   if (req.body.secret === checkValue) {
     const access = await createAccess()
-    return res.status(200).json({ key: access.key })
+    return res
+      .status(200)
+      .cookie('key', access.key, { expires: new Date(2100, 1) })
+      .json({ key: access.key })
   }
   res.status(403).end()
 }
