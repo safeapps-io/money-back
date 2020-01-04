@@ -13,6 +13,9 @@ import pathJoin from '@/utils/pathJoin'
 import logger from '@/middlewares/logger'
 import { sync } from '@/models'
 import router from '@/router'
+import bodyParser from 'body-parser'
+import cookieParser from 'cookie-parser'
+import multer from 'multer'
 
 const constructApp = async () => {
   await sync()
@@ -34,6 +37,10 @@ const constructApp = async () => {
   app
     .use(logger)
     .use(helmet())
+    .use(cookieParser(process.env.SECRET))
+    .use(bodyParser.json())
+    .use(bodyParser.urlencoded({ extended: true }))
+    .use(multer().none())
     .use(router)
 
   return app
