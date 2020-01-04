@@ -1,3 +1,11 @@
+## Authorization mechanizm
+
+We have 3 mechanizms in place:
+
+1. **signed cookies**. This is the preffered way, and it should be used in production always
+2. **authorization header**. Only works for REST endpoints. You store the key somewhere on the client (LS, for example) and attach the header to the request
+3. **path-based**. Only works for WS endpoints. You store the key somewhere on the client and push it as a path of path of the request
+
 ## How to debug sockets
 
 1. `yarn testEnvMigrate` — running migrations and applying all the seeds

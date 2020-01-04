@@ -31,6 +31,7 @@ const constructApp = async () => {
       cors({
         origin: process.env.ALLOWED_ORIGIN,
         maxAge: 86400,
+        allowedHeaders: ['authorization', 'content-type'],
       }),
     )
 
