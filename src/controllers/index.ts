@@ -2,12 +2,12 @@ import { Router, NextFunction, Request, Response } from 'express'
 import ash from 'express-async-handler'
 
 import { RequestError } from '@/core/errors'
-import auth from './auth'
+import authRouter from './auth'
 
 const apiRouter = Router()
 
 apiRouter
-  .post('/auth', ash(auth))
+  .use('/auth', ash(authRouter))
   .use((_, res) =>
     res
       .status(404)
