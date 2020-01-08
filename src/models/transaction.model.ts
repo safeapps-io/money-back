@@ -8,7 +8,7 @@ import {
 } from 'sequelize-typescript'
 import * as yup from 'yup'
 
-import BaseModel, { syncronizableGetUpdates, baseScheme } from './base'
+import BaseModel, { baseScheme } from './base'
 import Category from './category.model'
 
 @Table
@@ -53,6 +53,14 @@ export default class Transaction extends BaseModel<Transaction> {
 
   @BelongsTo(() => Category)
   category!: Category
+
+  public toJSON() {
+    const prev = super.toJSON()
+    return {
+      ...prev,
+      datetime: this.datetime.getTime(),
+    }
+  }
 }
 
 export const transactionScheme = yup
