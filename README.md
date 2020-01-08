@@ -10,7 +10,7 @@ We have 3 mechanizms in place:
 
 1. `yarn testEnvMigrate` — running migrations and applying all the seeds
 2. install [`websocat`](https://github.com/vi/websocat)
-3. `websocat -H='Cookie: key=9dJFMZADdoYhJ8E2SUxC0KLW2qYW3EaOyv6' ws://0.0.0.0:8080/ws/sync`
+3. `websocat ws://0.0.0.0:8080/ws/9dJFMZADdoYhJ8E2SUxC0KLW2qYW3EaOyv6/sync`
 
 ### Example objects
 

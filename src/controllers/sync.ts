@@ -54,7 +54,7 @@ const getServerDataChunkObject = (
 })
 
 const syncRouter = (Router() as WSRouter).use(cookieParser())
-syncRouter.ws('/sync', isWsAuth, ws => {
+syncRouter.ws('/:sessionId/sync', isWsAuth, ws => {
   const wsId = nanoid()
   wsClients[wsId] = ws
 
