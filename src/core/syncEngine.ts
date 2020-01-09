@@ -97,7 +97,7 @@ function syncronizableGetUpdatesFactory(type: ObjectTypes, model: any) {
   return async (dt?: Date) =>
     (
       await model.findAll({
-        where: dt && { updated: { [Op.gte]: dt } },
+        where: dt && { updated: { [Op.gt]: dt } },
         order: [['updated', 'ASC']],
       })
     ).map((ent: any) => ({ type, ent }))
