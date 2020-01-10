@@ -80,7 +80,10 @@ export const transactionScheme = yup
       .trim()
       .max(256),
     mcc: yup.number().notRequired(),
-    datetime: yup.date().required(),
+    datetime: yup
+      .date()
+      .required()
+      .transform((_, val) => new Date(val)),
     owner: yup
       .string()
       .required()

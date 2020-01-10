@@ -74,7 +74,12 @@ function runSyncValidationAndDbProcessFactory(
   scheme: yup.ObjectSchema,
 ) {
   return async (ent: BasicSynchronizableModelRequirements) => {
-    if (!scheme.isValidSync(ent)) return false
+    try {
+      scheme.validateSync(ent)
+    } catch (error) {
+      console.error(error)
+      return false
+    }
 
     if (!ent.updated) return { type, ent: await model.create(ent) }
 

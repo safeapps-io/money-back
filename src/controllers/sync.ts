@@ -54,7 +54,7 @@ const getServerDataChunkObject = (
 })
 
 const syncRouter = (Router() as WSRouter).use(cookieParser())
-syncRouter.ws('/:sessionId/sync', isWsAuth, ws => {
+syncRouter.ws('/:sessionId/sync', isWsAuth, (ws, req) => {
   const wsId = nanoid()
   wsClients[wsId] = ws
 
@@ -88,7 +88,7 @@ syncRouter.ws('/:sessionId/sync', isWsAuth, ws => {
       sequentialSend(ws, chunk(items, 100))
     } catch (e) {
       send(ws, { type: MessageTypes.error, data: e.message })
-      console.log(e)
+      req.log.warn(e)
       return ws.terminate()
     }
   })

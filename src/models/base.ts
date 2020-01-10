@@ -37,8 +37,14 @@ export default class BaseModel<T> extends Model<T> {
 
 export const baseScheme = yup.object().shape({
   id: yup.string().required(),
-  updated: yup.date().notRequired(),
-  clientUpdated: yup.date().notRequired(),
+  updated: yup
+    .date()
+    .notRequired()
+    .transform((_, val) => new Date(val)),
+  clientUpdated: yup
+    .date()
+    .notRequired()
+    .transform((_, val) => new Date(val)),
 })
 
 export function syncronizableGetUpdates(model: any) {
