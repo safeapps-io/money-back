@@ -40,6 +40,7 @@ const sendToAllExceptId = (id: string, data: Object) =>
 const sequentialSend = (ws: ws, items: Array<EntityItem[]>, startIndex = 0) =>
   ws.send(JSON.stringify(getServerDataChunkObject(items[startIndex])), () => {
     if (items[startIndex + 1]) sequentialSend(ws, items, startIndex + 1)
+    else send(ws, { type: MessageTypes.syncFinished })
   })
 
 /**
@@ -108,6 +109,8 @@ enum MessageTypes {
   clientChanges = 'clientChanges',
   /** Backend -> Client: set of updated data */
   serverDataChunk = 'serverDataChunk',
+  /** Backend -> Client: sync process has been finished */
+  syncFinished = 'syncFinished',
   /** Backend -> Client: error message */
   error = 'error',
 }
