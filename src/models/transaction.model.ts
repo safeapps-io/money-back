@@ -10,6 +10,7 @@ import * as yup from 'yup'
 
 import BaseModel, { baseScheme } from './base'
 import Category from './category.model'
+import mccCodeRegistry from '@/core/mcc/mccCodeRegistry'
 
 @Table
 export default class Transaction extends BaseModel<Transaction> {
@@ -35,6 +36,10 @@ export default class Transaction extends BaseModel<Transaction> {
   @Column(DataType.NUMBER)
   mcc!: number | null
 
+  public get mccCodeDescription() {
+    return this.mcc ? mccCodeRegistry[this.mcc] : null
+  }
+
   @Column
   datetime!: Date
 
@@ -59,6 +64,7 @@ export default class Transaction extends BaseModel<Transaction> {
     return {
       ...prev,
       datetime: this.datetime.getTime(),
+      mccCodeDescription: this.mccCodeDescription,
     }
   }
 }
@@ -90,15 +96,10 @@ export const transactionScheme = yup
       .min(1)
       .max(256),
     tags: yup
-      .array()
-      .default([])
-      .of(
-        yup
-          .string()
-          .trim()
-          .min(1),
-      )
-      .transform(val => JSON.stringify(val)),
+      .string()
+      .transform((_, originalValue) =>
+        JSON.stringify(originalValue.map((i: string) => i.trim())),
+      ),
     categoryId: yup
       .string()
       .required()
