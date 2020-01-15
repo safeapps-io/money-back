@@ -8,7 +8,7 @@ import SearchFilter, { searchFilterScheme } from '@/models/searchFilter.model'
 
 export enum ObjectTypes {
   category = 'category',
-  filter = 'filter',
+  searchFilter = 'searchFilter',
   transaction = 'transaction',
 }
 export type BasicSynchronizableModelRequirements = {
@@ -40,16 +40,16 @@ export const syncMap: {
     ),
     getUpdates: syncronizableGetUpdatesFactory(ObjectTypes.category, Category),
   },
-  [ObjectTypes.filter]: {
+  [ObjectTypes.searchFilter]: {
     model: SearchFilter,
     scheme: searchFilterScheme,
     syncRunner: runSyncValidationAndDbProcessFactory(
-      ObjectTypes.filter,
+      ObjectTypes.searchFilter,
       SearchFilter,
       searchFilterScheme,
     ),
     getUpdates: syncronizableGetUpdatesFactory(
-      ObjectTypes.filter,
+      ObjectTypes.searchFilter,
       SearchFilter,
     ),
   },
