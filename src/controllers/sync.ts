@@ -37,11 +37,14 @@ const sendToAllExceptId = (id: string, data: Object) =>
  * @param items An array of arrays that needs to be sent
  * @param startIndex Starting index for the sending. If it is not passed, then the whole process starts from 0 index
  */
-const sequentialSend = (ws: ws, items: Array<EntityItem[]>, startIndex = 0) =>
+const sequentialSend = (ws: ws, items: Array<EntityItem[]>, startIndex = 0) => {
+  if (ws.readyState !== ws.OPEN) return
+
   ws.send(JSON.stringify(getServerDataChunkObject(items[startIndex])), () => {
     if (items[startIndex + 1]) sequentialSend(ws, items, startIndex + 1)
     else send(ws, { type: MessageTypes.syncFinished })
   })
+}
 
 /**
  * Forms an object of type `serverDataChunk` (just for reusability)
