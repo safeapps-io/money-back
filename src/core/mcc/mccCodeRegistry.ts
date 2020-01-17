@@ -14,7 +14,7 @@ export interface IMCCInput {
 }
 
 interface IReturnData {
-  [id: number]: IMCCInput
+  [id: string]: IMCCInput
 }
 
 const mccFilePath = join(__dirname, 'mccData.json')

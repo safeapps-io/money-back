@@ -33,8 +33,8 @@ export default class Transaction extends BaseModel<Transaction> {
   description!: string | null
 
   @AllowNull
-  @Column(DataType.NUMBER)
-  mcc!: number | null
+  @Column(DataType.STRING)
+  mcc!: string | null
 
   public get mccCodeDescription() {
     return this.mcc ? mccCodeRegistry[this.mcc] : null

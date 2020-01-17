@@ -43,7 +43,7 @@ module.exports = {
       originalAmount: Sequelize.DECIMAL,
       currency: Sequelize.STRING,
       description: Sequelize.STRING,
-      mcc: Sequelize.NUMBER,
+      mcc: Sequelize.STRING,
       datetime: requiredDate,
       owner: requiredString,
       categoryId: {
