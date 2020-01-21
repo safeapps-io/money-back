@@ -74,22 +74,33 @@ function runSyncValidationAndDbProcessFactory(
   scheme: yup.ObjectSchema,
 ) {
   return async (ent: BasicSynchronizableModelRequirements) => {
+    let validatedEnt
     try {
-      scheme.validateSync(ent)
+      validatedEnt = scheme.cast(ent) as BasicSynchronizableModelRequirements
+      scheme.validateSync(validatedEnt)
     } catch (error) {
-      console.error(error)
+      console.error(ent, error)
       return false
     }
 
-    if (!ent.updated) return { type, ent: await model.create(ent) }
+    if (!validatedEnt.updated) {
+      try {
+        return { type, ent: await model.create(validatedEnt) }
+      } catch (error) {
+        console.error(validatedEnt, error)
+        return false
+      }
+    }
 
-    const fetchedModel = await model.findByPk(ent.id)
+    const fetchedModel = await model.findByPk(validatedEnt.id)
 
     if (
-      ent.clientUpdated &&
-      fetchedModel.updated <= new Date(ent.clientUpdated)
+      validatedEnt.clientUpdated &&
+      fetchedModel.updated <= new Date(validatedEnt.clientUpdated)
     ) {
-      Object.entries(ent).forEach(([key, value]) => (fetchedModel[key] = value))
+      Object.entries(validatedEnt).forEach(
+        ([key, value]) => (fetchedModel[key] = value),
+      )
       await fetchedModel.save()
       return { type, ent: fetchedModel }
     }

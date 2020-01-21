@@ -37,7 +37,9 @@ export default class Transaction extends BaseModel<Transaction> {
   mcc!: string | null
 
   public get mccCodeDescription() {
-    return this.mcc ? mccCodeRegistry[this.mcc] : null
+    return this.mcc && mccCodeRegistry[this.mcc]
+      ? mccCodeRegistry[this.mcc].edited_description
+      : null
   }
 
   @Column
@@ -65,6 +67,7 @@ export default class Transaction extends BaseModel<Transaction> {
       ...prev,
       datetime: this.datetime.getTime(),
       mccCodeDescription: this.mccCodeDescription,
+      tags: this.tags,
     }
   }
 }
@@ -96,10 +99,14 @@ export const transactionScheme = yup
       .min(1)
       .max(256),
     tags: yup
-      .string()
-      .transform((_, originalValue) =>
-        JSON.stringify(originalValue.map((i: string) => i.trim())),
-      ),
+      .array()
+      .of(
+        yup
+          .string()
+          .trim()
+          .ensure(),
+      )
+      .compact(),
     categoryId: yup
       .string()
       .required()

@@ -33,7 +33,7 @@ module.exports = {
     await queryInterface.createTable('SearchFilters', {
       ...baseModel,
       title: requiredString,
-      query: { type: Sequelize.STRING(2048), allowNull: false },
+      parameters: { type: Sequelize.JSON, allowNull: false },
     })
 
     return queryInterface.createTable('Transactions', {

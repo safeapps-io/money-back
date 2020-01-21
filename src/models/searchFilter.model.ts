@@ -1,4 +1,4 @@
-import { Table, Column } from 'sequelize-typescript'
+import { Table, Column, DataType } from 'sequelize-typescript'
 import * as yup from 'yup'
 
 import BaseModel, { baseScheme } from './base'
@@ -8,9 +8,49 @@ export default class SearchFilter extends BaseModel<SearchFilter> {
   @Column
   title!: string
 
-  @Column
-  query!: string
+  @Column(DataType.JSON)
+  parameters!: SearchFilterParameters
+
+  public toJSON() {
+    const prev = super.toJSON()
+    return {
+      ...prev,
+      parameters: this.parameters,
+    }
+  }
 }
+
+interface SearchFilterParameters {
+  datetime?:
+    | {
+        type: 'calendar'
+        period: 'week' | 'month' | 'quater' | 'year'
+      }
+    | { type: 'dates'; startDate: number; endDate: number }
+  category?: {
+    oneOf: string[]
+    noneOf: string[]
+  }
+  tag?: {
+    oneOf: string[]
+    noneOf: string[]
+  }
+}
+
+const optionalArrayOfStringsOrString = yup
+  .array()
+  .transform((_, val) => {
+    if (typeof val === 'string') return [val]
+    return val
+  })
+  .notRequired()
+  .of(
+    yup
+      .string()
+      .trim()
+      .ensure(),
+  )
+  .compact()
 
 export const searchFilterScheme = yup
   .object({
@@ -20,11 +60,45 @@ export const searchFilterScheme = yup
       .required()
       .min(1)
       .max(256),
-    query: yup
-      .string()
-      .trim()
-      .required()
-      .min(1)
-      .max(256),
+    parameters: yup
+      .object({
+        datetime: yup
+          .object({
+            type: yup.string().oneOf(['calendar', 'dates']),
+            period: yup.string().when('type', {
+              is: 'calendar',
+              then: yup.string().oneOf(['week', 'month', 'quater', 'year']),
+            }),
+            startDate: yup.date().when('type', {
+              is: 'dates',
+              then: yup
+                .date()
+                .transform((_, val) => new Date(val))
+                .required(),
+            }),
+            endDate: yup.date().when('type', {
+              is: 'dates',
+              then: yup
+                .date()
+                .transform((_, val) => (val ? new Date(val) : null))
+                .nullable()
+                .notRequired(),
+            }),
+          })
+          .notRequired(),
+        category: yup
+          .object({
+            include: optionalArrayOfStringsOrString,
+            exclude: optionalArrayOfStringsOrString,
+          })
+          .notRequired(),
+        tag: yup
+          .object({
+            include: optionalArrayOfStringsOrString,
+            exclude: optionalArrayOfStringsOrString,
+          })
+          .notRequired(),
+      })
+      .notRequired(),
   })
   .concat(baseScheme)
