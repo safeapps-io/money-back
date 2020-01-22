@@ -24,7 +24,7 @@ interface SearchFilterParameters {
   datetime?:
     | {
         type: 'calendar'
-        period: 'week' | 'month' | 'quater' | 'year'
+        period: 'week' | 'month' | 'quarter' | 'year'
       }
     | { type: 'dates'; startDate: number; endDate: number }
   category?: {
@@ -67,7 +67,7 @@ export const searchFilterScheme = yup
             type: yup.string().oneOf(['calendar', 'dates']),
             period: yup.string().when('type', {
               is: 'calendar',
-              then: yup.string().oneOf(['week', 'month', 'quater', 'year']),
+              then: yup.string().oneOf(['week', 'month', 'quarter', 'year']),
             }),
             startDate: yup.date().when('type', {
               is: 'dates',
