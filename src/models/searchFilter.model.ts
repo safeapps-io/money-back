@@ -81,8 +81,7 @@ export const searchFilterScheme = yup
               then: yup
                 .date()
                 .transform((_, val) => (val ? new Date(val) : null))
-                .nullable()
-                .notRequired(),
+                .required(),
             }),
           })
           .notRequired(),
