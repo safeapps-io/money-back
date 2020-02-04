@@ -1,15 +1,18 @@
-import { Model } from 'sequelize-typescript'
 import { Op } from 'sequelize'
 import * as yup from 'yup'
 
 import Category, { categoryScheme } from '@/models/category.model'
 import Transaction, { transactionScheme } from '@/models/transaction.model'
 import SearchFilter, { searchFilterScheme } from '@/models/searchFilter.model'
+import IgnoredTransaction, {
+  ignoredTransactionScheme,
+} from '@/models/ignoredTransaction.model'
 
 export enum ObjectTypes {
   category = 'category',
   searchFilter = 'searchFilter',
   transaction = 'transaction',
+  ignoredTransaction = 'ignoredTransaction',
 }
 export type BasicSynchronizableModelRequirements = {
   updated: string | Date
@@ -22,8 +25,6 @@ export type BasicSynchronizableModelRequirements = {
  */
 export const syncMap: {
   [index in ObjectTypes]: {
-    model: typeof Model
-    scheme: yup.ObjectSchema
     syncRunner: (
       ent: BasicSynchronizableModelRequirements,
     ) => Promise<false | { type: ObjectTypes; ent: any }>
@@ -31,8 +32,6 @@ export const syncMap: {
   }
 } = {
   [ObjectTypes.category]: {
-    model: Category,
-    scheme: categoryScheme,
     syncRunner: runSyncValidationAndDbProcessFactory(
       ObjectTypes.category,
       Category,
@@ -41,8 +40,6 @@ export const syncMap: {
     getUpdates: syncronizableGetUpdatesFactory(ObjectTypes.category, Category),
   },
   [ObjectTypes.searchFilter]: {
-    model: SearchFilter,
-    scheme: searchFilterScheme,
     syncRunner: runSyncValidationAndDbProcessFactory(
       ObjectTypes.searchFilter,
       SearchFilter,
@@ -54,8 +51,6 @@ export const syncMap: {
     ),
   },
   [ObjectTypes.transaction]: {
-    model: Transaction,
-    scheme: transactionScheme,
     syncRunner: runSyncValidationAndDbProcessFactory(
       ObjectTypes.transaction,
       Transaction,
@@ -64,6 +59,17 @@ export const syncMap: {
     getUpdates: syncronizableGetUpdatesFactory(
       ObjectTypes.transaction,
       Transaction,
+    ),
+  },
+  [ObjectTypes.ignoredTransaction]: {
+    syncRunner: runSyncValidationAndDbProcessFactory(
+      ObjectTypes.ignoredTransaction,
+      IgnoredTransaction,
+      ignoredTransactionScheme,
+    ),
+    getUpdates: syncronizableGetUpdatesFactory(
+      ObjectTypes.ignoredTransaction,
+      IgnoredTransaction,
     ),
   },
 }
