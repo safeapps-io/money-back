@@ -11,6 +11,10 @@ import * as yup from 'yup'
 import BaseModel, { baseScheme } from './base'
 import Category from './category.model'
 import mccCodeRegistry from '@/core/mcc/mccCodeRegistry'
+import {
+  optionalArrayOfStringsOrString,
+  dateAsTimestamp,
+} from '@/utils/yupHelpers'
 
 @Table
 export default class Transaction extends BaseModel<Transaction> {
@@ -77,10 +81,14 @@ export const transactionScheme = yup
     isIncome: yup.bool().required(),
     isDraft: yup.bool().required(),
     amount: yup.string().required(),
-    originalAmount: yup.string().notRequired(),
+    originalAmount: yup
+      .string()
+      .nullable()
+      .notRequired(),
     currency: yup
       .string()
       .notRequired()
+      .nullable()
       .trim()
       .max(256),
     description: yup
@@ -88,25 +96,17 @@ export const transactionScheme = yup
       .notRequired()
       .trim()
       .max(256),
-    mcc: yup.number().notRequired(),
-    datetime: yup
-      .date()
-      .required()
-      .transform((_, val) => new Date(val)),
+    mcc: yup
+      .number()
+      .nullable()
+      .notRequired(),
+    datetime: dateAsTimestamp.required(),
     owner: yup
       .string()
       .required()
       .min(1)
       .max(256),
-    tags: yup
-      .array()
-      .of(
-        yup
-          .string()
-          .trim()
-          .ensure(),
-      )
-      .compact(),
+    tags: optionalArrayOfStringsOrString,
     categoryId: yup
       .string()
       .required()

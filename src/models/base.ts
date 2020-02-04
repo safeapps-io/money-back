@@ -9,6 +9,7 @@ import { Op } from 'sequelize'
 import { inspect } from 'util'
 import nanoid from 'nanoid'
 import * as yup from 'yup'
+import { dateAsTimestamp } from '@/utils/yupHelpers'
 
 export default class BaseModel<T> extends Model<T> {
   @PrimaryKey
@@ -39,14 +40,8 @@ export const baseScheme = yup
   .object()
   .shape({
     id: yup.string().required(),
-    updated: yup
-      .date()
-      .notRequired()
-      .transform((_, val) => new Date(val)),
-    clientUpdated: yup
-      .date()
-      .notRequired()
-      .transform((_, val) => new Date(val)),
+    updated: dateAsTimestamp.notRequired(),
+    clientUpdated: dateAsTimestamp.notRequired(),
   })
   .noUnknown()
 

@@ -2,6 +2,7 @@ import { Table, Column, DataType } from 'sequelize-typescript'
 import * as yup from 'yup'
 
 import BaseModel, { baseScheme } from './base'
+import { optionalArrayOfStringsOrString } from '@/utils/yupHelpers'
 
 @Table
 export default class SearchFilter extends BaseModel<SearchFilter> {
@@ -36,21 +37,6 @@ interface SearchFilterParameters {
     noneOf: string[]
   }
 }
-
-const optionalArrayOfStringsOrString = yup
-  .array()
-  .transform((_, val) => {
-    if (typeof val === 'string') return [val]
-    return val
-  })
-  .notRequired()
-  .of(
-    yup
-      .string()
-      .trim()
-      .ensure(),
-  )
-  .compact()
 
 export const searchFilterScheme = yup
   .object({
