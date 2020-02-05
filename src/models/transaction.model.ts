@@ -10,7 +10,6 @@ import * as yup from 'yup'
 
 import BaseModel, { baseScheme } from './base'
 import Category from './category.model'
-import mccCodeRegistry from '@/core/mcc/mccCodeRegistry'
 import {
   optionalArrayOfStringsOrString,
   dateAsTimestamp,
@@ -40,12 +39,6 @@ export default class Transaction extends BaseModel<Transaction> {
   @Column(DataType.STRING)
   mcc!: string | null
 
-  public get mccCodeDescription() {
-    return this.mcc && mccCodeRegistry[this.mcc]
-      ? mccCodeRegistry[this.mcc].edited_description
-      : null
-  }
-
   @Column
   datetime!: Date
 
@@ -70,7 +63,6 @@ export default class Transaction extends BaseModel<Transaction> {
     return {
       ...prev,
       datetime: this.datetime.getTime(),
-      mccCodeDescription: this.mccCodeDescription,
       tags: this.tags,
     }
   }

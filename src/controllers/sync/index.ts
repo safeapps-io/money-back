@@ -6,6 +6,7 @@ import { isWsAuth } from '@/middlewares/isAuth'
 import { BackendMessageTypes, ClientMessageTypes } from './types'
 import WSSendHelper from '@/utils/wsSendWrapper'
 import syncMessageHandler from './sync'
+import mccCodeMessageHandler from './mcc'
 
 const syncWsHandler = new WSSendHelper<BackendMessageTypes>()
 
@@ -20,6 +21,7 @@ syncRouter.ws('/:sessionId/sync', isWsAuth, (ws, req) => {
           break
 
         case ClientMessageTypes.clientMCCDescription:
+          mccCodeMessageHandler(syncWsHandler, id, parsed.data)
           break
 
         default:
