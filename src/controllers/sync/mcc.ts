@@ -8,9 +8,11 @@ const mccCodeMessageHandler: MessageHandler = (
 ) => {
   const res = parsed.codeList
     .map(code =>
-      mccCodeRegistry[code] ? mccCodeRegistry[code].edited_description : null,
+      mccCodeRegistry[code]
+        ? { code, description: mccCodeRegistry[code].edited_description }
+        : null,
     )
-    .filter(Boolean) as string[]
+    .filter(Boolean) as { code: string; description: string }[]
 
   ws.sequentialSend(wsId, BackendMessageTypes.serverMCCDescription, res)
 }
