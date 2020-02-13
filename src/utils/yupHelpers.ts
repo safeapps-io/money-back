@@ -16,3 +16,8 @@ export const optionalArrayOfStringsOrString = yup
   .compact()
 
 export const dateAsTimestamp = yup.date().transform((_, val) => new Date(val))
+
+export const optionalString = yup
+  .string()
+  .nullable()
+  .notRequired()

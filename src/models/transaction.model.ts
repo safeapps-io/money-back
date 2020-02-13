@@ -13,6 +13,7 @@ import Category from './category.model'
 import {
   optionalArrayOfStringsOrString,
   dateAsTimestamp,
+  optionalString,
 } from '@/utils/yupHelpers'
 
 @Table
@@ -35,9 +36,13 @@ export default class Transaction extends BaseModel<Transaction> {
   @Column(DataType.STRING)
   description!: string | null
 
-  @AllowNull
-  @Column(DataType.STRING)
-  mcc!: string | null
+  @Column(DataType.JSON)
+  autocompleteData!: {
+    mcc?: string
+    accNumber?: string
+    merchant?: string
+    sourceDataHash?: string
+  }
 
   @Column
   datetime!: Date
@@ -73,10 +78,7 @@ export const transactionScheme = yup
     isIncome: yup.bool().required(),
     isDraft: yup.bool().required(),
     amount: yup.string().required(),
-    originalAmount: yup
-      .string()
-      .nullable()
-      .notRequired(),
+    originalAmount: optionalString,
     currency: yup
       .string()
       .notRequired()
@@ -88,10 +90,12 @@ export const transactionScheme = yup
       .notRequired()
       .trim()
       .max(256),
-    mcc: yup
-      .number()
-      .nullable()
-      .notRequired(),
+    autocompleteData: yup.object({
+      mcc: optionalString,
+      accountNumber: optionalString,
+      merchant: optionalString,
+      sourceDataHash: optionalString,
+    }),
     datetime: dateAsTimestamp.required(),
     owner: yup
       .string()

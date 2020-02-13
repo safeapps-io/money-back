@@ -43,7 +43,7 @@ module.exports = {
       originalAmount: Sequelize.DECIMAL,
       currency: Sequelize.STRING,
       description: Sequelize.STRING,
-      mcc: Sequelize.STRING,
+      autocompleteData: { type: Sequelize.JSON, allowNull: false },
       datetime: requiredDate,
       owner: requiredString,
       categoryId: {

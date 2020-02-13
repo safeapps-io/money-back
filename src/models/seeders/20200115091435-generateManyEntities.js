@@ -40,6 +40,7 @@ const transactionBuilder = () => {
     owner: _.sample(nameChoices),
     description: Math.random() < 0.1 ? faker.commerce.productName() : null,
     datetime: created,
+    autocompleteData: {},
     created,
     updated,
   }
@@ -54,7 +55,11 @@ const transactionBuilder = () => {
       res.originalAmount = _.random(1, 100)
       res.currency = faker.finance.currencyCode()
     }
-    if (Math.random() < 0.6) res.mcc = _.sample(mccChoices)
+    if (Math.random() < 0.8) {
+      res.autocompleteData.mcc = _.sample(mccChoices)
+      res.autocompleteData.accNumber = _.random(2500, 9000).toString()
+      res.autocompleteData.merchant = faker.company.companyName()
+    }
   }
   res.isDraft = Math.random() < 0.01
   res.tags = JSON.stringify(
@@ -62,6 +67,7 @@ const transactionBuilder = () => {
       ? [Array(_.random(1, 2)).keys()].map(() => _.sample(tagsChoices))
       : [],
   )
+  res.autocompleteData = JSON.stringify(res.autocompleteData)
 
   return res
 }

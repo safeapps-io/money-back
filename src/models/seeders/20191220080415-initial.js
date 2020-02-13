@@ -45,6 +45,7 @@ module.exports = {
         isDraft: false,
         tags: JSON.stringify([]),
         categoryId: catId,
+        autocompleteData: JSON.stringify({}),
       },
     ])
   },
