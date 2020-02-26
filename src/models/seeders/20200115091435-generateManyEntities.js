@@ -53,7 +53,11 @@ const transactionBuilder = () => {
     res.categoryId = _.sample(isIncomeToCategoryId.expense)
     if (Math.random() < 0.1) {
       res.originalAmount = _.random(1, 100)
-      res.currency = faker.finance.currencyCode()
+      let curr
+      while (!curr || curr.split(' ').length === 2)
+        curr = faker.finance.currencyCode()
+
+      res.currency = curr
     }
     if (Math.random() < 0.8) {
       res.autocompleteData.mcc = _.sample(mccChoices)
