@@ -126,6 +126,7 @@ export const transactionScheme = yup
       then: yup.bool().required(),
       otherwise: yup
         .bool()
+        .notRequired()
         .nullable()
         .transform(() => null),
     }),
@@ -136,7 +137,8 @@ export const transactionScheme = yup
       otherwise: yup
         .bool()
         .notRequired()
-        .transform(() => false),
+        .nullable()
+        .transform(() => null),
     }),
     originalAmount: optionalString,
     currency: yup
