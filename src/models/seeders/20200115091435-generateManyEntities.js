@@ -28,21 +28,30 @@ const tagsChoices = ['Отпуск', 'MetPet', 'Семья', 'CleverPay', 'Priva
 // prettier-ignore
 const mccChoices = ['0742', '0763', '0780', '1740', '1761', '1799', '3000', '3193', '3423', '3733', '5912', '7941', '9402']
 
-const transactionBuilder = () => {
+const buildBaseTransaction = () => {
   const created = randomDateBetween(
     startDate,
     new Date(endDate.getTime() - 5000),
   )
   const updated = randomDateBetween(created, endDate)
-  const res = {
+  return {
     id: nanoid(),
-    isIncome: Math.random() < 0.05,
-    owner: _.sample(nameChoices),
-    description: Math.random() < 0.1 ? faker.commerce.productName() : null,
     datetime: created,
-    autocompleteData: {},
     created,
     updated,
+    autocompleteData: JSON.stringify({}),
+    tags: JSON.stringify([]),
+  }
+}
+
+const transactionBuilder = () => {
+  const res = {
+    ...buildBaseTransaction(),
+    type: 'usual',
+    isIncome: Math.random() < 0.05,
+    isActiveReference: null,
+    owner: _.sample(nameChoices),
+    description: Math.random() < 0.1 ? faker.commerce.productName() : null,
   }
 
   if (res.isIncome) {
@@ -60,6 +69,7 @@ const transactionBuilder = () => {
       res.currency = curr
     }
     if (Math.random() < 0.8) {
+      res.autocompleteData = {}
       res.autocompleteData.mcc = _.sample(mccChoices)
       res.autocompleteData.accNumber = _.random(2500, 9000).toString()
       res.autocompleteData.merchant = faker.company.companyName()
@@ -75,6 +85,22 @@ const transactionBuilder = () => {
 
   return res
 }
+
+const buildCorrectionTransaction = () => ({
+  ...buildBaseTransaction(),
+  type: 'correction',
+  isActiveReference: null,
+  isIncome: Math.random() > 0.5,
+  amount: _.random(50, 5000),
+})
+
+const buildReferenceTransaction = (isActive = false) => ({
+  ...buildBaseTransaction(),
+  type: 'balanceReference',
+  isActiveReference: isActive,
+  isIncome: Math.random() > 0.5,
+  amount: _.random(50000, 100000),
+})
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
@@ -110,6 +136,8 @@ module.exports = {
           updated: created,
           title: 'Всё',
           parameters: JSON.stringify({ datetime: {}, category: {}, tag: {} }),
+          balanceType: 'independent',
+          sharedBalanceSearchFilterId: null,
         },
         {
           id: searchFilterIds[1],
@@ -121,17 +149,8 @@ module.exports = {
             category: {},
             tag: { exclude: _.sampleSize(tagsChoices, 3) },
           }),
-        },
-        {
-          id: searchFilterIds[2],
-          created,
-          updated: created,
-          title: 'От 1 января, с некоторыми категориями',
-          parameters: JSON.stringify({
-            datetime: { type: 'dates', startDate: '2010-01-01' },
-            category: { include: _.sampleSize(categoryIds, 10) },
-            tag: { include: [_.sample(tagsChoices)] },
-          }),
+          balanceType: 'reference',
+          sharedBalanceSearchFilterId: searchFilterIds[0],
         },
       ])
 
@@ -141,6 +160,14 @@ module.exports = {
           [...Array(100).keys()].map(transactionBuilder),
         )
       }
+      await queryInterface.bulkInsert(
+        'Transactions',
+        [...Array(10).keys()].map(buildCorrectionTransaction),
+      )
+      await queryInterface.bulkInsert('Transactions', [
+        buildReferenceTransaction(),
+        buildReferenceTransaction(true),
+      ])
     } catch (error) {
       console.error(error)
     }

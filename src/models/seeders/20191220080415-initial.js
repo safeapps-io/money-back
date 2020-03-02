@@ -46,6 +46,8 @@ module.exports = {
         tags: JSON.stringify([]),
         categoryId: catId,
         autocompleteData: JSON.stringify({}),
+        type: 'usual',
+        isActiveReference: null,
       },
     ])
   },

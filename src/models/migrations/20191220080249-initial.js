@@ -34,28 +34,39 @@ module.exports = {
       ...baseModel,
       title: requiredString,
       parameters: { type: Sequelize.JSON, allowNull: false },
+      balanceType: { type: Sequelize.STRING, allowNull: true },
+      sharedBalanceSearchFilterId: {
+        type: Sequelize.STRING,
+        references: {
+          model: 'SearchFilters',
+          key: 'id',
+        },
+        allowNull: true,
+      },
     })
 
     return queryInterface.createTable('Transactions', {
       ...baseModel,
+      type: requiredString,
+      isActiveReference: Sequelize.BOOLEAN,
       amount: { type: Sequelize.DECIMAL, allowNull: false },
       isIncome: { type: Sequelize.BOOLEAN, allowNull: false },
       originalAmount: Sequelize.DECIMAL,
       currency: Sequelize.STRING,
       description: Sequelize.STRING,
-      autocompleteData: { type: Sequelize.JSON, allowNull: false },
+      autocompleteData: Sequelize.JSON,
       datetime: requiredDate,
-      owner: requiredString,
+      owner: Sequelize.STRING,
       categoryId: {
         type: Sequelize.STRING,
         references: {
           model: 'Categories',
           key: 'id',
         },
-        allowNull: false,
+        allowNull: true,
       },
-      tags: { type: Sequelize.JSON, allowNull: false },
-      isDraft: { type: Sequelize.BOOLEAN, allowNull: false },
+      tags: Sequelize.JSON,
+      isDraft: Sequelize.BOOLEAN,
     })
   },
 }
