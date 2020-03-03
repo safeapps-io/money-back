@@ -45,28 +45,42 @@ module.exports = {
       },
     })
 
-    return queryInterface.createTable('Transactions', {
+    await queryInterface.createTable('BalanceTransactions', {
       ...baseModel,
       type: requiredString,
       isActiveReference: Sequelize.BOOLEAN,
+      amount: { type: Sequelize.DECIMAL, allowNull: false },
+      datetime: requiredDate,
+      searchFilterId: {
+        type: Sequelize.STRING,
+        references: {
+          model: 'SearchFilters',
+          key: 'id',
+        },
+        allowNull: false,
+      },
+    })
+
+    return queryInterface.createTable('Transactions', {
+      ...baseModel,
       amount: { type: Sequelize.DECIMAL, allowNull: false },
       isIncome: { type: Sequelize.BOOLEAN, allowNull: false },
       originalAmount: Sequelize.DECIMAL,
       currency: Sequelize.STRING,
       description: Sequelize.STRING,
-      autocompleteData: Sequelize.JSON,
+      autocompleteData: { type: Sequelize.JSON, allowNull: false },
       datetime: requiredDate,
-      owner: Sequelize.STRING,
+      owner: requiredString,
       categoryId: {
         type: Sequelize.STRING,
         references: {
           model: 'Categories',
           key: 'id',
         },
-        allowNull: true,
+        allowNull: false,
       },
-      tags: Sequelize.JSON,
-      isDraft: Sequelize.BOOLEAN,
+      tags: { type: Sequelize.JSON, allowNull: false },
+      isDraft: { type: Sequelize.BOOLEAN, allowNull: false },
     })
   },
 }

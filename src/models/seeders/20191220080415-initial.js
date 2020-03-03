@@ -9,47 +9,49 @@ const updated = new Date(2019, 1, 1, 1, 1, 1)
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.bulkInsert(
-      'Accesses',
-      [
+    try {
+      await queryInterface.bulkInsert(
+        'Accesses',
+        [
+          {
+            id: '1',
+            created: new Date(),
+            updated: new Date(),
+            key,
+          },
+        ],
+        {},
+      )
+
+      await queryInterface.bulkInsert('Categories', [
         {
-          id: '1',
+          id: catId,
           created: new Date(),
-          updated: new Date(),
-          key,
+          updated,
+          title: 'Test category',
+          color: '#123456',
+          isIncome: false,
         },
-      ],
-      {},
-    )
+      ])
 
-    await queryInterface.bulkInsert('Categories', [
-      {
-        id: catId,
-        created: new Date(),
-        updated,
-        title: 'Test category',
-        color: '#123456',
-        isIncome: false,
-      },
-    ])
-
-    return queryInterface.bulkInsert('Transactions', [
-      {
-        id: trId1,
-        created: new Date(),
-        updated,
-        amount: '12.21',
-        isIncome: false,
-        datetime: new Date(2019, 1, 2),
-        owner: 'Dan',
-        isDraft: false,
-        tags: JSON.stringify([]),
-        categoryId: catId,
-        autocompleteData: JSON.stringify({}),
-        type: 'usual',
-        isActiveReference: null,
-      },
-    ])
+      return queryInterface.bulkInsert('Transactions', [
+        {
+          id: trId1,
+          created: new Date(),
+          updated,
+          amount: '12.21',
+          isIncome: false,
+          datetime: new Date(2019, 1, 2),
+          owner: 'Dan',
+          isDraft: false,
+          tags: JSON.stringify([]),
+          categoryId: catId,
+          autocompleteData: JSON.stringify({}),
+        },
+      ])
+    } catch (e) {
+      console.error(e)
+    }
   },
 
   down: async (queryInterface, Sequelize) => {
