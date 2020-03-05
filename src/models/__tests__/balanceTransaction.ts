@@ -6,6 +6,7 @@ import {
 describe('Balance Transaction Scheme', () => {
   const baseObj = {
     id: '1',
+    searchFilterId: '1',
     created: 1234,
     updated: 1234,
     datetime: 1234,

@@ -59,6 +59,7 @@ export const balanceTransactionScheme = yup
       ]),
     amount: yup.string().required(),
     datetime: dateAsTimestamp.required(),
+    searchFilterId: yup.string().required(),
     isActiveReference: yup.bool().when('type', {
       is: BalanceTransactionTypes.balanceReference,
       then: yup.bool().required(),
