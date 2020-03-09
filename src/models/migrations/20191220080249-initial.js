@@ -34,6 +34,31 @@ module.exports = {
       ...baseModel,
       title: requiredString,
       parameters: { type: Sequelize.JSON, allowNull: false },
+      balanceType: { type: Sequelize.STRING, allowNull: true },
+      sharedBalanceSearchFilterId: {
+        type: Sequelize.STRING,
+        references: {
+          model: 'SearchFilters',
+          key: 'id',
+        },
+        allowNull: true,
+      },
+    })
+
+    await queryInterface.createTable('BalanceTransactions', {
+      ...baseModel,
+      type: requiredString,
+      isActiveReference: Sequelize.BOOLEAN,
+      amount: { type: Sequelize.DECIMAL, allowNull: false },
+      datetime: requiredDate,
+      searchFilterId: {
+        type: Sequelize.STRING,
+        references: {
+          model: 'SearchFilters',
+          key: 'id',
+        },
+        allowNull: false,
+      },
     })
 
     return queryInterface.createTable('Transactions', {

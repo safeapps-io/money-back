@@ -47,18 +47,19 @@ export default class Transaction extends BaseModel<Transaction> {
   @Column
   datetime!: Date
 
-  @Column
-  owner!: string
+  @Column(DataType.STRING)
+  owner!: string | null
 
-  @Column
+  @Column(DataType.BOOLEAN)
   isDraft!: boolean
 
   @Column(DataType.JSON)
   tags!: string[]
 
+  @AllowNull
   @ForeignKey(() => Category)
-  @Column
-  categoryId!: string
+  @Column(DataType.STRING)
+  categoryId!: string | null
 
   @BelongsTo(() => Category)
   category!: Category
@@ -76,8 +77,9 @@ export default class Transaction extends BaseModel<Transaction> {
 export const transactionScheme = yup
   .object({
     isIncome: yup.bool().required(),
-    isDraft: yup.bool().required(),
     amount: yup.string().required(),
+    datetime: dateAsTimestamp.required(),
+    isDraft: yup.bool().required(),
     originalAmount: optionalString,
     currency: yup
       .string()
@@ -90,23 +92,29 @@ export const transactionScheme = yup
       .notRequired()
       .trim()
       .max(256),
-    autocompleteData: yup.object({
-      mcc: optionalString,
-      accountNumber: optionalString,
-      merchant: optionalString,
-      sourceDataHash: optionalString,
-    }),
-    datetime: dateAsTimestamp.required(),
+    autocompleteData: yup
+      .object({
+        mcc: optionalString,
+        accountNumber: optionalString,
+        merchant: optionalString,
+        sourceDataHash: optionalString,
+      })
+      .notRequired()
+      .default({}),
     owner: yup
       .string()
       .required()
+      .nullable()
+      .trim()
       .min(1)
       .max(256),
-    tags: optionalArrayOfStringsOrString,
     categoryId: yup
       .string()
       .required()
+      .nullable()
+      .trim()
       .min(1)
       .max(256),
+    tags: optionalArrayOfStringsOrString,
   })
   .concat(baseScheme)

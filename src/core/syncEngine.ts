@@ -7,11 +7,15 @@ import SearchFilter, { searchFilterScheme } from '@/models/searchFilter.model'
 import IgnoredTransaction, {
   ignoredTransactionScheme,
 } from '@/models/ignoredTransaction.model'
+import BalanceTransaction, {
+  balanceTransactionScheme,
+} from '@/models/balanceTransaction.model'
 
 export enum ObjectTypes {
   category = 'category',
   searchFilter = 'searchFilter',
   transaction = 'transaction',
+  balanceTransaction = 'balanceTransaction',
   ignoredTransaction = 'ignoredTransaction',
 }
 export type BasicSynchronizableModelRequirements = {
@@ -59,6 +63,17 @@ export const syncMap: {
     getUpdates: syncronizableGetUpdatesFactory(
       ObjectTypes.transaction,
       Transaction,
+    ),
+  },
+  [ObjectTypes.balanceTransaction]: {
+    syncRunner: runSyncValidationAndDbProcessFactory(
+      ObjectTypes.balanceTransaction,
+      BalanceTransaction,
+      balanceTransactionScheme,
+    ),
+    getUpdates: syncronizableGetUpdatesFactory(
+      ObjectTypes.balanceTransaction,
+      BalanceTransaction,
     ),
   },
   [ObjectTypes.ignoredTransaction]: {
