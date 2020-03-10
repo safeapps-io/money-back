@@ -18,7 +18,7 @@ import {
 
 @Table
 export default class Transaction extends BaseModel<Transaction> {
-  @Column
+  @Column(DataType.DECIMAL)
   amount!: number
 
   @Column

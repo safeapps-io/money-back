@@ -26,7 +26,7 @@ export default class BalanceTransaction extends BaseModel<BalanceTransaction> {
   @Column(DataType.BOOLEAN)
   isActiveReference!: boolean | null
 
-  @Column
+  @Column(DataType.DECIMAL)
   amount!: number
 
   @Column
