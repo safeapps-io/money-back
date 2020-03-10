@@ -41,7 +41,7 @@ const constructApp = async () => {
     .use(bodyParser.json())
     .use(bodyParser.urlencoded({ extended: true }))
     .use(multer().none())
-    .use(router)
+    .use('/saviour', router)
 
   return app
 }
