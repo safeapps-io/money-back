@@ -56,10 +56,9 @@ export default class Transaction extends BaseModel<Transaction> {
   @Column(DataType.JSON)
   tags!: string[]
 
-  @AllowNull
   @ForeignKey(() => Category)
-  @Column(DataType.STRING)
-  categoryId!: string | null
+  @Column
+  categoryId!: string
 
   @BelongsTo(() => Category)
   category!: Category

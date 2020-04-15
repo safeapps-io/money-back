@@ -11,14 +11,14 @@ import helmet from 'helmet'
 
 import pathJoin from '@/utils/pathJoin'
 import logger from '@/middlewares/logger'
-import { sync } from '@/models'
+import sequelize from '@/models/setup'
 import router from '@/router'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import multer from 'multer'
 
 const constructApp = async () => {
-  await sync()
+  await sequelize.sync()
 
   app
     .set('x-powered-by', false)
