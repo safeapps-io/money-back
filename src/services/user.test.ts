@@ -35,11 +35,12 @@ import {
   InvalidToken,
   TokenExpired,
 } from './user'
+import { FormValidationError } from '@/core/errors'
 
 describe('User Service: sign up', () => {
   const dummyUser = {
-    username: 'test',
-    password: 'test',
+    username: 'username',
+    password: 'password',
     email: 'test@test.com',
     description: 'test',
   }
@@ -84,6 +85,25 @@ describe('User Service: sign up', () => {
     } catch (err) {
       expect(err).toBeInstanceOf(CredentialsTaken)
       expect(err.message.toLowerCase()).toContain('email')
+    }
+  })
+
+  it('signup: throws on bad username, email and password', async () => {
+    try {
+      await UserService.signup({
+        email: 'invalid',
+        username: 'smol',
+        password: 'smol',
+        description: '',
+      })
+      throw new Error()
+    } catch (err) {
+      expect(err).toBeInstanceOf(FormValidationError)
+      expect(err.fieldErrors).toEqual({
+        username: ['username must be at least 5 characters'],
+        email: ['email must be a valid email'],
+        password: ['password must be at least 6 characters'],
+      })
     }
   })
 

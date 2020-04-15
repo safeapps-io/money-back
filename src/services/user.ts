@@ -1,9 +1,12 @@
 import argon2 from 'argon2'
 import jwt from 'jsonwebtoken'
+import * as yup from 'yup'
 import { isBefore } from 'date-fns'
 
 import { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
+import { FormValidationError } from '@/core/errors'
+import { transformValidationErrorToObject } from '@/utils/yupHelpers'
 
 type JWTMessage = {
   id: string
@@ -63,6 +66,23 @@ export class UserService {
     return { refreshToken, token }
   }
 
+  private static signupSchema = yup.object({
+    username: yup
+      .string()
+      .required()
+      .min(5)
+      .max(50),
+    email: yup
+      .string()
+      .email()
+      .notRequired()
+      .nullable(),
+    password: yup
+      .string()
+      .required()
+      .min(6)
+      .max(100),
+  })
   static async signup({
     username,
     email,
@@ -74,6 +94,18 @@ export class UserService {
     password: string
     description: string
   }) {
+    try {
+      this.signupSchema.validateSync(
+        { username, email, password },
+        { abortEarly: false },
+      )
+    } catch (err) {
+      throw new FormValidationError(
+        'error',
+        transformValidationErrorToObject(err as yup.ValidationError),
+      )
+    }
+
     const promises = []
     promises.push(UserManager.isUsernameTaken(username))
 

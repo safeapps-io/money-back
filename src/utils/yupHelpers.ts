@@ -21,3 +21,9 @@ export const optionalString = yup
   .string()
   .nullable()
   .notRequired()
+
+export const transformValidationErrorToObject = (err: yup.ValidationError) =>
+  err.inner.reduce((acc, curr) => {
+    acc[curr.path] = curr.errors
+    return acc
+  }, {} as { [key: string]: string[] })
