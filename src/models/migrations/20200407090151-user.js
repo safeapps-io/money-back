@@ -1,0 +1,44 @@
+'use strict'
+
+const nanoid = require('nanoid')
+
+module.exports = {
+  up: async (queryInterface, Sequelize) => {
+    const requiredString = { type: Sequelize.STRING, allowNull: false }
+    const requiredDate = { type: Sequelize.DATE, allowNull: false }
+
+    const baseModel = {
+      id: {
+        allowNull: false,
+        primaryKey: true,
+        type: Sequelize.STRING,
+        defaultValue: nanoid,
+      },
+      created: requiredDate,
+      updated: requiredDate,
+    }
+
+    await queryInterface.createTable('Users', {
+      ...baseModel,
+      username: { ...requiredString, unique: true },
+      email: { type: Sequelize.STRING, allowNull: true, unique: true },
+      password: requiredString,
+    })
+
+    return queryInterface.createTable('RefreshTokens', {
+      ...baseModel,
+      key: { ...requiredString, defaultValue: () => nanoid(50) },
+      description: requiredString,
+      userId: {
+        ...requiredString,
+        references: {
+          model: 'Users',
+          key: 'id',
+        },
+        onDelete: 'cascade',
+      },
+    })
+  },
+
+  down: (queryInterface, Sequelize) => {},
+}

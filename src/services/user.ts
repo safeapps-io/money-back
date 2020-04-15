@@ -1,0 +1,139 @@
+import argon2 from 'argon2'
+import jwt from 'jsonwebtoken'
+import { isBefore } from 'date-fns'
+
+import { UserManager } from '@/models/user.model'
+import { RefreshTokenManager } from '@/models/refreshToken.model'
+
+type JWTMessage = {
+  id: string
+  exp?: number
+  iat?: number
+}
+
+export class UserService {
+  private static async generateRefreshToken(data: {
+    userId: string
+    description: string
+  }) {
+    return (await RefreshTokenManager.generateToken(data)).key
+  }
+
+  private static async generateToken({
+    refreshToken,
+    userId,
+    withCheck = true,
+  }: {
+    refreshToken: string
+    userId: string
+    withCheck?: boolean
+  }) {
+    if (withCheck) {
+      const tokenValid = await RefreshTokenManager.tokenExists({
+        token: refreshToken,
+        userId,
+      })
+      if (!tokenValid) throw new InvalidRefreshToken()
+    }
+
+    const data: JWTMessage = { id: userId }
+
+    return jwt.sign(data, process.env.SECRET as string, {
+      expiresIn: '15m',
+    })
+  }
+
+  private static async newSignIn({
+    userId,
+    description,
+  }: {
+    userId: string
+    description: string
+  }) {
+    const refreshToken = await this.generateRefreshToken({
+      userId,
+      description,
+    })
+    const token = await this.generateToken({
+      refreshToken,
+      userId,
+      withCheck: false,
+    })
+
+    return { refreshToken, token }
+  }
+
+  static async signup({
+    username,
+    email,
+    password,
+    description,
+  }: {
+    username: string
+    email?: string
+    password: string
+    description: string
+  }) {
+    const promises = []
+    promises.push(UserManager.isUsernameTaken(username))
+
+    if (email) promises.push(UserManager.isEmailTaken(email))
+    const [usernameTaken, emailTaken] = await Promise.all(promises)
+
+    if (usernameTaken) throw new CredentialsTaken('Username is taken')
+    else if (emailTaken) throw new CredentialsTaken('Email is taken')
+
+    const passwordHashed = await argon2.hash(password)
+    const user = await UserManager.createUser({
+      email,
+      username,
+      password: passwordHashed,
+    })
+
+    return { ...(await this.newSignIn({ userId: user.id, description })), user }
+  }
+
+  static async signin({
+    usernameOrEmail,
+    password,
+    description,
+  }: {
+    usernameOrEmail: string
+    password: string
+    description: string
+  }) {
+    const user = await UserManager.findUser(usernameOrEmail)
+    if (!user) throw new NoSuchUser()
+
+    const isCorrect = await argon2.verify(user.password, password)
+    if (!isCorrect) throw new IncorrectPassword()
+
+    return await this.newSignIn({ userId: user.id, description })
+  }
+
+  static getUserIdFromToken(token: string) {
+    let decoded: JWTMessage
+    try {
+      decoded = jwt.verify(token, process.env.SECRET as string, {
+        ignoreExpiration: true,
+      }) as JWTMessage
+    } catch (err) {
+      throw new InvalidToken()
+    }
+
+    if (!decoded.exp) throw new InvalidToken()
+
+    // Date constructor expects ms, but we get seconds here
+    if (isBefore(decoded.exp * 1000, new Date())) throw new TokenExpired()
+
+    return decoded.id
+  }
+}
+
+export class AuthError extends Error {}
+export class InvalidRefreshToken extends AuthError {}
+export class InvalidToken extends AuthError {}
+export class TokenExpired extends AuthError {}
+export class CredentialsTaken extends AuthError {}
+export class NoSuchUser extends AuthError {}
+export class IncorrectPassword extends AuthError {}
