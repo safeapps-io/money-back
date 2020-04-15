@@ -10,19 +10,6 @@ const updated = new Date(2019, 1, 1, 1, 1, 1)
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     try {
-      await queryInterface.bulkInsert(
-        'Accesses',
-        [
-          {
-            id: '1',
-            created: new Date(),
-            updated: new Date(),
-            key,
-          },
-        ],
-        {},
-      )
-
       await queryInterface.bulkInsert('Categories', [
         {
           id: catId,

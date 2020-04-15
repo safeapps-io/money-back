@@ -18,6 +18,8 @@ module.exports = {
       updated: requiredDate,
     }
 
+    await queryInterface.dropTable('Accesses')
+
     await queryInterface.createTable('Users', {
       ...baseModel,
       username: { ...requiredString, unique: true },
