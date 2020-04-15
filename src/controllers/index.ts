@@ -1,7 +1,7 @@
 import { Router, NextFunction, Request, Response } from 'express'
 import ash from 'express-async-handler'
 
-import { RequestError } from '@/core/errors'
+import { RequestError, FormValidationError } from '@/core/errors'
 import authRouter from './auth'
 
 const apiRouter = Router()
@@ -18,6 +18,14 @@ apiRouter
     if (err instanceof RequestError) {
       res.status(400).json({ code: err.code, message: err.message })
       return
+    } else if (err instanceof FormValidationError) {
+      res
+        .status(400)
+        .json({
+          code: err.code,
+          message: err.message,
+          fieldErrors: err.fieldErrors,
+        })
     }
     next(err)
   })

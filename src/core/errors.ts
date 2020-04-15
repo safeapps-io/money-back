@@ -1,14 +1,16 @@
 export class RequestError extends Error {
-  constructor(message: string, public code: number, ...args: any[]) {
+  constructor(message: string, public code: number) {
     super(message)
   }
 }
 
-export class FormValidationError extends RequestError {
+export class FormValidationError extends Error {
+  public code = 400
+
   constructor(
     message: string,
-    public fieldErrors: { [field: string]: string[] },
+    public fieldErrors?: { [field: string]: string[] },
   ) {
-    super(message, 400)
+    super(message)
   }
 }
