@@ -112,8 +112,8 @@ export class UserService {
     if (email) promises.push(UserManager.isEmailTaken(email))
     const [usernameTaken, emailTaken] = await Promise.all(promises)
 
-    if (usernameTaken) throw new CredentialsTaken('Username is taken')
-    else if (emailTaken) throw new CredentialsTaken('Email is taken')
+    if (usernameTaken) throw new FormValidationError('Username is taken')
+    else if (emailTaken) throw new FormValidationError('Email is taken')
 
     const passwordHashed = await argon2.hash(password)
     const user = await UserManager.createUser({
@@ -143,7 +143,19 @@ export class UserService {
     return await this.newSignIn({ userId: user.id, description })
   }
 
-  static getUserIdFromToken(token: string) {
+  static getNewAccessToken(accessToken: string, refreshToken: string) {
+    let decoded: JWTMessage
+    try {
+      decoded = jwt.verify(accessToken, process.env.SECRET as string, {
+        ignoreExpiration: true,
+      }) as JWTMessage
+    } catch (err) {
+      throw new InvalidToken()
+    }
+    return this.generateToken({ refreshToken, userId: decoded.id })
+  }
+
+  static async getUserFromToken(token: string) {
     let decoded: JWTMessage
     try {
       decoded = jwt.verify(token, process.env.SECRET as string, {
@@ -156,16 +168,18 @@ export class UserService {
     if (!decoded.exp) throw new InvalidToken()
 
     // Date constructor expects ms, but we get seconds here
-    if (isBefore(decoded.exp * 1000, new Date())) throw new TokenExpired()
+    if (isBefore(decoded.exp * 1000, new Date())) throw new ExpiredToken()
+    const user = await UserManager.getUserById(decoded.id)
 
-    return decoded.id
+    if (!user) throw new InvalidToken()
+
+    return user
   }
 }
 
 export class AuthError extends Error {}
 export class InvalidRefreshToken extends AuthError {}
 export class InvalidToken extends AuthError {}
-export class TokenExpired extends AuthError {}
-export class CredentialsTaken extends AuthError {}
+export class ExpiredToken extends AuthError {}
 export class NoSuchUser extends AuthError {}
 export class IncorrectPassword extends AuthError {}

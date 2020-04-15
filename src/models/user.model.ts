@@ -38,12 +38,16 @@ export default class User extends BaseModel<User> {
 }
 
 export class UserManager {
-  static async createUser(data: {
+  static createUser(data: {
     email?: string
     username: string
     password: string
   }) {
     return User.create(data)
+  }
+
+  static getUserById(userId: string) {
+    return User.findByPk(userId)
   }
 
   static async isUsernameTaken(username: string) {

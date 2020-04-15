@@ -17,6 +17,7 @@ const mockRefreshTokenManager = {
     isUsernameTaken: jest.fn(),
     isEmailTaken: jest.fn(),
     findUser: jest.fn(),
+    getUserById: jest.fn(),
   }
 
 jest.mock('@/models/refreshToken.model', () => ({
@@ -31,9 +32,9 @@ jest.mock('@/models/user.model', () => ({
 
 import {
   UserService,
-  CredentialsTaken,
   InvalidToken,
-  TokenExpired,
+  ExpiredToken,
+  InvalidRefreshToken,
 } from './user'
 import { FormValidationError } from '@/core/errors'
 
@@ -65,7 +66,7 @@ describe('User Service: sign up', () => {
       })
       throw new Error()
     } catch (err) {
-      expect(err).toBeInstanceOf(CredentialsTaken)
+      expect(err).toBeInstanceOf(FormValidationError)
       expect(err.message.toLowerCase()).toContain('username')
     }
   })
@@ -83,7 +84,7 @@ describe('User Service: sign up', () => {
       })
       throw new Error()
     } catch (err) {
-      expect(err).toBeInstanceOf(CredentialsTaken)
+      expect(err).toBeInstanceOf(FormValidationError)
       expect(err.message.toLowerCase()).toContain('email')
     }
   })
@@ -111,15 +112,32 @@ describe('User Service: sign up', () => {
     mockRefreshTokenManager.generateToken.mockClear()
     const res = await UserService.signup(dummyUser)
 
+    mockUserManager.getUserById.mockImplementation(id => {
+      if (id === res.user.id) return res.user
+    })
+
     expect(mockRefreshTokenManager.generateToken.mock.calls.length).toBe(1)
-    expect(UserService.getUserIdFromToken(res.token)).toBe(res.user.id)
+    expect(UserService.getUserFromToken(res.token)).resolves.toEqual(res.user)
+  })
+
+  it('token: throws if there is no such user id', async () => {
+    mockRefreshTokenManager.generateToken.mockClear()
+    const res = await UserService.signup(dummyUser)
+
+    mockUserManager.getUserById.mockImplementation(id => {
+      if (id === res.user.id) return null
+    })
+
+    expect(UserService.getUserFromToken(res.token)).rejects.toThrowError(
+      InvalidToken,
+    )
   })
 
   it('token: throws for incorrect access token', () => {
     const token = jwt.sign({ data: 'test' }, 'othersecret', {
       expiresIn: '15m',
     })
-    expect(() => UserService.getUserIdFromToken(token)).toThrowError(
+    expect(UserService.getUserFromToken(token)).rejects.toThrowError(
       InvalidToken,
     )
   })
@@ -128,8 +146,30 @@ describe('User Service: sign up', () => {
     const token = jwt.sign({ id: 'test' }, process.env.SECRET as string, {
       expiresIn: '-1m',
     })
-    expect(() => UserService.getUserIdFromToken(token)).toThrowError(
-      TokenExpired,
+    expect(UserService.getUserFromToken(token)).rejects.toThrowError(
+      ExpiredToken,
     )
+  })
+
+  it('token: getting new access token works', async () => {
+    const res = await UserService.signup(dummyUser)
+    mockRefreshTokenManager.tokenExists.mockImplementation(
+      ({ token, userId }) => {
+        return userId === res.user.id && token === res.refreshToken
+      },
+    )
+
+    expect(
+      UserService.getNewAccessToken(res.token, res.refreshToken),
+    ).resolves.toBeTruthy()
+  })
+
+  it('token: getting new access token throws if invalid access-refresh pair', async () => {
+    const res = await UserService.signup(dummyUser)
+    mockRefreshTokenManager.tokenExists.mockImplementation(() => false)
+
+    expect(
+      UserService.getNewAccessToken(res.token, res.refreshToken),
+    ).rejects.toThrowError(InvalidRefreshToken)
   })
 })
