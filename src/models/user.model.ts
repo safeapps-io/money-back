@@ -50,13 +50,17 @@ export class UserManager {
     return User.findByPk(userId)
   }
 
-  static async isUsernameTaken(username: string) {
-    const count = await User.count({ where: { username } })
+  static async isUsernameTaken(username: string, excludeId?: string) {
+    const q = { username } as { [key: string]: any }
+    if (excludeId) q['id'] = { [Op.not]: excludeId }
+    const count = await User.count({ where: q })
     return count !== 0
   }
 
-  static async isEmailTaken(email: string) {
-    const count = await User.count({ where: { email } })
+  static async isEmailTaken(email: string, excludeId?: string) {
+    const q = { email } as { [key: string]: any }
+    if (excludeId) q['id'] = { [Op.not]: excludeId }
+    const count = await User.count({ where: q })
     return count !== 0
   }
 
@@ -68,5 +72,12 @@ export class UserManager {
 
   static changeUserPassword(userId: string, password: string) {
     return User.update({ password }, { where: { id: userId } })
+  }
+
+  static updateUser(
+    userId: string,
+    data: { email?: string; username: string },
+  ) {
+    return User.update(data, { where: { id: userId } })
   }
 }

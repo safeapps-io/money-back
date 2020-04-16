@@ -15,10 +15,20 @@ type JWTMessage = {
 }
 
 const passwordScheme = yup
-  .string()
-  .required()
-  .min(6)
-  .max(100)
+    .string()
+    .required()
+    .min(6)
+    .max(100),
+  usernameScheme = yup
+    .string()
+    .required()
+    .min(5)
+    .max(50),
+  emailScheme = yup
+    .string()
+    .email()
+    .notRequired()
+    .nullable()
 
 export class UserService {
   private static hashPassword(rawPassword: string) {
@@ -80,17 +90,30 @@ export class UserService {
     return { refreshToken, token }
   }
 
+  private static async checkCredentialsAvailability({
+    email,
+    username,
+    excludeId,
+  }: {
+    username: string
+    email?: string
+    excludeId?: string
+  }) {
+    const promises = []
+    promises.push(UserManager.isUsernameTaken(username, excludeId))
+
+    if (email) promises.push(UserManager.isEmailTaken(email, excludeId))
+    const [usernameTaken, emailTaken] = await Promise.all(promises)
+
+    if (usernameTaken)
+      throw new FormValidationError(UserServiceFormErrors.usernameTaken)
+    else if (emailTaken)
+      throw new FormValidationError(UserServiceFormErrors.emailTaken)
+  }
+
   private static signupSchema = yup.object({
-    username: yup
-      .string()
-      .required()
-      .min(5)
-      .max(50),
-    email: yup
-      .string()
-      .email()
-      .notRequired()
-      .nullable(),
+    username: usernameScheme,
+    email: emailScheme,
     password: passwordScheme,
   })
   static async signup({
@@ -106,14 +129,7 @@ export class UserService {
   }) {
     runSchemaWithFormError(this.signupSchema, { username, email, password })
 
-    const promises = []
-    promises.push(UserManager.isUsernameTaken(username))
-
-    if (email) promises.push(UserManager.isEmailTaken(email))
-    const [usernameTaken, emailTaken] = await Promise.all(promises)
-
-    if (usernameTaken) throw new FormValidationError('Username is taken')
-    else if (emailTaken) throw new FormValidationError('Email is taken')
+    await this.checkCredentialsAvailability({ username, email })
 
     const passwordHashed = await this.hashPassword(password)
     const user = await UserManager.createUser({
@@ -196,19 +212,41 @@ export class UserService {
 
     const isCorrect = await this.verifyPassword(user.password, oldPassword)
     if (!isCorrect)
-      throw new FormValidationError(
-        UserServiceFormErrors.incorrect_old_password,
-      )
+      throw new FormValidationError(UserServiceFormErrors.incorrectOldPassword)
 
     const passwordHashed = await this.hashPassword(newPassword)
     await UserManager.changeUserPassword(user.id, passwordHashed)
   }
+
+  private static updateUserScheme = yup.object({
+    username: usernameScheme,
+    email: emailScheme,
+  })
+  static async updateUser({
+    user,
+    ...obj
+  }: {
+    user: User
+    username: string
+    email?: string
+  }) {
+    runSchemaWithFormError(this.updateUserScheme, obj)
+
+    if (user.email && !obj.email)
+      throw new FormValidationError(UserServiceFormErrors.cantDeleteEmail)
+
+    await this.checkCredentialsAvailability({ ...obj, excludeId: user.id })
+    return UserManager.updateUser(user.id, obj)
+  }
 }
 
 export enum UserServiceFormErrors {
+  emailTaken = 'emailTaken',
+  usernameTaken = 'usernameTaken',
   unknownUser = 'unknownUser',
   incorrectPassword = 'incorrectPassword',
-  incorrect_old_password = 'incorrectOldPassword',
+  incorrectOldPassword = 'incorrectOldPassword',
+  cantDeleteEmail = 'cantDeleteEmail',
 }
 
 export class AuthError extends Error {}

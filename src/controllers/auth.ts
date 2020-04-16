@@ -61,6 +61,20 @@ authRouter.post(
 )
 
 authRouter.post(
+  '/updateUser',
+  isRestAuth,
+  ash(async (req, res) => {
+    const body = req.body as {
+      username: string
+      email?: string
+    }
+    const user = await UserService.updateUser({ ...body, user: req.user })
+
+    res.json(user)
+  }),
+)
+
+authRouter.post(
   '/newToken',
   ash(async (req, res) => {
     const body = req.body as {

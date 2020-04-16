@@ -19,6 +19,7 @@ const mockRefreshTokenManager = {
     findUser: jest.fn(),
     getUserById: jest.fn(),
     changeUserPassword: jest.fn(),
+    updateUser: jest.fn(),
   }
 
 jest.mock('@/models/refreshToken.model', () => ({
@@ -39,7 +40,6 @@ import {
   UserServiceFormErrors,
 } from './user'
 import { FormValidationError } from '@/core/errors'
-import { UserManager } from '@/models/user.model'
 
 describe('User Service', () => {
   const dummyUser = {
@@ -71,7 +71,7 @@ describe('User Service', () => {
         throw new Error()
       } catch (err) {
         expect(err).toBeInstanceOf(FormValidationError)
-        expect(err.message.toLowerCase()).toContain('username')
+        expect(err.message).toBe(UserServiceFormErrors.usernameTaken)
       }
     })
 
@@ -89,7 +89,7 @@ describe('User Service', () => {
         throw new Error()
       } catch (err) {
         expect(err).toBeInstanceOf(FormValidationError)
-        expect(err.message.toLowerCase()).toContain('email')
+        expect(err.message).toBe(UserServiceFormErrors.emailTaken)
       }
     })
 
@@ -288,6 +288,77 @@ describe('User Service', () => {
           newPassword: 'hey-there',
         }),
       ).rejects.toThrowError(FormValidationError)
+    })
+  })
+
+  describe('update user', () => {
+    beforeEach(() => {
+      mockUserManager.updateUser.mockClear()
+      mockUserManager.isUsernameTaken.mockClear()
+      mockUserManager.isEmailTaken.mockClear()
+    })
+
+    it('works', async () => {
+      const res = await UserService.signup(dummyUser)
+
+      await UserService.updateUser({
+        user: res.user as any,
+        username: 'newUsername',
+        email: dummyUser.email,
+      })
+      expect(mockUserManager.updateUser.mock.calls.length).toBe(1)
+    })
+
+    it('throws if removing email', async () => {
+      const res = await UserService.signup(dummyUser)
+
+      try {
+        await UserService.updateUser({
+          user: res.user as any,
+          username: 'newUsername',
+        })
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(FormValidationError)
+        expect(error.message).toBe(UserServiceFormErrors.cantDeleteEmail)
+      }
+    })
+
+    it('throws if bad email or username', async () => {
+      expect(
+        UserService.updateUser({
+          user: {} as any,
+          username: 'new',
+          email: 'new',
+        }),
+      ).rejects.toThrowError(FormValidationError)
+    })
+
+    it('throws if taken email/username', async () => {
+      mockUserManager.isUsernameTaken.mockImplementationOnce(async () => true)
+      try {
+        await UserService.updateUser({
+          user: {} as any,
+          username: 'newUsername',
+        })
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(FormValidationError)
+        expect(error.message).toBe(UserServiceFormErrors.usernameTaken)
+      }
+
+      mockUserManager.isEmailTaken.mockImplementationOnce(async () => true)
+      try {
+        await UserService.updateUser({
+          user: {} as any,
+          username: 'newUsername',
+          email: 'qwer@qwer.com',
+        })
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(FormValidationError)
+        expect(error.message).toBe(UserServiceFormErrors.emailTaken)
+      }
     })
   })
 })
