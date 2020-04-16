@@ -1,33 +1,18 @@
-import { Router, NextFunction, Request, Response } from 'express'
-import ash from 'express-async-handler'
+import { Router } from 'express'
 
-import { RequestError, FormValidationError } from '@/core/errors'
+import { errorHandler } from '@/middlewares/errorHandler'
 import authRouter from './auth'
 
 const apiRouter = Router()
 
 apiRouter
-  .use('/auth', ash(authRouter))
+  .use('/auth', authRouter)
   .use((_, res) =>
     res
       .status(404)
       .json({ error: 'No such path' })
       .end(),
   )
-  .use(function(err: Error, req: Request, res: Response, next: NextFunction) {
-    if (err instanceof RequestError) {
-      res.status(400).json({ code: err.code, message: err.message })
-      return
-    } else if (err instanceof FormValidationError) {
-      res
-        .status(400)
-        .json({
-          code: err.code,
-          message: err.message,
-          fieldErrors: err.fieldErrors,
-        })
-    }
-    next(err)
-  })
+  .use(errorHandler)
 
 export default apiRouter
