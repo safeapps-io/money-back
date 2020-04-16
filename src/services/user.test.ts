@@ -18,6 +18,7 @@ const mockRefreshTokenManager = {
     isEmailTaken: jest.fn(),
     findUser: jest.fn(),
     getUserById: jest.fn(),
+    changeUserPassword: jest.fn(),
   }
 
 jest.mock('@/models/refreshToken.model', () => ({
@@ -38,6 +39,7 @@ import {
   UserServiceFormErrors,
 } from './user'
 import { FormValidationError } from '@/core/errors'
+import { UserManager } from '@/models/user.model'
 
 describe('User Service', () => {
   const dummyUser = {
@@ -155,7 +157,7 @@ describe('User Service', () => {
         throw new Error()
       } catch (error) {
         expect(error).toBeInstanceOf(FormValidationError)
-        expect(error.message).toBe(UserServiceFormErrors.unknown_user)
+        expect(error.message).toBe(UserServiceFormErrors.unknownUser)
       }
     })
 
@@ -180,7 +182,7 @@ describe('User Service', () => {
         throw new Error()
       } catch (error) {
         expect(error).toBeInstanceOf(FormValidationError)
-        expect(error.message).toBe(UserServiceFormErrors.incorrect_password)
+        expect(error.message).toBe(UserServiceFormErrors.incorrectPassword)
       }
     })
   })
@@ -249,6 +251,43 @@ describe('User Service', () => {
       expect(
         UserService.getNewAccessToken(res.token, res.refreshToken),
       ).rejects.toThrowError(InvalidRefreshToken)
+    })
+  })
+
+  describe('change password', () => {
+    beforeEach(() => mockUserManager.changeUserPassword.mockClear())
+
+    it('works', async () => {
+      const res = await UserService.signup(dummyUser)
+
+      await UserService.updatePassword({
+        user: res.user as any,
+        oldPassword: dummyUser.password,
+        newPassword: 'hey-there',
+      })
+      expect(mockUserManager.changeUserPassword.mock.calls.length).toBe(1)
+    })
+
+    it('throws if bad new password', async () => {
+      expect(
+        UserService.updatePassword({
+          user: {} as any,
+          oldPassword: '',
+          newPassword: 'hey',
+        }),
+      ).rejects.toThrowError(FormValidationError)
+    })
+
+    it('throws if invalid old password', async () => {
+      const res = await UserService.signup(dummyUser)
+
+      expect(
+        UserService.updatePassword({
+          user: res.user as any,
+          oldPassword: 'incorrect password',
+          newPassword: 'hey-there',
+        }),
+      ).rejects.toThrowError(FormValidationError)
     })
   })
 })

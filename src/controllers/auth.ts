@@ -47,6 +47,20 @@ authRouter.post(
 )
 
 authRouter.post(
+  '/changePassword',
+  isRestAuth,
+  ash(async (req, res) => {
+    const body = req.body as {
+      oldPassword: string
+      newPassword: string
+    }
+    await UserService.updatePassword({ ...body, user: req.user })
+
+    res.status(200).end()
+  }),
+)
+
+authRouter.post(
   '/newToken',
   ash(async (req, res) => {
     const body = req.body as {

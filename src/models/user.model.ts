@@ -65,4 +65,8 @@ export class UserManager {
       where: { [Op.or]: { username: usernameOrEmail, email: usernameOrEmail } },
     })
   }
+
+  static changeUserPassword(userId: string, password: string) {
+    return User.update({ password }, { where: { id: userId } })
+  }
 }

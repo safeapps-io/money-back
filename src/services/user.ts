@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import * as yup from 'yup'
 import { isBefore } from 'date-fns'
 
-import { UserManager } from '@/models/user.model'
+import User, { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
 import { FormValidationError } from '@/core/errors'
 import { runSchemaWithFormError } from '@/utils/yupHelpers'
@@ -14,7 +14,21 @@ type JWTMessage = {
   iat?: number
 }
 
+const passwordScheme = yup
+  .string()
+  .required()
+  .min(6)
+  .max(100)
+
 export class UserService {
+  private static hashPassword(rawPassword: string) {
+    return argon2.hash(rawPassword)
+  }
+
+  private static verifyPassword(hashedPassword: string, password: string) {
+    return argon2.verify(hashedPassword, password)
+  }
+
   private static async generateRefreshToken(data: {
     userId: string
     description: string
@@ -77,11 +91,7 @@ export class UserService {
       .email()
       .notRequired()
       .nullable(),
-    password: yup
-      .string()
-      .required()
-      .min(6)
-      .max(100),
+    password: passwordScheme,
   })
   static async signup({
     username,
@@ -105,7 +115,7 @@ export class UserService {
     if (usernameTaken) throw new FormValidationError('Username is taken')
     else if (emailTaken) throw new FormValidationError('Email is taken')
 
-    const passwordHashed = await argon2.hash(password)
+    const passwordHashed = await this.hashPassword(password)
     const user = await UserManager.createUser({
       email,
       username,
@@ -131,11 +141,11 @@ export class UserService {
     runSchemaWithFormError(this.signinSchema, { usernameOrEmail, password })
 
     const user = await UserManager.findUser(usernameOrEmail)
-    if (!user) throw new FormValidationError(UserServiceFormErrors.unknown_user)
+    if (!user) throw new FormValidationError(UserServiceFormErrors.unknownUser)
 
-    const isCorrect = await argon2.verify(user.password, password)
+    const isCorrect = await this.verifyPassword(user.password, password)
     if (!isCorrect)
-      throw new FormValidationError(UserServiceFormErrors.incorrect_password)
+      throw new FormValidationError(UserServiceFormErrors.incorrectPassword)
 
     return await this.newSignIn({ userId: user.id, description })
   }
@@ -172,11 +182,33 @@ export class UserService {
 
     return user
   }
+
+  static async updatePassword({
+    user,
+    oldPassword,
+    newPassword,
+  }: {
+    user: User
+    oldPassword: string
+    newPassword: string
+  }) {
+    runSchemaWithFormError(passwordScheme, newPassword)
+
+    const isCorrect = await this.verifyPassword(user.password, oldPassword)
+    if (!isCorrect)
+      throw new FormValidationError(
+        UserServiceFormErrors.incorrect_old_password,
+      )
+
+    const passwordHashed = await this.hashPassword(newPassword)
+    await UserManager.changeUserPassword(user.id, passwordHashed)
+  }
 }
 
 export enum UserServiceFormErrors {
-  unknown_user = 'unknown_user',
-  incorrect_password = 'incorrect_password',
+  unknownUser = 'unknownUser',
+  incorrectPassword = 'incorrectPassword',
+  incorrect_old_password = 'incorrectOldPassword',
 }
 
 export class AuthError extends Error {}
