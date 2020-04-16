@@ -6,7 +6,7 @@ import { isBefore } from 'date-fns'
 import { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
 import { FormValidationError } from '@/core/errors'
-import { transformValidationErrorToObject } from '@/utils/yupHelpers'
+import { runSchemaWithFormError } from '@/utils/yupHelpers'
 
 type JWTMessage = {
   id: string
@@ -94,17 +94,7 @@ export class UserService {
     password: string
     description: string
   }) {
-    try {
-      this.signupSchema.validateSync(
-        { username, email, password },
-        { abortEarly: false },
-      )
-    } catch (err) {
-      throw new FormValidationError(
-        'error',
-        transformValidationErrorToObject(err as yup.ValidationError),
-      )
-    }
+    runSchemaWithFormError(this.signupSchema, { username, email, password })
 
     const promises = []
     promises.push(UserManager.isUsernameTaken(username))
@@ -138,17 +128,7 @@ export class UserService {
     password: string
     description: string
   }) {
-    try {
-      this.signinSchema.validateSync(
-        { usernameOrEmail, password },
-        { abortEarly: false },
-      )
-    } catch (err) {
-      throw new FormValidationError(
-        'error',
-        transformValidationErrorToObject(err as yup.ValidationError),
-      )
-    }
+    runSchemaWithFormError(this.signinSchema, { usernameOrEmail, password })
 
     const user = await UserManager.findUser(usernameOrEmail)
     if (!user) throw new FormValidationError(UserServiceFormErrors.unknown_user)
