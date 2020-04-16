@@ -125,6 +125,10 @@ export class UserService {
     return { ...(await this.newSignIn({ userId: user.id, description })), user }
   }
 
+  private static signinSchema = yup.object({
+    usernameOrEmail: yup.string().required(),
+    password: yup.string().required(),
+  })
   static async signin({
     usernameOrEmail,
     password,
@@ -134,6 +138,18 @@ export class UserService {
     password: string
     description: string
   }) {
+    try {
+      this.signinSchema.validateSync(
+        { usernameOrEmail, password },
+        { abortEarly: false },
+      )
+    } catch (err) {
+      throw new FormValidationError(
+        'error',
+        transformValidationErrorToObject(err as yup.ValidationError),
+      )
+    }
+
     const user = await UserManager.findUser(usernameOrEmail)
     if (!user) throw new NoSuchUser()
 
