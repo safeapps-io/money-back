@@ -151,10 +151,11 @@ export class UserService {
     }
 
     const user = await UserManager.findUser(usernameOrEmail)
-    if (!user) throw new NoSuchUser()
+    if (!user) throw new FormValidationError(UserServiceFormErrors.unknown_user)
 
     const isCorrect = await argon2.verify(user.password, password)
-    if (!isCorrect) throw new IncorrectPassword()
+    if (!isCorrect)
+      throw new FormValidationError(UserServiceFormErrors.incorrect_password)
 
     return await this.newSignIn({ userId: user.id, description })
   }
@@ -193,9 +194,12 @@ export class UserService {
   }
 }
 
+export enum UserServiceFormErrors {
+  unknown_user = 'unknown_user',
+  incorrect_password = 'incorrect_password',
+}
+
 export class AuthError extends Error {}
 export class InvalidRefreshToken extends AuthError {}
 export class InvalidToken extends AuthError {}
 export class ExpiredToken extends AuthError {}
-export class NoSuchUser extends AuthError {}
-export class IncorrectPassword extends AuthError {}
