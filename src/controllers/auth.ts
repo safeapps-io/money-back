@@ -1,24 +1,65 @@
-import { Request, Response, Router } from 'express'
-import { delay } from 'bluebird'
-import { createAccess } from '@/models/access.model'
-import { isRestAuth } from '@/middlewares/isAuth'
+import { Router } from 'express'
+import ash from 'express-async-handler'
 
-const checkValue =
-  'x2MfHTTIC3ra2jimQ/aWiNzWTNq/ntapQ1KzNeir9AeFvxY3G7xEj9bxTeoQLxZQAdAbq0kYsqWFglRCIs9p+neZZBts66dEeEvnny67HHcCIWJVAsg2aFZhGIO8IL50PZpkhbuK6Vo+I/lUKoHHOVff+kt3QfOYqFpu06f6nMsSXb7LPw0nkBVZCi5mnuH0'
+import { isRestAuth } from '@/middlewares/isAuth'
+import { UserService } from '@/services/user'
+import { getDeviceDescription } from '@/services/deviceDescription'
 
 const authRouter = Router()
 
-authRouter.get('', isRestAuth, (_, res) => res.status(200).end())
-authRouter.post('', async (req: Request, res: Response) => {
-  await delay(Math.random() * 500 + 500)
-  if (req.body.secret === checkValue) {
-    const access = await createAccess()
-    return res
-      .status(200)
-      .cookie('key', access.key, { expires: new Date(2100, 1) })
-      .json({ key: access.key })
-  }
-  res.status(403).end()
+authRouter.get('/user', isRestAuth, (req, res) => {
+  res.status(200).json(req.user)
 })
+
+authRouter.post(
+  '/signup',
+  ash(async (req, res) => {
+    const body = req.body as {
+      username: string
+      email?: string
+      password: string
+    }
+
+    const result = await UserService.signup({
+      ...body,
+      description: getDeviceDescription(req.get('User-Agent') || ''),
+    })
+
+    res.json(result)
+  }),
+)
+
+authRouter.post(
+  '/signin',
+  ash(async (req, res) => {
+    const body = req.body as {
+      usernameOrEmail: string
+      password: string
+    }
+
+    const result = await UserService.signin({
+      ...body,
+      description: getDeviceDescription(req.get('User-Agent') || ''),
+    })
+
+    res.json(result)
+  }),
+)
+
+authRouter.post(
+  '/newToken',
+  ash(async (req, res) => {
+    const body = req.body as {
+      accessToken: string
+      refreshToken: string
+    }
+
+    const token = await UserService.getNewAccessToken(
+      body.accessToken,
+      body.refreshToken,
+    )
+    res.json({ token })
+  }),
+)
 
 export default authRouter
