@@ -17,36 +17,33 @@ export const isRestAuth = async (
   _: Response,
   next: NextFunction,
 ) => {
-  let key, user
+  let key
   if (req.cookies && req.cookies.key) key = req.cookies.key
   else if (req.headers['authorization']) key = req.headers['authorization']
 
   try {
-    user = await UserService.getUserFromToken(key)
-    req.user = user
+    req.user = await UserService.getUserFromToken(key)
+    next()
   } catch (error) {
     if (error instanceof ExpiredToken)
-      throw new RequestError('Expired token', 401)
+      next(new RequestError('Expired token', 401))
     else if (error instanceof InvalidToken)
-      throw new RequestError('Invalid token', 403)
-    else throw error
+      next(new RequestError('Invalid token', 403))
+    else next(error)
   }
-
-  next()
 }
 
 export const isWsAuth = async (ws: ws, req: Request, next: NextFunction) => {
   // FIXME: Temp solution, should make it better
-  let key, user
+  let key
   if (req.params && req.params.sessionId) key = req.params.sessionId
 
   try {
-    user = await UserService.getUserFromToken(key as string)
-    req.user = user
+    req.user = await UserService.getUserFromToken(key as string)
+    next()
   } catch (error) {
     if (error instanceof ExpiredToken) ws.close()
     else if (error instanceof InvalidToken) ws.close()
-    else throw error
+    else next(error)
   }
-  next()
 }
