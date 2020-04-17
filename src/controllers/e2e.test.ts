@@ -8,13 +8,12 @@ describe('Error reporting', () => {
   it('reports error for user endpoint', async done => {
     const app = request(await appPromise)
 
-    app
-      .get('/saviour/api/auth/user')
-      .expect(400, { code: 403, message: 'Invalid token' })
-      .end(function(err) {
-        if (err) return done(err)
-        done()
-      })
+    app.get('/saviour/api/auth/user').end(function(_, res) {
+      expect(res.status).toBe(400)
+      expect(res.body).toEqual({ code: 403, message: 'Invalid token' })
+
+      done()
+    })
   })
 
   it('reports error for signup', async done => {
@@ -43,7 +42,7 @@ describe('Error reporting', () => {
     app
       .post('/saviour/api/auth/signup')
       .send({ username, password: nanoid() })
-      .end(function(err, res) {
+      .end(function(_, res) {
         expect(res.status).toBe(200)
         expect(res.body.user.username).toBe(username)
         done()

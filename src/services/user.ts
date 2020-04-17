@@ -1,5 +1,4 @@
 import argon2 from 'argon2'
-import jwt from 'jsonwebtoken'
 import * as yup from 'yup'
 import { isBefore } from 'date-fns'
 
@@ -7,6 +6,7 @@ import User, { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
 import { FormValidationError } from '@/core/errors'
 import { runSchemaWithFormError } from '@/utils/yupHelpers'
+import { signJwt, verifyJwt } from '@/utils/asyncJwt'
 
 type JWTMessage = {
   id: string
@@ -65,9 +65,7 @@ export class UserService {
 
     const data: JWTMessage = { id: userId }
 
-    return jwt.sign(data, process.env.SECRET as string, {
-      expiresIn: '15m',
-    })
+    return signJwt(data, { expiresIn: '15m' })
   }
 
   private static async newSignIn({
@@ -166,12 +164,12 @@ export class UserService {
     return await this.newSignIn({ userId: user.id, description })
   }
 
-  static getNewAccessToken(accessToken: string, refreshToken: string) {
+  static async getNewAccessToken(accessToken: string, refreshToken: string) {
     let decoded: JWTMessage
     try {
-      decoded = jwt.verify(accessToken, process.env.SECRET as string, {
+      decoded = await verifyJwt<JWTMessage>(accessToken, {
         ignoreExpiration: true,
-      }) as JWTMessage
+      })
     } catch (err) {
       throw new InvalidToken()
     }
@@ -181,9 +179,9 @@ export class UserService {
   static async getUserFromToken(token: string) {
     let decoded: JWTMessage
     try {
-      decoded = jwt.verify(token, process.env.SECRET as string, {
+      decoded = await verifyJwt<JWTMessage>(token, {
         ignoreExpiration: true,
-      }) as JWTMessage
+      })
     } catch (err) {
       throw new InvalidToken()
     }

@@ -38,7 +38,7 @@ import {
   ExpiredToken,
   InvalidRefreshToken,
   UserServiceFormErrors,
-} from './user'
+} from '../user'
 import { FormValidationError } from '@/core/errors'
 
 describe('User Service', () => {
@@ -239,9 +239,11 @@ describe('User Service', () => {
         },
       )
 
-      expect(
-        UserService.getNewAccessToken(res.token, res.refreshToken),
-      ).resolves.toBeTruthy()
+      const token = await UserService.getNewAccessToken(
+        res.token,
+        res.refreshToken,
+      )
+      expect(token).toBeTruthy()
     })
 
     it('getting new access token throws if invalid access-refresh pair', async () => {
