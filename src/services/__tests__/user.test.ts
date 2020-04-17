@@ -19,7 +19,12 @@ const mockRefreshTokenManager = {
     findUser: jest.fn(),
     getUserById: jest.fn(),
     changeUserPassword: jest.fn(),
-    updateUser: jest.fn(),
+    updateUser: jest
+      .fn()
+      .mockImplementation(async (userId: string, data: object) => ({
+        ...data,
+        id: userId,
+      })),
   }
 
 jest.mock('@/models/refreshToken.model', () => ({
@@ -43,11 +48,16 @@ import { FormValidationError } from '@/core/errors'
 
 describe('User Service', () => {
   const dummyUser = {
-    username: 'username',
-    password: 'password',
-    email: 'test@test.com',
-    description: 'test',
-  }
+      username: 'username',
+      password: 'password',
+      email: 'test@test.com',
+      description: 'test',
+    },
+    validatedUser = {
+      id: nanoid(),
+      username: 'username',
+      email: 'test@test.com',
+    }
 
   describe('signup', () => {
     it('works', async () => {
@@ -55,6 +65,7 @@ describe('User Service', () => {
 
       expect(res.refreshToken).toBeDefined()
       expect(argon2.verify(res.user.password, dummyUser.password))
+      expect(res.user.email).toBeUndefined()
     })
 
     it('forbids the same username', async () => {
@@ -301,22 +312,22 @@ describe('User Service', () => {
     })
 
     it('works', async () => {
-      const res = await UserService.signup(dummyUser)
+      const newUsername = 'newUsername'
 
-      await UserService.updateUser({
-        user: res.user as any,
-        username: 'newUsername',
-        email: dummyUser.email,
+      const result = await UserService.updateUser({
+        user: validatedUser as any,
+        username: newUsername,
+        email: 'newEmail@asdfasdf.com',
       })
       expect(mockUserManager.updateUser.mock.calls.length).toBe(1)
+      expect(result.email).toBeUndefined()
+      expect(result.username).toBe(newUsername)
     })
 
     it('throws if removing email', async () => {
-      const res = await UserService.signup(dummyUser)
-
       try {
         await UserService.updateUser({
-          user: res.user as any,
+          user: validatedUser as any,
           username: 'newUsername',
         })
         throw new Error()
@@ -336,12 +347,13 @@ describe('User Service', () => {
       ).rejects.toThrowError(FormValidationError)
     })
 
-    it('throws if taken email/username', async () => {
+    it('throws if taken username', async () => {
       mockUserManager.isUsernameTaken.mockImplementationOnce(async () => true)
       try {
         await UserService.updateUser({
-          user: {} as any,
+          user: validatedUser as any,
           username: 'newUsername',
+          email: validatedUser.email,
         })
         throw new Error()
       } catch (error) {

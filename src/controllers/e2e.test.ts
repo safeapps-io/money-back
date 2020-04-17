@@ -62,22 +62,12 @@ describe('Error reporting', () => {
         expect(res.status).toBe(200)
         app
           .post('/saviour/api/auth/signup')
-          .send({ username: 'other-username', password, email })
+          .send({ username, password, email: 'otherEmail@test.com' })
           .end((_, res) => {
             expect(res.status).toBe(400)
-            expect(res.body.message).toBe(UserServiceFormErrors.emailTaken)
+            expect(res.body.message).toBe(UserServiceFormErrors.usernameTaken)
 
-            app
-              .post('/saviour/api/auth/signup')
-              .send({ username, password, email: 'otherEmail@test.com' })
-              .end((_, res) => {
-                expect(res.status).toBe(400)
-                expect(res.body.message).toBe(
-                  UserServiceFormErrors.usernameTaken,
-                )
-
-                done()
-              })
+            done()
           })
       })
   })

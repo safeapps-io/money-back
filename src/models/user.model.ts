@@ -74,10 +74,12 @@ export class UserManager {
     return User.update({ password }, { where: { id: userId } })
   }
 
-  static updateUser(
+  static async updateUser(
     userId: string,
-    data: { email?: string; username: string },
+    data: { username?: string; email?: string },
   ) {
-    return User.update(data, { where: { id: userId } })
+    return (
+      await User.update(data, { where: { id: userId }, returning: true })
+    )[1][0]
   }
 }

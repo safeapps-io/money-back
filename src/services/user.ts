@@ -7,6 +7,7 @@ import { RefreshTokenManager } from '@/models/refreshToken.model'
 import { FormValidationError } from '@/core/errors'
 import { runSchemaWithFormError } from '@/utils/yupHelpers'
 import { signJwt, verifyJwt } from '@/utils/asyncJwt'
+import { ValidateEmailService } from './validateEmail'
 
 type JWTMessage = {
   id: string
@@ -131,10 +132,11 @@ export class UserService {
 
     const passwordHashed = await this.hashPassword(password)
     const user = await UserManager.createUser({
-      email,
       username,
       password: passwordHashed,
     })
+
+    await ValidateEmailService.triggerEmailValidation(user, email)
 
     return { ...(await this.newSignIn({ userId: user.id, description })), user }
   }
@@ -222,19 +224,22 @@ export class UserService {
   })
   static async updateUser({
     user,
-    ...obj
+    username,
+    email,
   }: {
     user: User
     username: string
     email?: string
   }) {
-    runSchemaWithFormError(this.updateUserScheme, obj)
+    runSchemaWithFormError(this.updateUserScheme, { email, username })
 
-    if (user.email && !obj.email)
+    if (user.email && !email)
       throw new FormValidationError(UserServiceFormErrors.cantDeleteEmail)
 
-    await this.checkCredentialsAvailability({ ...obj, excludeId: user.id })
-    return UserManager.updateUser(user.id, obj)
+    await this.checkCredentialsAvailability({ username, excludeId: user.id })
+    await ValidateEmailService.triggerEmailValidation(user, email)
+
+    return UserManager.updateUser(user.id, { username })
   }
 }
 

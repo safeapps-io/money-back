@@ -4,6 +4,7 @@ import ash from 'express-async-handler'
 import { isRestAuth } from '@/middlewares/isAuth'
 import { UserService } from '@/services/user'
 import { getDeviceDescription } from '@/services/deviceDescription'
+import { ValidateEmailService } from '@/services/validateEmail'
 
 const authRouter = Router()
 
@@ -71,6 +72,18 @@ authRouter.post(
     const user = await UserService.updateUser({ ...body, user: req.user })
 
     res.json(user)
+  }),
+)
+
+authRouter.post(
+  '/validateEmail',
+  ash(async (req, res) => {
+    const body = req.body as {
+      emailToken: string
+    }
+
+    await ValidateEmailService.updateEmail(body.emailToken)
+    res.status(200).end()
   }),
 )
 
