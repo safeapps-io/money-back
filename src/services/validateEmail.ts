@@ -3,6 +3,8 @@ import { signJwt, verifyJwt } from '@/utils/asyncJwt'
 import { FormValidationError } from '@/core/errors'
 import { MessageService } from './message'
 
+export const jwtSubject = 'vem' // Validate EMail
+
 type JWTMessage = {
   id: string
   // email
@@ -21,6 +23,7 @@ export class ValidateEmailService {
   private static generateToken({ email, userId }: UserData): Promise<string> {
     return signJwt({ em: email, id: userId } as JWTMessage, {
       expiresIn: '2d',
+      subject: jwtSubject,
     })
   }
 
@@ -35,7 +38,9 @@ export class ValidateEmailService {
 
   public static async validateToken(token: string): Promise<UserData> {
     try {
-      const { em, id } = await verifyJwt<JWTMessage>(token)
+      const { em, id } = await verifyJwt<JWTMessage>(token, {
+        subject: jwtSubject,
+      })
       return { email: em, userId: id }
     } catch (error) {
       throw new FormValidationError(ValidateEmailServiceErrors.invalidToken)

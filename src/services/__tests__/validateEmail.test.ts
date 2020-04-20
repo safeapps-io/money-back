@@ -18,6 +18,7 @@ jest.mock('@/models/user.model', () => ({
 import {
   ValidateEmailService,
   ValidateEmailServiceErrors,
+  jwtSubject,
 } from '../validateEmail'
 import User from '@/models/user.model'
 import { signJwt } from '@/utils/asyncJwt'
@@ -92,7 +93,21 @@ describe('Email validation', () => {
   it('update: throws if token is old', async () => {
     const token = await signJwt(
       { message: 'doesnt matter' },
-      { expiresIn: '-5m' },
+      { expiresIn: '-5m', subject: jwtSubject },
+    )
+    try {
+      await ValidateEmailService.updateEmail(token)
+      throw new Error()
+    } catch (err) {
+      expect(err).toBeInstanceOf(FormValidationError)
+      expect(err.message).toBe(ValidateEmailServiceErrors.invalidToken)
+    }
+  })
+
+  it('update: throws if subject is different', async () => {
+    const token = await signJwt(
+      { message: 'doesnt matter' },
+      { expiresIn: '5m', subject: 'other' },
     )
     try {
       await ValidateEmailService.updateEmail(token)
