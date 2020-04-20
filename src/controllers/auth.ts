@@ -63,6 +63,43 @@ authRouter.post(
 )
 
 authRouter.post(
+  '/requestPasswordReset',
+  ash(async (req, res) => {
+    const { email } = req.body as {
+      email: string
+    }
+    await PasswordService.requestPasswordReset(email)
+
+    res.status(200).end()
+  }),
+)
+
+authRouter.post(
+  '/isResetTokenValid',
+  ash(async (req, res) => {
+    const { token } = req.body as {
+      token: string
+    }
+    await PasswordService.getUserIdFromPasswordResetToken(token)
+
+    res.status(200).end()
+  }),
+)
+
+authRouter.post(
+  '/setPasswordFromResetToken',
+  ash(async (req, res) => {
+    const body = req.body as {
+      token: string
+      password: string
+    }
+    await PasswordService.updatePasswordFromResetToken(body)
+
+    res.status(200).end()
+  }),
+)
+
+authRouter.post(
   '/updateUser',
   isRestAuth,
   ash(async (req, res) => {

@@ -14,7 +14,6 @@ export const jwtSubject = 'sess' // session
 type JWTMessage = {
   id: string
   exp?: number
-  iat?: number
 }
 
 const usernameScheme = yup
