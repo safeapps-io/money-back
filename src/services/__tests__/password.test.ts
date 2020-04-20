@@ -21,7 +21,7 @@ import {
   PasswordServiceFormErrors,
   jwtSubject,
 } from '../password'
-import { signJwt } from '@/utils/asyncJwt'
+import { signJwt } from '@/utils/crypto'
 import { SignOptions } from 'jsonwebtoken'
 
 describe('Password service', () => {

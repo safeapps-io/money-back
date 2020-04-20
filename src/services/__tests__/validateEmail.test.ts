@@ -21,7 +21,7 @@ import {
   jwtSubject,
 } from '../validateEmail'
 import User from '@/models/user.model'
-import { signJwt } from '@/utils/asyncJwt'
+import { signJwt } from '@/utils/crypto'
 import { FormValidationError } from '@/core/errors'
 
 describe('Email validation', () => {

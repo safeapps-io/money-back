@@ -4,7 +4,7 @@ import * as yup from 'yup'
 import { runSchemaWithFormError } from '@/utils/yupHelpers'
 import User, { UserManager } from '@/models/user.model'
 import { FormValidationError } from '@/core/errors'
-import { signJwt, verifyJwt } from '@/utils/asyncJwt'
+import { signJwt, verifyJwt } from '@/utils/crypto'
 import { MessageService } from './message'
 
 export const passwordScheme = yup

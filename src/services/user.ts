@@ -5,7 +5,7 @@ import User, { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
 import { FormValidationError } from '@/core/errors'
 import { runSchemaWithFormError } from '@/utils/yupHelpers'
-import { signJwt, verifyJwt } from '@/utils/asyncJwt'
+import { signJwt, verifyJwt } from '@/utils/crypto'
 import { ValidateEmailService } from './validateEmail'
 import { PasswordService, passwordScheme } from './password'
 

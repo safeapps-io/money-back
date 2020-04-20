@@ -1,5 +1,5 @@
 import User, { UserManager } from '@/models/user.model'
-import { signJwt, verifyJwt } from '@/utils/asyncJwt'
+import { signJwt, verifyJwt } from '@/utils/crypto'
 import { FormValidationError } from '@/core/errors'
 import { MessageService } from './message'
 
