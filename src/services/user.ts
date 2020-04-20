@@ -9,6 +9,8 @@ import { runSchemaWithFormError } from '@/utils/yupHelpers'
 import { signJwt, verifyJwt } from '@/utils/asyncJwt'
 import { ValidateEmailService } from './validateEmail'
 
+export const jwtSubject = 'sess' // session
+
 type JWTMessage = {
   id: string
   exp?: number
@@ -66,7 +68,11 @@ export class UserService {
 
     const data: JWTMessage = { id: userId }
 
-    return signJwt(data, { expiresIn: '15m' })
+    return signJwt(data, {
+      expiresIn: '15m',
+      subject: jwtSubject,
+      noTimestamp: true,
+    })
   }
 
   private static async newSignIn({
@@ -171,6 +177,7 @@ export class UserService {
     try {
       decoded = await verifyJwt<JWTMessage>(accessToken, {
         ignoreExpiration: true,
+        subject: jwtSubject,
       })
     } catch (err) {
       throw new InvalidToken()
@@ -183,6 +190,7 @@ export class UserService {
     try {
       decoded = await verifyJwt<JWTMessage>(token, {
         ignoreExpiration: true,
+        subject: jwtSubject,
       })
     } catch (err) {
       throw new InvalidToken()

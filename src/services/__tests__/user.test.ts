@@ -43,6 +43,7 @@ import {
   ExpiredToken,
   InvalidRefreshToken,
   UserServiceFormErrors,
+  jwtSubject,
 } from '../user'
 import { FormValidationError } from '@/core/errors'
 
@@ -70,7 +71,7 @@ describe('User Service', () => {
 
     it('forbids the same username', async () => {
       const takenUsername = 'test2'
-      mockUserManager.isUsernameTaken.mockImplementation(
+      mockUserManager.isUsernameTaken.mockImplementationOnce(
         async username => username === takenUsername,
       )
 
@@ -88,7 +89,7 @@ describe('User Service', () => {
 
     it('forbids the same email', async () => {
       const takenEmail = 'test@test2.com'
-      mockUserManager.isEmailTaken.mockImplementation(
+      mockUserManager.isEmailTaken.mockImplementationOnce(
         async email => email === takenEmail,
       )
 
@@ -135,7 +136,7 @@ describe('User Service', () => {
           description,
         })
 
-      mockUserManager.findUser.mockImplementation(() => res.user)
+      mockUserManager.findUser.mockImplementationOnce(() => res.user)
 
       const result = await UserService.signin({
         usernameOrEmail: username,
@@ -157,7 +158,7 @@ describe('User Service', () => {
         password = 'normal',
         description = ''
 
-      mockUserManager.findUser.mockImplementation(() => null)
+      mockUserManager.findUser.mockImplementationOnce(() => null)
 
       try {
         await UserService.signin({
@@ -182,7 +183,7 @@ describe('User Service', () => {
           description,
         })
 
-      mockUserManager.findUser.mockImplementation(() => res.user)
+      mockUserManager.findUser.mockImplementationOnce(() => res.user)
 
       try {
         await UserService.signin({
@@ -203,7 +204,7 @@ describe('User Service', () => {
       mockRefreshTokenManager.generateToken.mockClear()
       const res = await UserService.signup(dummyUser)
 
-      mockUserManager.getUserById.mockImplementation(id => {
+      mockUserManager.getUserById.mockImplementationOnce(id => {
         if (id === res.user.id) return res.user
       })
 
@@ -215,7 +216,7 @@ describe('User Service', () => {
       mockRefreshTokenManager.generateToken.mockClear()
       const res = await UserService.signup(dummyUser)
 
-      mockUserManager.getUserById.mockImplementation(id => {
+      mockUserManager.getUserById.mockImplementationOnce(id => {
         if (id === res.user.id) return null
       })
 
@@ -233,18 +234,22 @@ describe('User Service', () => {
       )
     })
 
-    it('throws for expired access token', () => {
+    it('throws for expired access token', async () => {
       const token = jwt.sign({ id: 'test' }, process.env.SECRET as string, {
         expiresIn: '-1m',
+        subject: jwtSubject,
       })
-      expect(UserService.getUserFromToken(token)).rejects.toThrowError(
-        ExpiredToken,
-      )
+      try {
+        await UserService.getUserFromToken(token)
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(ExpiredToken)
+      }
     })
 
     it('getting new access token works', async () => {
       const res = await UserService.signup(dummyUser)
-      mockRefreshTokenManager.tokenExists.mockImplementation(
+      mockRefreshTokenManager.tokenExists.mockImplementationOnce(
         ({ token, userId }) => {
           return userId === res.user.id && token === res.refreshToken
         },
@@ -259,11 +264,24 @@ describe('User Service', () => {
 
     it('getting new access token throws if invalid access-refresh pair', async () => {
       const res = await UserService.signup(dummyUser)
-      mockRefreshTokenManager.tokenExists.mockImplementation(() => false)
+      mockRefreshTokenManager.tokenExists.mockImplementationOnce(() => false)
 
       expect(
         UserService.getNewAccessToken(res.token, res.refreshToken),
       ).rejects.toThrowError(InvalidRefreshToken)
+    })
+
+    it('throws for incorrect subject of token', async () => {
+      const token = jwt.sign({ id: 'test' }, process.env.SECRET as string, {
+        expiresIn: '5m',
+        subject: 'other',
+      })
+      try {
+        await UserService.getUserFromToken(token)
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(InvalidToken)
+      }
     })
   })
 
