@@ -1,4 +1,3 @@
-import argon2 from 'argon2'
 import * as yup from 'yup'
 import { isBefore } from 'date-fns'
 
@@ -8,6 +7,7 @@ import { FormValidationError } from '@/core/errors'
 import { runSchemaWithFormError } from '@/utils/yupHelpers'
 import { signJwt, verifyJwt } from '@/utils/asyncJwt'
 import { ValidateEmailService } from './validateEmail'
+import { PasswordService, passwordScheme } from './password'
 
 export const jwtSubject = 'sess' // session
 
@@ -17,12 +17,7 @@ type JWTMessage = {
   iat?: number
 }
 
-const passwordScheme = yup
-    .string()
-    .required()
-    .min(6)
-    .max(100),
-  usernameScheme = yup
+const usernameScheme = yup
     .string()
     .required()
     .min(5)
@@ -34,14 +29,6 @@ const passwordScheme = yup
     .nullable()
 
 export class UserService {
-  private static hashPassword(rawPassword: string) {
-    return argon2.hash(rawPassword)
-  }
-
-  private static verifyPassword(hashedPassword: string, password: string) {
-    return argon2.verify(hashedPassword, password)
-  }
-
   private static async generateRefreshToken(data: {
     userId: string
     description: string
@@ -136,7 +123,7 @@ export class UserService {
 
     await this.checkCredentialsAvailability({ username, email })
 
-    const passwordHashed = await this.hashPassword(password)
+    const passwordHashed = await PasswordService.hashPassword(password)
     const user = await UserManager.createUser({
       username,
       password: passwordHashed,
@@ -165,9 +152,7 @@ export class UserService {
     const user = await UserManager.findUser(usernameOrEmail)
     if (!user) throw new FormValidationError(UserServiceFormErrors.unknownUser)
 
-    const isCorrect = await this.verifyPassword(user.password, password)
-    if (!isCorrect)
-      throw new FormValidationError(UserServiceFormErrors.incorrectPassword)
+    await PasswordService.verifyPassword(user.password, password)
 
     return await this.newSignIn({ userId: user.id, description })
   }
@@ -207,25 +192,6 @@ export class UserService {
     return user
   }
 
-  static async updatePassword({
-    user,
-    oldPassword,
-    newPassword,
-  }: {
-    user: User
-    oldPassword: string
-    newPassword: string
-  }) {
-    runSchemaWithFormError(passwordScheme, newPassword)
-
-    const isCorrect = await this.verifyPassword(user.password, oldPassword)
-    if (!isCorrect)
-      throw new FormValidationError(UserServiceFormErrors.incorrectOldPassword)
-
-    const passwordHashed = await this.hashPassword(newPassword)
-    await UserManager.changeUserPassword(user.id, passwordHashed)
-  }
-
   private static updateUserScheme = yup.object({
     username: usernameScheme,
     email: emailScheme,
@@ -255,8 +221,6 @@ export enum UserServiceFormErrors {
   emailTaken = 'emailTaken',
   usernameTaken = 'usernameTaken',
   unknownUser = 'unknownUser',
-  incorrectPassword = 'incorrectPassword',
-  incorrectOldPassword = 'incorrectOldPassword',
   cantDeleteEmail = 'cantDeleteEmail',
 }
 

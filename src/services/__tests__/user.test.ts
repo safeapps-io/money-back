@@ -46,6 +46,7 @@ import {
   jwtSubject,
 } from '../user'
 import { FormValidationError } from '@/core/errors'
+import { PasswordServiceFormErrors } from '../password'
 
 describe('User Service', () => {
   const dummyUser = {
@@ -194,7 +195,7 @@ describe('User Service', () => {
         throw new Error()
       } catch (error) {
         expect(error).toBeInstanceOf(FormValidationError)
-        expect(error.message).toBe(UserServiceFormErrors.incorrectPassword)
+        expect(error.message).toBe(PasswordServiceFormErrors.incorrectPassword)
       }
     })
   })
@@ -282,43 +283,6 @@ describe('User Service', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(InvalidToken)
       }
-    })
-  })
-
-  describe('change password', () => {
-    beforeEach(() => mockUserManager.changeUserPassword.mockClear())
-
-    it('works', async () => {
-      const res = await UserService.signup(dummyUser)
-
-      await UserService.updatePassword({
-        user: res.user as any,
-        oldPassword: dummyUser.password,
-        newPassword: 'hey-there',
-      })
-      expect(mockUserManager.changeUserPassword.mock.calls.length).toBe(1)
-    })
-
-    it('throws if bad new password', async () => {
-      expect(
-        UserService.updatePassword({
-          user: {} as any,
-          oldPassword: '',
-          newPassword: 'hey',
-        }),
-      ).rejects.toThrowError(FormValidationError)
-    })
-
-    it('throws if invalid old password', async () => {
-      const res = await UserService.signup(dummyUser)
-
-      expect(
-        UserService.updatePassword({
-          user: res.user as any,
-          oldPassword: 'incorrect password',
-          newPassword: 'hey-there',
-        }),
-      ).rejects.toThrowError(FormValidationError)
     })
   })
 

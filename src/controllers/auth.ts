@@ -5,6 +5,7 @@ import { isRestAuth } from '@/middlewares/isAuth'
 import { UserService } from '@/services/user'
 import { getDeviceDescription } from '@/services/deviceDescription'
 import { ValidateEmailService } from '@/services/validateEmail'
+import { PasswordService } from '@/services/password'
 
 const authRouter = Router()
 
@@ -55,7 +56,7 @@ authRouter.post(
       oldPassword: string
       newPassword: string
     }
-    await UserService.updatePassword({ ...body, user: req.user })
+    await PasswordService.updatePassword({ ...body, user: req.user })
 
     res.status(200).end()
   }),
