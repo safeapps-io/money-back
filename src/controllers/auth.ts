@@ -6,6 +6,7 @@ import { UserService } from '@/services/user'
 import { getDeviceDescription } from '@/services/deviceDescription'
 import { ValidateEmailService } from '@/services/validateEmail'
 import { PasswordService } from '@/services/password'
+import { InviteService } from '@/services/invite'
 
 const authRouter = Router()
 
@@ -14,11 +15,23 @@ authRouter.get('/user', isRestAuth, (req, res) => {
 })
 
 authRouter.post(
+  '/isInviteValid',
+  ash(async (req, res) => {
+    const body = req.body as {
+      invite: string
+    }
+    InviteService.getUserIdFromInvite(body.invite)
+    res.status(200).end()
+  }),
+)
+
+authRouter.post(
   '/signup',
   ash(async (req, res) => {
     const body = req.body as {
       username: string
       email?: string
+      invite?: string
       password: string
     }
 

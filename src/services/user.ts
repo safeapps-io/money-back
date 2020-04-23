@@ -8,6 +8,7 @@ import { runSchemaWithFormError } from '@/utils/yupHelpers'
 import { signJwt, verifyJwt } from '@/utils/crypto'
 import { ValidateEmailService } from './validateEmail'
 import { PasswordService, passwordScheme } from './password'
+import { InviteService } from './invite'
 
 export const jwtSubject = 'sess' // session
 
@@ -112,20 +113,24 @@ export class UserService {
     email,
     password,
     description,
+    invite,
   }: {
     username: string
     email?: string
     password: string
     description: string
+    invite?: string
   }) {
     runSchemaWithFormError(this.signupSchema, { username, email, password })
 
     await this.checkCredentialsAvailability({ username, email })
+    const inviterId = await InviteService.getUserIdFromInvite(invite)
 
     const passwordHashed = await PasswordService.hashPassword(password)
     const user = await UserManager.createUser({
       username,
       password: passwordHashed,
+      inviterId,
     })
 
     await ValidateEmailService.triggerEmailValidation(user, email)

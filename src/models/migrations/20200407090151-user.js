@@ -25,6 +25,15 @@ module.exports = {
       username: { ...requiredString, unique: true },
       email: { type: Sequelize.STRING, allowNull: true, unique: true },
       password: requiredString,
+      inviterId: {
+        type: Sequelize.STRING,
+        references: {
+          model: 'Users',
+          key: 'id',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL',
+      },
     })
 
     return queryInterface.createTable('RefreshTokens', {
@@ -37,7 +46,7 @@ module.exports = {
           model: 'Users',
           key: 'id',
         },
-        onDelete: 'cascade',
+        onDelete: 'CASCADE',
       },
     })
   },

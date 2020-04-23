@@ -25,16 +25,22 @@ const mockRefreshTokenManager = {
         ...data,
         id: userId,
       })),
+  },
+  mockInviteService = {
+    getUserIdFromInvite: jest.fn(),
   }
 
 jest.mock('@/models/refreshToken.model', () => ({
   __esModule: true,
   RefreshTokenManager: mockRefreshTokenManager,
 }))
-
 jest.mock('@/models/user.model', () => ({
   __esModule: true,
   UserManager: mockUserManager,
+}))
+jest.mock('@/services/invite', () => ({
+  __esModule: true,
+  InviteService: mockInviteService,
 }))
 
 import {

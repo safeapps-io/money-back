@@ -3,8 +3,21 @@ import nanoid from 'nanoid'
 
 import appPromise from '@/app'
 import { UserServiceFormErrors } from '@/services/user'
+import { UserManager } from '@/models/user.model'
+import { InviteService } from '@/services/invite'
 
 describe('Error reporting', () => {
+  let _invite: string
+  async function getInvite(): Promise<string> {
+    if (_invite) return _invite
+    const u = await UserManager.createUser({
+      username: nanoid(),
+      password: nanoid(),
+    })
+    _invite = InviteService.generateInviteString(u.id)
+    return _invite
+  }
+
   it('reports error for user endpoint', async done => {
     const app = request(await appPromise)
 
@@ -37,11 +50,12 @@ describe('Error reporting', () => {
 
   it('lets you signup', async done => {
     const app = request(await appPromise),
-      username = nanoid()
+      username = nanoid(),
+      invite = await getInvite()
 
     app
       .post('/saviour/api/auth/signup')
-      .send({ username, password: nanoid() })
+      .send({ username, password: nanoid(), invite })
       .end(function(_, res) {
         expect(res.status).toBe(200)
         expect(res.body.user.username).toBe(username)
@@ -53,16 +67,17 @@ describe('Error reporting', () => {
     const app = request(await appPromise),
       username = nanoid(),
       email = `${nanoid()}@test.com`,
-      password = nanoid()
+      password = nanoid(),
+      invite = await getInvite()
 
     app
       .post('/saviour/api/auth/signup')
-      .send({ username, password, email })
+      .send({ username, password, email, invite })
       .end((_, res) => {
         expect(res.status).toBe(200)
         app
           .post('/saviour/api/auth/signup')
-          .send({ username, password, email: 'otherEmail@test.com' })
+          .send({ username, password, invite, email: 'otherEmail@test.com' })
           .end((_, res) => {
             expect(res.status).toBe(400)
             expect(res.body.message).toBe(UserServiceFormErrors.usernameTaken)
@@ -76,16 +91,17 @@ describe('Error reporting', () => {
     const app = request(await appPromise),
       username = nanoid(),
       email = `${nanoid()}@test.com`,
-      password = nanoid()
+      password = nanoid(),
+      invite = await getInvite()
 
     app
       .post('/saviour/api/auth/signup')
-      .send({ username, password, email })
+      .send({ username, password, email, invite })
       .end((_, res) => {
         app
           .post('/saviour/api/auth/updateUser')
           .set('authorization', res.body.token)
-          .send({ username, email: `${nanoid()}@test.com` })
+          .send({ username, email: `${nanoid()}@test.com`, invite })
           .end((_, res) => {
             expect(res.status).toBe(200)
             done()

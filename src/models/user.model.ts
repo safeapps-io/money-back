@@ -5,6 +5,8 @@ import {
   DataType,
   AllowNull,
   HasMany,
+  ForeignKey,
+  BelongsTo,
 } from 'sequelize-typescript'
 
 import BaseModel from './base'
@@ -25,6 +27,17 @@ export default class User extends BaseModel<User> {
   @Column
   password!: string
 
+  @AllowNull
+  @ForeignKey(() => User)
+  @Column(DataType.STRING)
+  inviterId!: string | null
+
+  @BelongsTo(() => User)
+  inviter!: User
+
+  @HasMany(() => User, 'inviterId')
+  invitedUsers!: User[]
+
   @HasMany(() => RefreshToken)
   refreshTokens!: RefreshToken[]
 
@@ -42,6 +55,7 @@ export class UserManager {
     email?: string
     username: string
     password: string
+    inviterId?: string
   }) {
     return User.create(data)
   }
