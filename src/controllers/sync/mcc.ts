@@ -1,4 +1,4 @@
-import mccCodeRegistry from '@/core/mcc/mccCodeRegistry'
+import { MCCService } from '@/services/mcc'
 import { WSMiddleware } from '@/utils/wsMiddleware'
 
 enum ITypes {
@@ -19,15 +19,7 @@ export class MCCWsMiddleware implements M {
     wsWrapped,
     message,
   ) => {
-    const items = message.codeList
-      .map(code => ({
-        code,
-        description: mccCodeRegistry[code]
-          ? mccCodeRegistry[code].edited_description
-          : null,
-      }))
-      .filter(Boolean) as { code: string; description: string | null }[]
-
+    const items = MCCService.getCodeDescription(message.codeList)
     wsWrapped.sequentialSend({ type: OTypes.serverMCCDescription, items })
   }
 }
