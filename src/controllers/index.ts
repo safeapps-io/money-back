@@ -1,7 +1,7 @@
 import { Router } from 'express'
 
 import { errorHandler } from '@/middlewares/errorHandler'
-import authRouter from './auth'
+import authRouter from '@/controllers/auth'
 
 const apiRouter = Router()
 

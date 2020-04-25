@@ -216,7 +216,8 @@ describe('User Service', () => {
       })
 
       expect(mockRefreshTokenManager.generateToken.mock.calls.length).toBe(1)
-      expect(UserService.getUserFromToken(res.token)).resolves.toEqual(res.user)
+      const user = await UserService.getUserFromToken(res.token)
+      expect(user).toEqual(res.user)
     })
 
     it('throws if there is no such user id', async () => {

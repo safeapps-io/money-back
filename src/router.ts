@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import apiRouter from '@/controllers'
-import syncRouter from './controllers/sync'
+import syncRouter from '@/controllers/sync'
 
 const router = Router()
   .use('/ws', syncRouter)

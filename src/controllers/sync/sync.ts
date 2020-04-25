@@ -1,45 +1,12 @@
-import { BackendMessageTypes, MessageHandler } from './types'
+import { WSMiddleware } from '@/utils/wsMiddleware'
 import { ObjectTypes, syncMap } from '@/core/syncEngine'
 import Transaction from '@/models/transaction.model'
 import Category from '@/models/category.model'
 import SearchFilter from '@/models/searchFilter.model'
 
-const syncMessageHandler: MessageHandler = async (
-  ws,
-  wsId,
-  parsed = {} as ClientChangesData,
-) => {
-  const latestUpdated = parsed.latestUpdated || 0
-  const entities: EntityItem[] = parsed.entities || []
-
-  const changedItems = (
-    await Promise.all(
-      entities.map(({ type, ent }) => syncMap[type].syncRunner(ent)),
-    )
-  ).filter(Boolean)
-
-  if (changedItems.length)
-    ws.sendToAllExceptId(
-      wsId,
-      BackendMessageTypes.serverDataChunk,
-      changedItems,
-    )
-
-  const changedDate = new Date(latestUpdated)
-  const items = (
-    await Promise.all(
-      Object.values(ObjectTypes).map(type =>
-        syncMap[type].getUpdates(changedDate),
-      ),
-    )
-  ).flatMap(i => i)
-
-  ws.sequentialSend(wsId, BackendMessageTypes.serverDataChunk, items, {
-    type: BackendMessageTypes.syncFinished,
-  })
+enum ITypes {
+  clientChanges = 'clientChanges',
 }
-
-export default syncMessageHandler
 
 type EntityItem = {
   type: ObjectTypes
@@ -49,4 +16,58 @@ type EntityItem = {
 type ClientChangesData = {
   latestUpdated?: string | number
   entities: EntityItem[]
+}
+
+export type SyncIncomingMessages = {
+  [ITypes.clientChanges]: ClientChangesData
+}
+
+enum OTypes {
+  serverDataChunk = 'serverDataChunk',
+  syncFinished = 'syncFinished',
+}
+
+type M = WSMiddleware<SyncIncomingMessages>
+export class SyncWsMiddleware implements M {
+  static [ITypes.clientChanges]: M[ITypes.clientChanges] = async (
+    wsWrapped,
+    message,
+    state,
+  ) => {
+    if (!state.user) throw new Error()
+
+    const latestUpdated = message.latestUpdated || 0
+    const entities: EntityItem[] = message.entities || []
+
+    const changedItems = (
+      await Promise.all(
+        entities.map(({ type, ent }) => syncMap[type].syncRunner(ent)),
+      )
+    ).filter(Boolean)
+
+    // TODO: Вот это с помощью редиса надо делать. Надо делать publish в каналы
+    // if (changedItems.length)
+    //   wsWrapped.sendToAllExceptId(
+    //     wsId,
+    //     BackendSyncMessageTypes.serverDataChunk,
+    //     changedItems,
+    //   )
+
+    const changedDate = new Date(latestUpdated)
+    const items = (
+      await Promise.all(
+        Object.values(ObjectTypes).map(type =>
+          syncMap[type].getUpdates(changedDate),
+        ),
+      )
+    ).flatMap(i => i)
+
+    wsWrapped.sequentialSend({
+      type: OTypes.serverDataChunk,
+      items,
+      finishMessage: {
+        type: OTypes.syncFinished,
+      },
+    })
+  }
 }
