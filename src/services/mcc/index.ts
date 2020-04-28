@@ -32,7 +32,7 @@ export class MCCService {
     return codeList
       .map(code => ({
         code,
-        description: mccData[code] ? mccData[code].edited_description : null,
+        description: mccData[code]?.edited_description,
       }))
       .filter(Boolean)
   }

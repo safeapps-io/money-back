@@ -11,11 +11,5 @@ export const getDeviceDescription = (userAgent: string) => {
   )
 }
 
-const getNameAndVersion = (obj: { name?: string; version?: string }) => {
-  let res = ''
-  if (obj.name) {
-    res += obj.name
-    if (obj.version) res += ` ${obj.version}`
-  }
-  return res
-}
+const getNameAndVersion = (obj: { name?: string; version?: string }) =>
+  (obj?.name + ` ${obj?.version}`).trim()

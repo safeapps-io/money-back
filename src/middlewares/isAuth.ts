@@ -17,9 +17,7 @@ export const isRestAuth = async (
   _: Response,
   next: NextFunction,
 ) => {
-  let key
-  if (req.cookies && req.cookies.key) key = req.cookies.key
-  else if (req.headers['authorization']) key = req.headers['authorization']
+  const key = req.cookies?.key || req.headers['authorization']
 
   try {
     req.user = await UserService.getUserFromToken(key)

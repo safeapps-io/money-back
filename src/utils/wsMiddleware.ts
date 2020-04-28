@@ -43,7 +43,7 @@ export async function handleWsConnection<IncomingMessages>(
     }
 
     for (let middleware of middlewares) {
-      if (middleware.bulk) await middleware.bulk(wrapper, data, state)
+      if (middleware.bulk) await middleware?.bulk(wrapper, data, state)
       if (!middleware[type]) continue
 
       try {
