@@ -29,11 +29,11 @@ enum OTypes {
 
 type M = WSMiddleware<SyncIncomingMessages>
 export class SyncWsMiddleware implements M {
-  static [ITypes.clientChanges]: M[ITypes.clientChanges] = async (
+  static [ITypes.clientChanges]: M[ITypes.clientChanges] = async ({
     wsWrapped,
     message,
     state,
-  ) => {
+  }) => {
     if (!state.user) throw new Error()
 
     const latestUpdated = message.latestUpdated || 0

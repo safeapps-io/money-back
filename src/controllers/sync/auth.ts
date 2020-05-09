@@ -15,8 +15,8 @@ enum OTypes {
 
 type M = WSMiddleware<AuthIncomingMessages>
 export class AuthWsMiddleware implements M {
-  static bulk: M['bulk'] = async (_, message, state) => {
-    const { token } = message
+  static bulk: M['bulk'] = async ({ parsed, state }) => {
+    const { token } = parsed
     try {
       const user = await UserService.getUserFromToken(token!)
       state.user = user
@@ -25,10 +25,10 @@ export class AuthWsMiddleware implements M {
     }
   }
 
-  static [ITypes.getNewAccessToken]: M[ITypes.getNewAccessToken] = async (
+  static [ITypes.getNewAccessToken]: M[ITypes.getNewAccessToken] = async ({
     wsWrapped,
     message,
-  ) => {
+  }) => {
     const { accessToken, refreshToken } = message
     const token = await UserService.getNewAccessToken(accessToken, refreshToken)
     wsWrapped.send({ type: OTypes.newAccessToken, data: token })

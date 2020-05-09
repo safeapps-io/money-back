@@ -3,16 +3,23 @@ import nanoid from 'nanoid'
 
 import chunk from '@/utils/chunk'
 
+// TODO: Mama, I failed. Make this all type strict… but not like this. Too much `any`
 export type WSMiddleware<MessageMap> = {
   open?: (ws: any) => Promise<void>
   close?: (ws: any) => Promise<void>
-  bulk?: (ws: any, message: BaseMessage, state: any) => Promise<object | void>
+  bulk?: (data: {
+    wsWrapped: WSWrapper
+    message: any
+    parsed: any
+    state: any
+  }) => Promise<object | void>
 } & {
-  [messageType in keyof MessageMap]?: (
-    wsWrapped: WSWrapper,
-    message: MessageMap[messageType],
-    state: any,
-  ) => Promise<object | void>
+  [messageType in keyof MessageMap]?: (data: {
+    wsWrapped: WSWrapper
+    message: MessageMap[messageType]
+    parsed: any
+    state: any
+  }) => Promise<object | void>
 }
 
 type BaseMessage = {
@@ -28,14 +35,14 @@ export async function handleWsConnection<IncomingMessages>(
   ...middlewares: WSMiddleware<IncomingMessages>[]
 ) {
   const id = nanoid(),
-    wrapper = new WSWrapper(id, ws)
+    wsWrapped = new WSWrapper(id, ws)
 
   ws.on('message', async raw => {
     const state = {}
-    let type, data
+    let type, data, parsed
 
     try {
-      const parsed = JSON.parse(raw as string) as Message<IncomingMessages>
+      parsed = JSON.parse(raw as string) as Message<IncomingMessages>
       type = parsed.type
       data = parsed.data
     } catch (err) {
@@ -43,11 +50,22 @@ export async function handleWsConnection<IncomingMessages>(
     }
 
     for (let middleware of middlewares) {
-      if (middleware.bulk) await middleware?.bulk(wrapper, data, state)
+      if (middleware.bulk)
+        await middleware?.bulk({
+          wsWrapped,
+          message: data,
+          parsed,
+          state,
+        })
       if (!middleware[type]) continue
 
       try {
-        await middleware[type]!(wrapper, data, state)
+        await middleware[type]!({
+          wsWrapped,
+          message: data,
+          parsed,
+          state,
+        })
       } catch (error) {
         /**
          * TODO: Сделать так, чтобы определённые ошибки (например, FormValidationError) закрывали коннект с нужным кодом.
@@ -63,19 +81,19 @@ export async function handleWsConnection<IncomingMessages>(
     for (let middleware of middlewares) {
       if (!middleware.close) continue
       try {
-        await middleware.close(wrapper)
+        await middleware.close(wsWrapped)
       } catch (error) {
         // We want to execute all the closing fns, because we can have GC implemented there
       }
     }
   })
 
-  wrapper.send({ type: 'start' })
+  wsWrapped.send({ type: 'start' })
 
   for (let middleware of middlewares) {
     if (!middleware.open) continue
     try {
-      await middleware.open(wrapper)
+      await middleware.open(wsWrapped)
     } catch (error) {
       break
     }

@@ -15,10 +15,10 @@ enum OTypes {
 
 type M = WSMiddleware<MCCIncomingMessages>
 export class MCCWsMiddleware implements M {
-  static [ITypes.clientMCCDescription]: M[ITypes.clientMCCDescription] = async (
+  static [ITypes.clientMCCDescription]: M[ITypes.clientMCCDescription] = async ({
     wsWrapped,
     message,
-  ) => {
+  }) => {
     const items = MCCService.getCodeDescription(message.codeList)
     wsWrapped.sequentialSend({ type: OTypes.serverMCCDescription, items })
   }
