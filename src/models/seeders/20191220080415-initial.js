@@ -1,6 +1,7 @@
 'use strict'
 
-const key = '9dJFMZADdoYhJ8E2SUxC0KLW2qYW3EaOyv6'
+const nanoid = require('nanoid')
+const argon2 = require('argon2')
 
 const trId1 = '6hVbgZBREFjdSJ1vuY4YT'
 const catId = 'EaIYQnjW5o-twjHhriSsF'
@@ -18,6 +19,17 @@ module.exports = {
           title: 'Test category',
           color: '#123456',
           isIncome: false,
+        },
+      ])
+
+      await queryInterface.bulkInsert('Users', [
+        {
+          id: nanoid(),
+          created: new Date(),
+          updated: new Date(),
+          username: 'qwerty',
+          email: 'qwerty@qwerty.com',
+          password: await argon2.hash('qwerty123456'),
         },
       ])
 
