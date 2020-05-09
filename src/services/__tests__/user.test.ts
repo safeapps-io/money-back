@@ -151,7 +151,7 @@ describe('User Service', () => {
         description,
       })
       expect(result.refreshToken).toBeDefined()
-      expect(result.token).toBeDefined()
+      expect(result.accessToken).toBeDefined()
     })
 
     it('throws on invalid data', async () => {
@@ -216,7 +216,7 @@ describe('User Service', () => {
       })
 
       expect(mockRefreshTokenManager.generateToken.mock.calls.length).toBe(1)
-      const user = await UserService.getUserFromToken(res.token)
+      const user = await UserService.getUserFromToken(res.accessToken)
       expect(user).toEqual(res.user)
     })
 
@@ -228,9 +228,9 @@ describe('User Service', () => {
         if (id === res.user.id) return null
       })
 
-      expect(UserService.getUserFromToken(res.token)).rejects.toThrowError(
-        InvalidToken,
-      )
+      expect(
+        UserService.getUserFromToken(res.accessToken),
+      ).rejects.toThrowError(InvalidToken)
     })
 
     it('throws for incorrect access token', () => {
@@ -264,7 +264,7 @@ describe('User Service', () => {
       )
 
       const token = await UserService.getNewAccessToken(
-        res.token,
+        res.accessToken,
         res.refreshToken,
       )
       expect(token).toBeTruthy()
@@ -275,7 +275,7 @@ describe('User Service', () => {
       mockRefreshTokenManager.tokenExists.mockImplementationOnce(() => false)
 
       expect(
-        UserService.getNewAccessToken(res.token, res.refreshToken),
+        UserService.getNewAccessToken(res.accessToken, res.refreshToken),
       ).rejects.toThrowError(InvalidRefreshToken)
     })
 

@@ -73,13 +73,13 @@ export class UserService {
       userId,
       description,
     })
-    const token = await this.generateToken({
+    const accessToken = await this.generateToken({
       refreshToken,
       userId,
       withCheck: false,
     })
 
-    return { refreshToken, token }
+    return { refreshToken, accessToken }
   }
 
   private static async checkCredentialsAvailability({
@@ -98,9 +98,13 @@ export class UserService {
     const [usernameTaken, emailTaken] = await Promise.all(promises)
 
     if (usernameTaken)
-      throw new FormValidationError(UserServiceFormErrors.usernameTaken)
+      throw new FormValidationError(UserServiceFormErrors.usernameTaken, {
+        username: [UserServiceFormErrors.usernameTaken],
+      })
     else if (emailTaken)
-      throw new FormValidationError(UserServiceFormErrors.emailTaken)
+      throw new FormValidationError(UserServiceFormErrors.emailTaken, {
+        email: [UserServiceFormErrors.emailTaken],
+      })
   }
 
   private static signupSchema = yup.object({
@@ -123,8 +127,13 @@ export class UserService {
   }) {
     runSchemaWithFormError(this.signupSchema, { username, email, password })
 
+    // TODO: убрать, когда будет интерфейс с инвайт-ссылками
+    let inviterId: string | undefined
+    if (process.env.NODE_ENV === 'development' && invite === 'qwerty')
+      inviterId = undefined
+    else inviterId = await InviteService.getUserIdFromInvite(invite)
+
     await this.checkCredentialsAvailability({ username, email })
-    const inviterId = await InviteService.getUserIdFromInvite(invite)
 
     const passwordHashed = await PasswordService.hashPassword(password)
     const user = await UserManager.createUser({
@@ -154,11 +163,14 @@ export class UserService {
     runSchemaWithFormError(this.signinSchema, { usernameOrEmail, password })
 
     const user = await UserManager.findUser(usernameOrEmail)
-    if (!user) throw new FormValidationError(UserServiceFormErrors.unknownUser)
+    if (!user)
+      throw new FormValidationError(UserServiceFormErrors.unknownUser, {
+        usernameOrEmail: [UserServiceFormErrors.unknownUser],
+      })
 
     await PasswordService.verifyPassword(user.password, password)
 
-    return await this.newSignIn({ userId: user.id, description })
+    return this.newSignIn({ userId: user.id, description })
   }
 
   static async getNewAccessToken(accessToken: string, refreshToken: string) {

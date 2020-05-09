@@ -57,7 +57,9 @@ describe('Password service', () => {
     it('throws if invalid old password', async () => {
       try {
         await PasswordService.updatePassword({
-          user: {} as any,
+          user: {
+            password: await PasswordService.hashPassword('pass', false),
+          } as any,
           oldPassword: 'incorrect password',
           newPassword: 'hey-there',
         })
@@ -136,15 +138,18 @@ describe('Password service', () => {
 
       await PasswordService.requestPasswordReset(email)
       const {
-        token,
-      } = mockMessageService.sendPasswordResetEmail.mock.calls[0][0]
+          token,
+        } = mockMessageService.sendPasswordResetEmail.mock.calls[0][0],
+        password = 'normalPassword'
 
       await PasswordService.updatePasswordFromResetToken({
-        token: token,
-        password: 'normalPassword',
+        token,
+        password,
       })
 
       expect(mockUserManager.changeUserPassword.mock.calls.length).toBe(1)
+      const hashedPassword = mockUserManager.changeUserPassword.mock.calls[0][1]
+      expect(await PasswordService.verifyPassword(hashedPassword, password))
     })
 
     it('throws if bad password', async () => {

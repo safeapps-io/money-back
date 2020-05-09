@@ -100,7 +100,7 @@ describe('Error reporting', () => {
       .end((_, res) => {
         app
           .post('/saviour/api/auth/updateUser')
-          .set('authorization', res.body.token)
+          .set('authorization', res.body.accessToken)
           .send({ username, email: `${nanoid()}@test.com`, invite })
           .end((_, res) => {
             expect(res.status).toBe(200)

@@ -11,7 +11,7 @@ import { InviteService } from '@/services/invite'
 const authRouter = Router()
 
 authRouter.get('/user', isRestAuth, (req, res) => {
-  res.status(200).json(req.user)
+  res.json(req.user)
 })
 
 authRouter.post(
@@ -20,8 +20,8 @@ authRouter.post(
     const body = req.body as {
       invite: string
     }
-    InviteService.getUserIdFromInvite(body.invite)
-    res.status(200).end()
+    await InviteService.getUserIdFromInvite(body.invite)
+    res.json({})
   }),
 )
 
@@ -71,7 +71,7 @@ authRouter.post(
     }
     await PasswordService.updatePassword({ ...body, user: req.user })
 
-    res.status(200).end()
+    res.json({})
   }),
 )
 
@@ -83,7 +83,7 @@ authRouter.post(
     }
     await PasswordService.requestPasswordReset(email)
 
-    res.status(200).end()
+    res.json({})
   }),
 )
 
@@ -95,7 +95,7 @@ authRouter.post(
     }
     await PasswordService.getUserIdFromPasswordResetToken(token)
 
-    res.status(200).end()
+    res.json({})
   }),
 )
 
@@ -108,7 +108,7 @@ authRouter.post(
     }
     await PasswordService.updatePasswordFromResetToken(body)
 
-    res.status(200).end()
+    res.json({})
   }),
 )
 
@@ -134,7 +134,7 @@ authRouter.post(
     }
 
     await ValidateEmailService.updateEmail(body.emailToken)
-    res.status(200).end()
+    res.json({})
   }),
 )
 
