@@ -16,6 +16,7 @@ import router from '@/router'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import multer from 'multer'
+import delayOnDevMiddleware from './middlewares/delayOnDev'
 
 const constructApp = async () => {
   await sequelize.sync()
@@ -41,6 +42,7 @@ const constructApp = async () => {
     .use(bodyParser.json())
     .use(bodyParser.urlencoded({ extended: true }))
     .use(multer().none())
+    .use(delayOnDevMiddleware)
     .use('/saviour', router)
 
   return app
