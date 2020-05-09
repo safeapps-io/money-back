@@ -7,8 +7,8 @@
     "migrate": "sequelize-cli db:migrate",
     "testEnvMigrate": "rm db.sqlite && yarn migrate && yarn sequelize-cli db:seed:all",
     "shell": "ts-node -T -r tsconfig-paths/register -r ./src/shell.ts",
-    "pretest": "touch db.test.sqlite && rm db.test.sqlite && yarn migrate",
-    "test": "jest --watch",
+    "pretest": "NODE_ENV=test touch db.test.sqlite && rm db.test.sqlite && yarn migrate",
+    "test": "NODE_ENV=test jest --watch",
     "coverage": "jest --coverage",
     "dev": "nodemon -q --watch src --ignore 'src/**/*.spec.ts' --exec 'ts-node -r tsconfig-paths/register' src/server.ts | pino-pretty",
     "prod": "pm2 ecosystem.config.js app"

@@ -16,6 +16,11 @@ export class InviteService {
     try {
       if (!invite) throw new Error()
 
+      // TODO: remove it after we have interface that shows invite link
+      if (process.env.NODE_ENV === 'development' && invite === 'qwerty') {
+        return 'ok'
+      }
+
       const id = decryptAes<InviteObject>(invite).id
       const user = await UserManager.getUserById(id)
 

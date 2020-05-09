@@ -3,6 +3,7 @@ export class MessageService {
     email: string
     token: string
   }): Promise<void> {
+    console.log('validating email', data)
     return
   }
 
@@ -10,6 +11,7 @@ export class MessageService {
     email: string
     token: string
   }): Promise<void> {
+    console.log('resetting password', data)
     return
   }
 }
