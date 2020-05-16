@@ -7,11 +7,14 @@ import {
   HasMany,
   ForeignKey,
   BelongsTo,
+  BelongsToMany,
 } from 'sequelize-typescript'
+import { Op } from 'sequelize'
 
 import BaseModel from './base'
-import { Op } from 'sequelize'
 import RefreshToken from './refreshToken.model'
+import Wallet from './wallet.model'
+import WalletAccess from './walletAccess.model'
 
 @Table
 export default class User extends BaseModel<User> {
@@ -48,6 +51,12 @@ export default class User extends BaseModel<User> {
 
   @HasMany(() => RefreshToken)
   refreshTokens!: RefreshToken[]
+
+  @BelongsToMany(
+    () => Wallet,
+    () => WalletAccess,
+  )
+  wallets!: Array<Wallet & { WalletAccess: WalletAccess }>
 
   public toJSON() {
     const prev = super.toJSON()
