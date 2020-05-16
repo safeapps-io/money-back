@@ -28,6 +28,14 @@ export default class User extends BaseModel<User> {
   password!: string
 
   @AllowNull
+  @Column(DataType.STRING(2048))
+  inviteKey!: string | null
+
+  @AllowNull
+  @Column(DataType.TEXT)
+  encr!: string | null
+
+  @AllowNull
   @ForeignKey(() => User)
   @Column(DataType.STRING)
   inviterId!: string | null
@@ -90,10 +98,20 @@ export class UserManager {
 
   static async updateUser(
     userId: string,
-    data: { username?: string; email?: string },
+    data: {
+      username?: string
+      email?: string
+      encr?: string | null
+      inviteKey?: string | null
+    },
   ) {
+    const resultData = Object.entries(data).reduce((acc, [key, value]) => {
+      if (typeof value !== 'undefined') acc[key] = value
+      return acc
+    }, {} as { [key: string]: any })
+
     return (
-      await User.update(data, { where: { id: userId }, returning: true })
+      await User.update(resultData, { where: { id: userId }, returning: true })
     )[1][0]
   }
 }

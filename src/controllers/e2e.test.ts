@@ -57,6 +57,7 @@ describe('Error reporting', () => {
       .post('/saviour/api/auth/signup')
       .send({ username, password: nanoid(), invite })
       .end(function(_, res) {
+        console.log(res.body)
         expect(res.status).toBe(200)
         expect(res.body.user.username).toBe(username)
         done()

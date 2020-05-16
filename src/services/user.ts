@@ -231,6 +231,26 @@ export class UserService {
 
     return UserManager.updateUser(user.id, { username })
   }
+
+  private static updateEncrScheme = yup.string().required()
+  static async updateUserEncr({ user, encr }: { user: User; encr: string }) {
+    runSchemaWithFormError(this.updateEncrScheme, encr)
+
+    return UserManager.updateUser(user.id, { encr })
+  }
+
+  private static updateInviteKeyScheme = yup.string().required()
+  static async updateUserInviteKey({
+    user,
+    inviteKey,
+  }: {
+    user: User
+    inviteKey: string
+  }) {
+    runSchemaWithFormError(this.updateInviteKeyScheme, inviteKey)
+
+    return UserManager.updateUser(user.id, { inviteKey })
+  }
 }
 
 export enum UserServiceFormErrors {

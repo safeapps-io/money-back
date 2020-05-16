@@ -127,6 +127,22 @@ authRouter.post(
 )
 
 authRouter.post(
+  '/updateInviteKey',
+  isRestAuth,
+  ash(async (req, res) => {
+    const body = req.body as {
+      inviteKey: string
+    }
+    const user = await UserService.updateUserInviteKey({
+      ...body,
+      user: req.user,
+    })
+
+    res.json(user)
+  }),
+)
+
+authRouter.post(
   '/validateEmail',
   ash(async (req, res) => {
     const body = req.body as {

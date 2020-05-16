@@ -363,5 +363,39 @@ describe('User Service', () => {
         expect(error.message).toBe(UserServiceFormErrors.emailTaken)
       }
     })
+
+    it('updates encr', async () => {
+      const encr = 'hey',
+        user = {} as any
+
+      try {
+        await UserService.updateUserEncr({ user, encr: null as any })
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(FormValidationError)
+      }
+
+      await UserService.updateUserEncr({ user, encr })
+      expect(mockUserManager.updateUser.mock.calls.length).toBe(1)
+      expect(mockUserManager.updateUser.mock.calls[0][1].encr).toBe(encr)
+    })
+
+    it('updates invite key', async () => {
+      const inviteKey = 'hey',
+        user = {} as any
+
+      try {
+        await UserService.updateUserInviteKey({ user, inviteKey: null as any })
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(FormValidationError)
+      }
+
+      await UserService.updateUserInviteKey({ user, inviteKey })
+      expect(mockUserManager.updateUser.mock.calls.length).toBe(1)
+      expect(mockUserManager.updateUser.mock.calls[0][1].inviteKey).toBe(
+        inviteKey,
+      )
+    })
   })
 })
