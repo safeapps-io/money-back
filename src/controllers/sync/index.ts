@@ -3,8 +3,14 @@ import { Router } from 'express'
 
 import { handleWsConnection } from '@/utils/wsMiddleware'
 import { AuthWsMiddleware, AuthIncomingMessages } from '@/controllers/sync/auth'
-import { SyncWsMiddleware, SyncIncomingMessages } from '@/controllers/sync/sync'
-import { MCCWsMiddleware, MCCIncomingMessages } from '@/controllers/sync/mcc'
+import {
+  SyncWsMiddleware,
+  SyncIncomingMessages,
+} from '@/services/sync/syncWsHandler'
+import {
+  MCCIncomingMessages,
+  MCCWsMiddleware,
+} from '@/services/mcc/mccWsHandler'
 
 const syncRouter = Router() as WSRouter
 syncRouter.ws('/sync', ws => {

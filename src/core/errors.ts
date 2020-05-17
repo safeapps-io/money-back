@@ -14,3 +14,5 @@ export class FormValidationError extends Error {
     super(message)
   }
 }
+
+export class AccessError extends Error {}
