@@ -45,4 +45,10 @@ export class WalletAccessManager {
       where: { ...filter, accessLevel: { [Op.not]: AccessLevels.rejected } },
     })
   }
+
+  static findAllByUserId(userId: string) {
+    return WalletAccess.findAll({
+      where: { accessLevel: { [Op.not]: AccessLevels.rejected }, userId },
+    })
+  }
 }

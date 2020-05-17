@@ -12,4 +12,10 @@ export class WalletService {
     const res = await WalletAccessManager.findOne({ userId, walletId })
     if (!res) throw new AccessError()
   }
+
+  static async getUserWalletIds(userId: string) {
+    return (await WalletAccessManager.findAllByUserId(userId)).map(
+      ent => ent.walletId,
+    )
+  }
 }

@@ -5,16 +5,19 @@ import { dateAsTimestamp, runSchemaWithFormError } from '@/utils/yupHelpers'
 import Entity, { EntityManager } from '@/models/entity.model'
 import { WalletService } from '@/services/wallet/walletService'
 import { UpdatedEntity, ClientChangesData } from './types'
+import { SyncPubSubService } from './syncPubSubService'
 
 export class SyncService {
   private static async handleWalletUpdates({
     entities,
     walletId,
     userId,
+    socketId,
   }: {
     entities: UpdatedEntity[]
     walletId: string
     userId: string
+    socketId: string
   }) {
     if (!entities.length) return
     try {
@@ -34,7 +37,10 @@ export class SyncService {
       } else createEntities.push(ent)
     }
 
-    if (createEntities.length) await EntityManager.bulkCreate(createEntities)
+    const results: Entity[] = []
+
+    if (createEntities.length)
+      results.push(...(await EntityManager.bulkCreate(createEntities)))
 
     if (updateEntities.length) {
       const fetchedEntities = await EntityManager.filterByIds({
@@ -59,8 +65,14 @@ export class SyncService {
             }),
           )
       }
-      await Promise.all(promises)
+      results.push(...(await Promise.all(promises)))
     }
+
+    return SyncPubSubService.publishWalletUpdates({
+      data: results,
+      walletId,
+      socketId,
+    })
   }
 
   private static entitiesUpdateSchema = yup.array(
@@ -77,9 +89,11 @@ export class SyncService {
   )
   static async handleClientUpdates({
     userId,
+    socketId,
     entityMap,
   }: {
     userId: string
+    socketId: string
     entityMap: ClientChangesData
   }) {
     await Promise.all(
@@ -88,7 +102,12 @@ export class SyncService {
           ent => ent.walletId === walletId,
         )
         runSchemaWithFormError(this.entitiesUpdateSchema, entities)
-        return this.handleWalletUpdates({ entities, walletId, userId })
+        return this.handleWalletUpdates({
+          entities,
+          walletId,
+          userId,
+          socketId,
+        })
       }),
     )
 
