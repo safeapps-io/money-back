@@ -8,8 +8,6 @@ import {
 import { Op } from 'sequelize'
 import { inspect } from 'util'
 import nanoid from 'nanoid'
-import * as yup from 'yup'
-import { dateAsTimestamp } from '@/utils/yupHelpers'
 
 export default class BaseModel<T> extends Model<T> {
   @PrimaryKey
@@ -35,15 +33,6 @@ export default class BaseModel<T> extends Model<T> {
     }
   }
 }
-
-export const baseScheme = yup
-  .object()
-  .shape({
-    id: yup.string().required(),
-    updated: dateAsTimestamp.notRequired(),
-    clientUpdated: dateAsTimestamp.notRequired(),
-  })
-  .noUnknown()
 
 export function syncronizableGetUpdates(model: any) {
   return (dt?: Date) =>

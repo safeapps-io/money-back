@@ -11,10 +11,10 @@ import {
 } from 'sequelize-typescript'
 import { Op } from 'sequelize'
 
-import BaseModel from './base'
-import RefreshToken from './refreshToken.model'
-import Wallet from './wallet.model'
-import WalletAccess from './walletAccess.model'
+import BaseModel from '@/models/base'
+import RefreshToken from '@/models/refreshToken.model'
+import Wallet from '@/models/wallet.model'
+import WalletAccess from '@/models/walletAccess.model'
 
 @Table
 export default class User extends BaseModel<User> {

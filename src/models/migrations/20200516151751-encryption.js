@@ -4,7 +4,6 @@ const nanoid = require('nanoid')
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    const requiredString = { type: Sequelize.STRING, allowNull: false }
     const requiredDate = { type: Sequelize.DATE, allowNull: false }
 
     const baseModel = {
@@ -20,6 +19,20 @@ module.exports = {
 
     await queryInterface.createTable('Wallets', {
       ...baseModel,
+      encr: { type: Sequelize.TEXT, allowNull: false },
+    })
+
+    await queryInterface.createTable('Entities', {
+      ...baseModel,
+      walletId: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        references: {
+          model: 'Wallets',
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+      },
       encr: { type: Sequelize.TEXT, allowNull: false },
     })
 

@@ -1,7 +1,15 @@
-import { Table, Column, BelongsToMany, DataType } from 'sequelize-typescript'
-import BaseModel from './base'
-import User from './user.model'
-import WalletAccess from './walletAccess.model'
+import {
+  Table,
+  Column,
+  BelongsToMany,
+  DataType,
+  HasMany,
+} from 'sequelize-typescript'
+
+import BaseModel from '@/models/base'
+import User from '@/models/user.model'
+import WalletAccess from '@/models/walletAccess.model'
+import Entity from '@/models/entity.model'
 
 @Table
 export default class Wallet extends BaseModel<Wallet> {
@@ -13,4 +21,9 @@ export default class Wallet extends BaseModel<Wallet> {
     () => WalletAccess,
   )
   users!: Array<User & { WalletAccess: WalletAccess }>
+
+  @HasMany(() => Entity)
+  entities!: Entity[]
 }
+
+export class WalletManager {}

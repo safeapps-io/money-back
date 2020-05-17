@@ -5,10 +5,11 @@ import {
   DataType,
   AllowNull,
 } from 'sequelize-typescript'
+import { Op } from 'sequelize'
 
-import BaseModel from './base'
-import User from './user.model'
-import Wallet from './wallet.model'
+import BaseModel from '@/models/base'
+import User from '@/models/user.model'
+import Wallet from '@/models/wallet.model'
 
 export enum AccessLevels {
   owner = 'owner',
@@ -36,4 +37,12 @@ export default class WalletAccess extends BaseModel<WalletAccess> {
 
   @Column(DataType.STRING(16))
   accessLevel!: AccessLevels
+}
+
+export class WalletAccessManager {
+  static findOne(filter: { userId: string; walletId: string }) {
+    return WalletAccess.findOne({
+      where: { ...filter, accessLevel: { [Op.not]: AccessLevels.rejected } },
+    })
+  }
 }
