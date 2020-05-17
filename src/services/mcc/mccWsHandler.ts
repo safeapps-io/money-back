@@ -1,5 +1,5 @@
-import { MCCService } from '@/services/mcc'
 import { WSMiddleware } from '@/utils/wsMiddleware'
+import { MCCService } from './mccService'
 
 enum ITypes {
   clientMCCDescription = 'clientMCCDescription',

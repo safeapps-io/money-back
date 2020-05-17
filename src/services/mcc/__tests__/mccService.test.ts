@@ -1,4 +1,4 @@
-import { MCCService } from '../mcc'
+import { MCCService } from '../mccService'
 
 describe('MCC Service', () => {
   it('returns description for existing types and null for non-existing', () => {
