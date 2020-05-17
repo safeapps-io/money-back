@@ -15,11 +15,11 @@ enum OTypes {
 
 type M = WSMiddleware<AuthIncomingMessages>
 export class AuthWsMiddleware implements M {
-  static bulk: M['bulk'] = async ({ parsed, state }) => {
+  static bulk: M['bulk'] = async ({ wsWrapped, parsed }) => {
     const { token } = parsed
     try {
       const user = await UserService.getUserFromToken(token!)
-      state.user = user
+      wsWrapped.state.user = user
     } catch (error) {
       // User is unauthorized, which is ok, we just don't push any state about the user
     }

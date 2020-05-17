@@ -5,20 +5,18 @@ import chunk from '@/utils/chunk'
 
 // TODO: Mama, I failed. Make this all type strict… but not like this. Too much `any`
 export type WSMiddleware<MessageMap> = {
-  open?: (ws: any) => Promise<void>
-  close?: (ws: any) => Promise<void>
+  open?: (ws: WSWrapper) => Promise<void>
+  close?: (ws: WSWrapper) => Promise<void>
   bulk?: (data: {
     wsWrapped: WSWrapper
     message: any
     parsed: any
-    state: any
   }) => Promise<object | void>
 } & {
   [messageType in keyof MessageMap]?: (data: {
     wsWrapped: WSWrapper
     message: MessageMap[messageType]
     parsed: any
-    state: any
   }) => Promise<object | void>
 }
 
@@ -38,9 +36,7 @@ export async function handleWsConnection<IncomingMessages>(
     wsWrapped = new WSWrapper(id, ws)
 
   ws.on('message', async raw => {
-    const state = {}
     let type, data, parsed
-
     try {
       parsed = JSON.parse(raw as string) as Message<IncomingMessages>
       type = parsed.type
@@ -55,7 +51,6 @@ export async function handleWsConnection<IncomingMessages>(
           wsWrapped,
           message: data,
           parsed,
-          state,
         })
       if (!middleware[type]) continue
 
@@ -64,7 +59,6 @@ export async function handleWsConnection<IncomingMessages>(
           wsWrapped,
           message: data,
           parsed,
-          state,
         })
       } catch (error) {
         /**
@@ -101,7 +95,7 @@ export async function handleWsConnection<IncomingMessages>(
 }
 
 class WSWrapper {
-  constructor(public id: string, private ws: wsType) {}
+  constructor(public id: string, private ws: wsType, public state: any = {}) {}
 
   send({
     type,
@@ -120,12 +114,12 @@ class WSWrapper {
   sequentialSend({
     type,
     items,
-    finishMessage,
+    finishCallback,
     threshold = 100,
   }: {
     type: string
     items: Array<any>
-    finishMessage?: { type: string; data?: any }
+    finishCallback?: () => void
     threshold?: number
   }) {
     const chunkedItems = chunk(items, threshold)
@@ -136,9 +130,7 @@ class WSWrapper {
         data: chunkedItems[index],
         cb: () => {
           if (chunkedItems[index + 1]) recursiveSend(index + 1)
-          else
-            finishMessage &&
-              this.send({ type: finishMessage.type, data: finishMessage.data })
+          else if (finishCallback) finishCallback()
         },
       })
 
