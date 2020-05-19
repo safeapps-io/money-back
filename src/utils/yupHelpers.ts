@@ -31,7 +31,7 @@ export const transformValidationErrorToObject = (err: yup.ValidationError) =>
 
 export const runSchemaWithFormError = (schema: yup.Schema<any>, data: any) => {
   try {
-    schema.validateSync(data, { abortEarly: false })
+    schema.validateSync(data, { abortEarly: false, stripUnknown: true })
   } catch (err) {
     throw new FormValidationError(
       'error',
