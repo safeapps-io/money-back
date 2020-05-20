@@ -3,7 +3,7 @@ import { isBefore } from 'date-fns'
 
 import User, { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
-import { FormValidationError, AccessError } from '@/core/errors'
+import { FormValidationError, AccessError } from '@/services/errors'
 import { runSchemaWithFormError } from '@/utils/yupHelpers'
 import { signJwt, verifyJwt } from '@/utils/crypto'
 import { ValidateEmailService } from '../validateEmail'

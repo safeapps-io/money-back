@@ -3,7 +3,7 @@ import * as yup from 'yup'
 
 import { runSchemaWithFormError } from '@/utils/yupHelpers'
 import User, { UserManager } from '@/models/user.model'
-import { FormValidationError } from '@/core/errors'
+import { FormValidationError } from '@/services/errors'
 import { signJwt, verifyJwt } from '@/utils/crypto'
 import { MessageService } from './message'
 

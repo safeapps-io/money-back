@@ -6,7 +6,7 @@ import {
   ExpiredToken,
 } from '@/services/user/userService'
 import User from '@/models/user.model'
-import { RequestError } from '@/core/errors'
+import { RequestError } from '@/services/errors'
 
 declare global {
   namespace Express {

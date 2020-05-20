@@ -22,7 +22,7 @@ import {
 } from '../validateEmail'
 import User from '@/models/user.model'
 import { signJwt } from '@/utils/crypto'
-import { FormValidationError } from '@/core/errors'
+import { FormValidationError } from '@/services/errors'
 
 describe('Email validation', () => {
   const user = { id: 'test', email: 'test@test.com' } as User,

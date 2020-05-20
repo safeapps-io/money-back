@@ -49,7 +49,7 @@ import {
   UserServiceFormErrors,
   jwtSubject,
 } from '../userService'
-import { FormValidationError } from '@/core/errors'
+import { FormValidationError } from '@/services/errors'
 import { PasswordServiceFormErrors } from '../../password'
 
 describe('User Service', () => {

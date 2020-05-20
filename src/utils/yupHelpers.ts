@@ -1,5 +1,5 @@
 import * as yup from 'yup'
-import { FormValidationError } from '@/core/errors'
+import { FormValidationError } from '@/services/errors'
 
 export const optionalArrayOfStringsOrString = yup
   .array()

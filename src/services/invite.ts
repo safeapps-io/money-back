@@ -1,5 +1,5 @@
 import { encryptAes, decryptAes } from '@/utils/crypto'
-import { FormValidationError } from '@/core/errors'
+import { FormValidationError } from '@/services/errors'
 import { UserManager } from '@/models/user.model'
 
 type InviteObject = {

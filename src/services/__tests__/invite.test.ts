@@ -7,7 +7,7 @@ jest.mock('@/models/user.model', () => ({
 }))
 
 import { InviteService, InviteServiceFormErrors } from '../invite'
-import { FormValidationError } from '@/core/errors'
+import { FormValidationError } from '@/services/errors'
 
 describe('Invite service', () => {
   beforeEach(() => mockUserManager.byId.mockClear())

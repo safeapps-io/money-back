@@ -11,7 +11,7 @@ jest.mock('@/services/user/userService', () => ({
 }))
 
 import { isRestAuth } from '../isAuth'
-import { RequestError } from '@/core/errors'
+import { RequestError } from '@/services/errors'
 import { ExpiredToken, InvalidToken } from '@/services/user/userService'
 
 const _next = jest.fn(),

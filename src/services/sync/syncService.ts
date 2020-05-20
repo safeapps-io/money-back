@@ -30,8 +30,6 @@ export class SyncService {
       } else createEntities.push(ent)
     }
 
-    console.log(entities)
-
     const results: Entity[] = [],
       promises = []
 
@@ -50,8 +48,6 @@ export class SyncService {
 
       for (const entityToUpdate of updateEntities) {
         const fetchedEntity = fetchedEntitiesById[entityToUpdate.id]
-
-        console.log(fetchedEntities, entityToUpdate)
 
         if (!entityToUpdate.clientUpdated || !fetchedEntity) continue
         if (entityToUpdate.clientUpdated < fetchedEntity.updated.getTime())

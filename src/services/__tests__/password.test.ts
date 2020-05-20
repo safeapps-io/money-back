@@ -15,7 +15,7 @@ jest.mock('@/services/message', () => ({
   MessageService: mockMessageService,
 }))
 
-import { FormValidationError } from '@/core/errors'
+import { FormValidationError } from '@/services/errors'
 import {
   PasswordService,
   PasswordServiceFormErrors,

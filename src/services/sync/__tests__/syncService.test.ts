@@ -31,7 +31,7 @@ jest.mock('@/services/sync/syncPubSubService', () => ({
 
 import { SyncService } from '../syncService'
 import { ClientChangesData } from '../types'
-import { FormValidationError, AccessError } from '@/core/errors'
+import { FormValidationError } from '@/services/errors'
 
 describe('Sync service', () => {
   const walletId = '1234',

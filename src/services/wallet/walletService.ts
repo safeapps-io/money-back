@@ -1,6 +1,6 @@
 import * as yup from 'yup'
 
-import { AccessError } from '@/core/errors'
+import { AccessError } from '@/services/errors'
 import Wallet, { WalletManager } from '@/models/wallet.model'
 import { runSchemaWithFormError } from '@/utils/yupHelpers'
 
