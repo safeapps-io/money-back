@@ -1,6 +1,6 @@
 import * as yup from 'yup'
 
-import { dateAsTimestamp, runSchemaWithFormError } from '@/utils/yupHelpers'
+import { runSchemaWithFormError } from '@/utils/yupHelpers'
 
 import Entity, { EntityManager } from '@/models/entity.model'
 import { WalletService } from '@/services/wallet/walletService'
@@ -73,8 +73,14 @@ export class SyncService {
   private static entitiesUpdateSchema = yup.array(
     yup.object({
       id: yup.string().required(),
-      updated: dateAsTimestamp.notRequired(),
-      clientUpdated: dateAsTimestamp.required(),
+      updated: yup
+        .number()
+        .positive()
+        .notRequired(),
+      clientUpdated: yup
+        .number()
+        .positive()
+        .required(),
       walletId: yup.string().required(),
       encr: yup.string().required(),
     }),

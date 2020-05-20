@@ -40,10 +40,10 @@ describe('Sync service', () => {
     entityMap = ({
       [walletId]: {
         entities: [
-          { id: 'qwer', clientUpdated: new Date(1234), encr: 'text', walletId },
+          { id: 'qwer', clientUpdated: 1234, encr: 'text', walletId },
           {
             id: 'qwer',
-            clientUpdated: new Date(1234),
+            clientUpdated: 1234,
             encr: 'text',
             walletId: 'otherId',
           },
@@ -127,19 +127,19 @@ describe('Sync service', () => {
         clientUpdated,
       }: {
         id: string
-        updated: Date
-        clientUpdated?: Date
+        updated: number | Date
+        clientUpdated?: number | Date
       }) => ({
         id,
         updated,
-        clientUpdated: clientUpdated ? clientUpdated.getTime() : undefined,
+        clientUpdated,
         encr: 'text',
         walletId,
       }),
       entToBeSaved = buildEnt({
         id: 'qwer2',
-        updated: sub(new Date(), { days: 1 }),
-        clientUpdated: sub(new Date(), { hours: 1 }),
+        updated: sub(new Date(), { days: 1 }).getTime(),
+        clientUpdated: sub(new Date(), { hours: 1 }).getTime(),
       }),
       entityMap = ({
         [walletId]: {
@@ -147,8 +147,8 @@ describe('Sync service', () => {
           entities: [
             buildEnt({
               id: 'qwer1',
-              updated: sub(new Date(), { days: 2 }),
-              clientUpdated: sub(new Date(), { hours: 2 }),
+              updated: sub(new Date(), { days: 2 }).getTime(),
+              clientUpdated: sub(new Date(), { hours: 2 }).getTime(),
             }),
             entToBeSaved,
           ],
