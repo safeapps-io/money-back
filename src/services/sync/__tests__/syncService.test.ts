@@ -1,16 +1,19 @@
 import { sub } from 'date-fns'
 
 const mockEnitityManager = {
-    filterByIds: jest.fn(),
+    byIds: jest.fn(),
     bulkCreate: jest.fn(),
-    updateEntity: jest.fn(),
+    update: jest.fn(),
     getUpdates: jest.fn(),
   },
-  mockWalletService = { checkIfUserHasAccess: jest.fn() },
+  mockWalletService = {
+    checkIfUserHasAccess: jest.fn(),
+    getUserWalletIds: jest.fn(),
+  },
   mockSyncPubSubService = {
-    publishWalletUpdates: jest.fn(),
-    subscribeWalletUpdates: jest.fn(),
-    unsubscribeWalletUpdates: jest.fn(),
+    publishEntitiesUpdates: jest.fn(),
+    subscribeEntitiesUpdates: jest.fn(),
+    unsubscribeEntitiesUpdates: jest.fn(),
   }
 
 jest.mock('@/models/entity.model', () => ({
@@ -34,30 +37,32 @@ describe('Sync service', () => {
   const walletId = '1234',
     socketId = '132',
     userId = 'qwerqwer',
-    entityMap = [
-      {
-        walletId,
-        latestUpdated: 1234,
+    entityMap = ({
+      [walletId]: {
         entities: [
-          { id: 'qwer', clientUpdated: 1234, encr: 'text', walletId },
+          { id: 'qwer', clientUpdated: new Date(1234), encr: 'text', walletId },
           {
             id: 'qwer',
-            clientUpdated: 1234,
+            clientUpdated: new Date(1234),
             encr: 'text',
             walletId: 'otherId',
           },
         ],
+        latestUpdated: 1234,
       },
-    ] as ClientChangesData,
+    } as unknown) as ClientChangesData,
     copyEntityMap = () => JSON.parse(JSON.stringify(entityMap))
 
   beforeEach(() => {
-    mockWalletService.checkIfUserHasAccess.mockClear()
-    mockEnitityManager.bulkCreate.mockClear()
-    mockSyncPubSubService.publishWalletUpdates.mockClear()
+    mockWalletService.getUserWalletIds.mockClear()
+    mockWalletService.getUserWalletIds.mockImplementation(async userId => [
+      walletId,
+    ])
+    mockSyncPubSubService.publishEntitiesUpdates.mockClear()
 
+    mockEnitityManager.bulkCreate.mockClear()
     mockEnitityManager.bulkCreate.mockImplementation(async ents => ents)
-    mockEnitityManager.updateEntity.mockImplementation(
+    mockEnitityManager.update.mockImplementation(
       async ({ newEntity }) => newEntity,
     )
   })
@@ -65,7 +70,7 @@ describe('Sync service', () => {
   it('filters out entities, that belong to other wallet', async () => {
     await SyncService.handleClientUpdates({ userId, entityMap, socketId })
     expect(mockEnitityManager.bulkCreate.mock.calls[0][0]).toEqual(
-      entityMap[0].entities.filter(
+      entityMap[walletId].entities.filter(
         ent => ent.walletId === walletId && !ent.updated,
       ),
     )
@@ -73,26 +78,17 @@ describe('Sync service', () => {
 
   it('checks if user has access to wallet', async () => {
     await SyncService.handleClientUpdates({ userId, entityMap, socketId })
-    expect(mockWalletService.checkIfUserHasAccess.mock.calls.length).toBe(2)
-    expect(mockWalletService.checkIfUserHasAccess.mock.calls[0][0].userId).toBe(
-      userId,
-    )
-    expect(
-      mockWalletService.checkIfUserHasAccess.mock.calls[0][0].walletId,
-    ).toBe(walletId)
+    expect(mockWalletService.getUserWalletIds.mock.calls.length).toBe(1)
+    expect(mockWalletService.getUserWalletIds.mock.calls[0][0]).toBe(userId)
   })
 
   it('ignores wallets, that user has no access to', async () => {
     const copy = copyEntityMap(),
       noAccessWalletId = 'woeifwjoeif'
-    copy[1] = {
+    copy[noAccessWalletId] = {
+      entities: [{ ...copy[walletId].entities[0], walletId: noAccessWalletId }],
       latestUpdated: 1234,
-      walletId: noAccessWalletId,
-      entities: [{ ...copy[0].entities[0], walletId: noAccessWalletId }],
     }
-    mockWalletService.checkIfUserHasAccess.mockImplementation(async args => {
-      if (args.walletId === noAccessWalletId) throw new AccessError()
-    })
 
     await SyncService.handleClientUpdates({ userId, entityMap: copy, socketId })
     // only saves one wallet
@@ -101,7 +97,7 @@ describe('Sync service', () => {
 
   it('throws if object is of invalid form', async () => {
     const copy = copyEntityMap()
-    delete copy[0].entities[0].id
+    delete copy[walletId].entities[0].id
     try {
       await SyncService.handleClientUpdates({
         userId,
@@ -118,7 +114,7 @@ describe('Sync service', () => {
     await SyncService.handleClientUpdates({ userId, entityMap, socketId })
     expect(mockEnitityManager.bulkCreate.mock.calls.length).toBe(1)
     expect(mockEnitityManager.bulkCreate.mock.calls[0][0]).toEqual(
-      entityMap[0].entities.filter(
+      entityMap[walletId].entities.filter(
         ent => ent.walletId === walletId && !ent.updated,
       ),
     )
@@ -145,9 +141,8 @@ describe('Sync service', () => {
         updated: sub(new Date(), { days: 1 }),
         clientUpdated: sub(new Date(), { hours: 1 }),
       }),
-      entityMap = [
-        {
-          walletId,
+      entityMap = ({
+        [walletId]: {
           latestUpdated: 1234,
           entities: [
             buildEnt({
@@ -158,48 +153,30 @@ describe('Sync service', () => {
             entToBeSaved,
           ],
         },
-      ] as ClientChangesData
+      } as unknown) as ClientChangesData
 
-    mockEnitityManager.filterByIds.mockImplementationOnce(async () => [
+    mockEnitityManager.byIds.mockImplementationOnce(async () => [
       buildEnt({ id: 'qwer1', updated: sub(new Date(), { hours: 1 }) }),
       buildEnt({ id: 'qwer2', updated: sub(new Date(), { hours: 5 }) }),
     ])
 
     await SyncService.handleClientUpdates({ userId, entityMap, socketId })
 
-    expect(mockEnitityManager.updateEntity.mock.calls.length).toBe(1)
-    expect(mockEnitityManager.updateEntity.mock.calls[0][0].newEntity).toEqual(
-      entToBeSaved,
-    )
+    expect(mockEnitityManager.update.mock.calls.length).toBe(1)
+    expect(mockEnitityManager.update.mock.calls[0][1]).toEqual(entToBeSaved)
   })
 
   it('publishes stuff to redis after saving', async () => {
-    const copy = copyEntityMap(),
-      fetchedEnt = {
-        id: 'qwer',
-        updated: sub(new Date(), { hours: 2 }),
-        clientUpdated: sub(new Date(), { hours: 1 }).getTime(),
-        encr: 'text',
-        walletId,
-      }
-    copy[0].entities.push(fetchedEnt)
+    await SyncService.handleClientUpdates({ userId, entityMap, socketId })
 
-    mockEnitityManager.filterByIds.mockImplementationOnce(async () => [
-      fetchedEnt,
-    ])
-
-    await SyncService.handleClientUpdates({ userId, entityMap: copy, socketId })
-
-    expect(mockSyncPubSubService.publishWalletUpdates.mock.calls.length).toBe(1)
-    const {
-      data,
-      socketId: socketIdInner,
-      walletId: walletIdInner,
-    } = mockSyncPubSubService.publishWalletUpdates.mock.calls[0][0]
-    expect(socketIdInner).toBe(socketId)
-    expect(walletIdInner).toBe(walletId)
-    expect(data).toEqual(
-      copy[0].entities.filter((ent: any) => ent.walletId === walletId),
+    expect(mockSyncPubSubService.publishEntitiesUpdates.mock.calls.length).toBe(
+      1,
+    )
+    const args = mockSyncPubSubService.publishEntitiesUpdates.mock.calls[0][0]
+    expect(args.walletId).toBe(walletId)
+    expect(args.socketId).toBe(socketId)
+    expect(args.data).toEqual(
+      entityMap[walletId].entities.filter(ent => ent.walletId === walletId),
     )
   })
 })

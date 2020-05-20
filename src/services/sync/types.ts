@@ -1,11 +1,13 @@
 import Entity from '@/models/entity.model'
 
-export type UpdatedEntity = {
+export type ClientUpdated<T> = {
   clientUpdated?: number
-} & Entity
+} & T
+export type EntityUpdated = ClientUpdated<Entity>
 
 export type ClientChangesData = {
-  walletId: string
-  entities: UpdatedEntity[]
-  latestUpdated: number
-}[]
+  [walletId: string]: {
+    entities: EntityUpdated[]
+    latestUpdated: number
+  }
+}

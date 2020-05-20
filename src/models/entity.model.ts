@@ -24,7 +24,7 @@ export default class Entity extends BaseModel<Entity> {
 }
 
 export class EntityManager {
-  static filterByIds({ ids, walletId }: { ids: string[]; walletId: string }) {
+  static byIds({ ids, walletId }: { ids: string[]; walletId: string }) {
     return Entity.findAll({ where: { walletId, id: { [Op.in]: ids } } })
   }
 
@@ -32,28 +32,31 @@ export class EntityManager {
     return Entity.bulkCreate(entities, { returning: true })
   }
 
-  static updateEntity({
-    fetchedEntity,
-    newEntity,
-  }: {
-    fetchedEntity: Entity
-    newEntity: Entity
-  }) {
-    Object.entries(newEntity).forEach(
-      ([key, value]) => ((fetchedEntity as any)[key] = value),
-    )
-    return fetchedEntity.save()
+  static async update(id: string, entity: Partial<Entity>) {
+    return (
+      await Entity.update(entity, {
+        where: { id },
+        returning: true,
+      })
+    )[1][0]
   }
 
-  static getUpdates({
-    walletId,
-    latestUpdated,
-  }: {
-    walletId: string
-    latestUpdated: Date
-  }) {
+  static getUpdates(
+    idToUpdatedMap: {
+      walletId: string
+      latestUpdated: Date
+    }[],
+  ) {
+    // Single query to fetch data for all the wallets
+    const query = {
+      [Op.or]: idToUpdatedMap.map(({ walletId, latestUpdated }) => ({
+        walletId,
+        updated: { [Op.gt]: latestUpdated },
+      })),
+    }
+
     return Entity.findAll({
-      where: { walletId, updated: { [Op.gt]: latestUpdated } },
+      where: query,
       order: [['updated', 'ASC']],
     })
   }

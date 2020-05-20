@@ -34,7 +34,7 @@ export class SyncWsMiddleware implements M {
         wsWrapped.send({
           type: OTypes.syncFinished,
           cb: () =>
-            SyncPubSubService.subscribeWalletUpdates({
+            SyncPubSubService.subscribeEntitiesUpdates({
               socketId: wsWrapped.id,
               userId: wsWrapped.state.user.id,
               callback: data =>
@@ -50,7 +50,7 @@ export class SyncWsMiddleware implements M {
   }
 
   static close: M['close'] = async wsWrapped =>
-    SyncPubSubService.unsubscribeWalletUpdates({
+    SyncPubSubService.unsubscribeEntitiesUpdates({
       socketId: wsWrapped.id,
       userId: wsWrapped.state.user.id,
     })

@@ -4,30 +4,23 @@ import { dateAsTimestamp, runSchemaWithFormError } from '@/utils/yupHelpers'
 
 import Entity, { EntityManager } from '@/models/entity.model'
 import { WalletService } from '@/services/wallet/walletService'
-import { UpdatedEntity, ClientChangesData } from './types'
+import { ClientChangesData, EntityUpdated } from './types'
 import { SyncPubSubService } from './syncPubSubService'
 
 export class SyncService {
-  private static async handleWalletUpdates({
+  private static async handleUpdatesByWallet({
     entities,
     walletId,
-    userId,
     socketId,
   }: {
-    entities: UpdatedEntity[]
+    entities: EntityUpdated[]
     walletId: string
-    userId: string
     socketId: string
   }) {
     if (!entities.length) return
-    try {
-      await WalletService.checkIfUserHasAccess({ userId, walletId })
-    } catch (error) {
-      return
-    }
 
     const createEntities = [] as Entity[],
-      updateEntities = [] as UpdatedEntity[],
+      updateEntities = [] as EntityUpdated[],
       updateEntitiesIds = [] as string[]
 
     for (const ent of entities) {
@@ -37,38 +30,44 @@ export class SyncService {
       } else createEntities.push(ent)
     }
 
-    const results: Entity[] = []
+    console.log(entities)
+
+    const results: Entity[] = [],
+      promises = []
 
     if (createEntities.length)
       results.push(...(await EntityManager.bulkCreate(createEntities)))
 
     if (updateEntities.length) {
-      const fetchedEntities = await EntityManager.filterByIds({
+      const fetchedEntities = await EntityManager.byIds({
           walletId,
           ids: updateEntitiesIds,
         }),
         fetchedEntitiesById = fetchedEntities.reduce((acc, curr) => {
           acc[curr.id] = curr
           return acc
-        }, {} as { [id: string]: Entity }),
-        promises = []
+        }, {} as { [id: string]: Entity })
 
       for (const entityToUpdate of updateEntities) {
         const fetchedEntity = fetchedEntitiesById[entityToUpdate.id]
-        if (!entityToUpdate.clientUpdated || !fetchedEntity) continue
 
-        if (entityToUpdate.clientUpdated >= fetchedEntity.updated.getTime())
-          promises.push(
-            EntityManager.updateEntity({
-              fetchedEntity,
-              newEntity: entityToUpdate,
-            }),
-          )
+        console.log(fetchedEntities, entityToUpdate)
+
+        if (!entityToUpdate.clientUpdated || !fetchedEntity) continue
+        if (entityToUpdate.clientUpdated < fetchedEntity.updated.getTime())
+          continue
+
+        // We don't want it to be updated from client side, but we need it to decide if the entity is to
+        // be created or updated
+        delete entityToUpdate.updated
+
+        promises.push(EntityManager.update(fetchedEntity.id, entityToUpdate))
       }
+
       results.push(...(await Promise.all(promises)))
     }
 
-    return SyncPubSubService.publishWalletUpdates({
+    return SyncPubSubService.publishEntitiesUpdates({
       data: results,
       walletId,
       socketId,
@@ -76,68 +75,62 @@ export class SyncService {
   }
 
   private static entitiesUpdateSchema = yup.array(
-    yup
-      .object({
-        id: yup.string().required(),
-        created: dateAsTimestamp.notRequired(),
-        updated: dateAsTimestamp.notRequired(),
-        clientUpdated: dateAsTimestamp.required(),
-        walletId: yup.string().required(),
-        encr: yup.string().required(),
-      })
-      .noUnknown(),
+    yup.object({
+      id: yup.string().required(),
+      updated: dateAsTimestamp.notRequired(),
+      clientUpdated: dateAsTimestamp.required(),
+      walletId: yup.string().required(),
+      encr: yup.string().required(),
+    }),
   )
   static async handleClientUpdates({
     userId,
     socketId,
-    entityMap,
+    entityMap: unfilteredEntityMap,
   }: {
     userId: string
     socketId: string
     entityMap: ClientChangesData
   }) {
+    // Only allow access to user's wallets, filter other data out
+    const usersWalletIds = await WalletService.getUserWalletIds(userId),
+      entityMap = Object.entries(unfilteredEntityMap).reduce(
+        (acc, [walletId, entities]) => {
+          if (usersWalletIds.includes(walletId)) acc[walletId] = entities
+          return acc
+        },
+        {} as ClientChangesData,
+      )
+
     await Promise.all(
-      entityMap.map(({ entities: unfilteredEntities, walletId }) => {
-        const entities = unfilteredEntities.filter(
-          ent => ent.walletId === walletId,
-        )
-        runSchemaWithFormError(this.entitiesUpdateSchema, entities)
-        return this.handleWalletUpdates({
-          entities,
-          walletId,
-          userId,
-          socketId,
-        })
+      Object.entries(entityMap).map(
+        ([walletId, { entities: unfilteredEntities }]) => {
+          // It's a bit of a stretch. User can change wallet id for some other, and send it to backend.
+          // Will never happen in real life, but HACKERS ARE EVERYWHERE
+          const entities = unfilteredEntities.filter(
+            ent => ent.walletId === walletId,
+          )
+          runSchemaWithFormError(this.entitiesUpdateSchema, entities)
+          return this.handleUpdatesByWallet({
+            entities,
+            walletId,
+            socketId,
+          })
+        },
+      ),
+    )
+
+    return this.getServerUpdates(entityMap)
+  }
+
+  private static async getServerUpdates(entityMap: ClientChangesData) {
+    const map = Object.entries(entityMap).map(
+      ([walletId, { latestUpdated }]) => ({
+        walletId,
+        latestUpdated: new Date(latestUpdated),
       }),
     )
 
-    return (
-      await Promise.all(
-        entityMap.map(({ walletId, latestUpdated }) =>
-          this.getServerUpdates({ walletId, userId, latestUpdated }),
-        ),
-      )
-    ).flatMap(i => i)
-  }
-
-  static async getServerUpdates({
-    userId,
-    walletId,
-    latestUpdated,
-  }: {
-    userId: string
-    walletId: string
-    latestUpdated: number
-  }) {
-    try {
-      await WalletService.checkIfUserHasAccess({ userId, walletId })
-    } catch (error) {
-      return []
-    }
-
-    return EntityManager.getUpdates({
-      walletId,
-      latestUpdated: new Date(latestUpdated),
-    })
+    return EntityManager.getUpdates(map)
   }
 }

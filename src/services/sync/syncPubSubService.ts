@@ -1,13 +1,13 @@
 import { redisPubSub } from '@/services/redis/pubSub'
-import Entity from '@/models/entity.model'
 import { WalletService } from '../wallet/walletService'
+import Entity from '@/models/entity.model'
 
 export class SyncPubSubService {
-  private static channelWalletUpdates(walletId: string) {
-    return `wu--${walletId}`
+  private static channelEntitiesUpdates(walletId: string) {
+    return `ent-u--${walletId}`
   }
 
-  static publishWalletUpdates({
+  static publishEntitiesUpdates({
     socketId,
     walletId,
     data,
@@ -17,13 +17,13 @@ export class SyncPubSubService {
     data: Entity[]
   }) {
     return redisPubSub.publish({
-      channel: this.channelWalletUpdates(walletId),
+      channel: this.channelEntitiesUpdates(walletId),
       publisherId: socketId,
       data,
     })
   }
 
-  static async subscribeWalletUpdates({
+  static async subscribeEntitiesUpdates({
     socketId,
     userId,
     callback,
@@ -35,13 +35,13 @@ export class SyncPubSubService {
     const walletIds = await WalletService.getUserWalletIds(userId)
 
     return redisPubSub.subscribe({
-      channels: walletIds.map(this.channelWalletUpdates),
+      channels: walletIds.map(this.channelEntitiesUpdates),
       subscriberId: socketId,
       callback,
     })
   }
 
-  static async unsubscribeWalletUpdates({
+  static async unsubscribeEntitiesUpdates({
     socketId,
     userId,
   }: {
@@ -51,7 +51,7 @@ export class SyncPubSubService {
     const walletIds = await WalletService.getUserWalletIds(userId)
 
     return redisPubSub.unsubscribe({
-      channels: walletIds.map(this.channelWalletUpdates),
+      channels: walletIds.map(this.channelEntitiesUpdates),
       subscriberId: socketId,
     })
   }
