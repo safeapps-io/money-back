@@ -17,10 +17,7 @@ module.exports = {
       updated: requiredDate,
     }
 
-    await queryInterface.createTable('Wallets', {
-      ...baseModel,
-      encr: { type: Sequelize.TEXT, allowNull: false },
-    })
+    await queryInterface.createTable('Wallets', baseModel)
 
     await queryInterface.createTable('Entities', {
       ...baseModel,
