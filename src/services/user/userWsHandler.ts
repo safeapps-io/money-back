@@ -1,6 +1,7 @@
 import { WSMiddleware } from '@/utils/wsMiddleware'
 import { UserPubSubService } from './userPubSubService'
 import { UserService } from './userService'
+import { DefaultWsState } from '@/services/types'
 
 enum ITypes {
   getNewAccessToken = 'getNewAccessToken',
@@ -17,7 +18,7 @@ enum OTypes {
   newAccessToken = 'newAccessToken',
 }
 
-type M = WSMiddleware<UserIncomingMessages>
+type M = WSMiddleware<UserIncomingMessages, DefaultWsState>
 export class UserWsMiddleware implements M {
   static bulk: M['bulk'] = async ({ wsWrapped, parsed }) => {
     const { token } = parsed
@@ -39,6 +40,8 @@ export class UserWsMiddleware implements M {
   }
 
   static [ITypes.getUser]: M[ITypes.getUser] = async ({ wsWrapped }) => {
+    if (!wsWrapped.state.user) return
+
     const fetchedUser = await UserService.fetchUserById(wsWrapped.state.user.id)
     wsWrapped.send({ type: OTypes.userData, data: fetchedUser })
 
@@ -51,9 +54,12 @@ export class UserWsMiddleware implements M {
     })
   }
 
-  static close: M['close'] = async wsWrapped =>
-    UserPubSubService.unsubscribeUserUpdates({
+  static close: M['close'] = async wsWrapped => {
+    if (!wsWrapped.state.user) return void 0
+
+    return UserPubSubService.unsubscribeUserUpdates({
       socketId: wsWrapped.id,
       userId: wsWrapped.state.user.id,
     })
+  }
 }

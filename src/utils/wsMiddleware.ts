@@ -4,17 +4,17 @@ import nanoid from 'nanoid'
 import chunk from '@/utils/chunk'
 
 // TODO: Mama, I failed. Make this all type strict… but not like this. Too much `any`
-export type WSMiddleware<MessageMap> = {
-  open?: (ws: WSWrapper) => Promise<void>
-  close?: (ws: WSWrapper) => Promise<void>
+export type WSMiddleware<MessageMap, State> = {
+  open?: (ws: WSWrapper<State>) => Promise<void>
+  close?: (ws: WSWrapper<State>) => Promise<void>
   bulk?: (data: {
-    wsWrapped: WSWrapper
+    wsWrapped: WSWrapper<State>
     message: any
     parsed: any
   }) => Promise<object | void>
 } & {
   [messageType in keyof MessageMap]?: (data: {
-    wsWrapped: WSWrapper
+    wsWrapped: WSWrapper<State>
     message: MessageMap[messageType]
     parsed: any
   }) => Promise<object | void>
@@ -28,12 +28,12 @@ type Message<MessageMap> = {
   type: keyof MessageMap
 } & BaseMessage
 
-export async function handleWsConnection<IncomingMessages>(
+export async function handleWsConnection<IncomingMessages, State>(
   ws: wsType,
-  ...middlewares: WSMiddleware<IncomingMessages>[]
+  ...middlewares: WSMiddleware<IncomingMessages, State>[]
 ) {
   const id = nanoid(),
-    wsWrapped = new WSWrapper(id, ws)
+    wsWrapped = new WSWrapper<State>(id, ws)
 
   ws.on('message', async raw => {
     let type, data, parsed
@@ -94,8 +94,12 @@ export async function handleWsConnection<IncomingMessages>(
   }
 }
 
-class WSWrapper {
-  constructor(public id: string, private ws: wsType, public state: any = {}) {}
+class WSWrapper<State> {
+  constructor(
+    public id: string,
+    private ws: wsType,
+    public state = {} as State,
+  ) {}
 
   send({
     type,

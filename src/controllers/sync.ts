@@ -19,6 +19,7 @@ import {
   WalletWsMiddleware,
   WalletIncomingMessages,
 } from '@/services/wallet/walletWsHandler'
+import User from '@/models/user.model'
 
 const syncRouter = Router() as WSRouter
 syncRouter.ws('/sync', ws => {
@@ -26,7 +27,8 @@ syncRouter.ws('/sync', ws => {
     UserIncomingMessages &
       WalletIncomingMessages &
       SyncIncomingMessages &
-      MCCIncomingMessages
+      MCCIncomingMessages,
+    { user?: User }
   >(ws, UserWsMiddleware, WalletWsMiddleware, SyncWsMiddleware, MCCWsMiddleware)
 })
 
