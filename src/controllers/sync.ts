@@ -2,7 +2,11 @@ import { Router as WSRouter } from 'express-ws'
 import { Router } from 'express'
 
 import { handleWsConnection } from '@/utils/wsMiddleware'
-import { AuthWsMiddleware, AuthIncomingMessages } from '@/controllers/sync/auth'
+
+import {
+  UserIncomingMessages,
+  UserWsMiddleware,
+} from '@/services/user/userWsHandler'
 import {
   SyncWsMiddleware,
   SyncIncomingMessages,
@@ -11,12 +15,19 @@ import {
   MCCIncomingMessages,
   MCCWsMiddleware,
 } from '@/services/mcc/mccWsHandler'
+import {
+  WalletWsMiddleware,
+  WalletIncomingMessages,
+} from '@/services/wallet/walletWsHandler'
 
 const syncRouter = Router() as WSRouter
 syncRouter.ws('/sync', ws => {
   handleWsConnection<
-    AuthIncomingMessages & SyncIncomingMessages & MCCIncomingMessages
-  >(ws, AuthWsMiddleware, SyncWsMiddleware, MCCWsMiddleware)
+    UserIncomingMessages &
+      WalletIncomingMessages &
+      SyncIncomingMessages &
+      MCCIncomingMessages
+  >(ws, UserWsMiddleware, WalletWsMiddleware, SyncWsMiddleware, MCCWsMiddleware)
 })
 
 export default syncRouter
