@@ -2,7 +2,7 @@ import request from 'supertest'
 import nanoid from 'nanoid'
 
 import appPromise from '@/app'
-import { UserServiceFormErrors } from '@/services/user'
+import { UserServiceFormErrors } from '@/services/user/userService'
 import { UserManager } from '@/models/user.model'
 import { InviteService } from '@/services/invite'
 
@@ -10,7 +10,7 @@ describe('Error reporting', () => {
   let _invite: string
   async function getInvite(): Promise<string> {
     if (_invite) return _invite
-    const u = await UserManager.createUser({
+    const u = await UserManager.create({
       username: nanoid(),
       password: nanoid(),
     })

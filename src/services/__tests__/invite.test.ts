@@ -1,5 +1,5 @@
 const mockUserManager = {
-  getUserById: jest.fn(),
+  byId: jest.fn(),
 }
 jest.mock('@/models/user.model', () => ({
   __esModule: true,
@@ -10,10 +10,10 @@ import { InviteService, InviteServiceFormErrors } from '../invite'
 import { FormValidationError } from '@/core/errors'
 
 describe('Invite service', () => {
-  beforeEach(() => mockUserManager.getUserById.mockClear())
+  beforeEach(() => mockUserManager.byId.mockClear())
 
   it('generates valid invite and validates it correctly', async () => {
-    mockUserManager.getUserById.mockImplementation(async () => true)
+    mockUserManager.byId.mockImplementation(async () => true)
 
     const id = 'testId'
     const inviteId = InviteService.generateInviteString(id)
@@ -22,7 +22,7 @@ describe('Invite service', () => {
   })
 
   it('throws if invite is invalid', async () => {
-    mockUserManager.getUserById.mockImplementation(async () => true)
+    mockUserManager.byId.mockImplementation(async () => true)
 
     try {
       await InviteService.getUserIdFromInvite('19823746918723649817236123')
@@ -34,7 +34,7 @@ describe('Invite service', () => {
   })
 
   it('throws if no such user can be found', async () => {
-    mockUserManager.getUserById.mockImplementation(async () => false)
+    mockUserManager.byId.mockImplementation(async () => false)
 
     const id = 'testId'
     const inviteId = InviteService.generateInviteString(id)

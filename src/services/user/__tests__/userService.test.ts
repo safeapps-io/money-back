@@ -11,15 +11,13 @@ const mockRefreshTokenManager = {
     tokenExists: jest.fn(),
   },
   mockUserManager = {
-    createUser: jest
-      .fn()
-      .mockImplementation(data => ({ ...data, id: nanoid() })),
+    create: jest.fn().mockImplementation(data => ({ ...data, id: nanoid() })),
     isUsernameTaken: jest.fn(),
     isEmailTaken: jest.fn(),
-    findUser: jest.fn(),
-    getUserById: jest.fn(),
+    findByEmailOrUsername: jest.fn(),
+    byId: jest.fn(),
     changeUserPassword: jest.fn(),
-    updateUser: jest
+    update: jest
       .fn()
       .mockImplementation(async (userId: string, data: object) => ({
         ...data,
@@ -50,9 +48,9 @@ import {
   InvalidRefreshToken,
   UserServiceFormErrors,
   jwtSubject,
-} from '../user'
+} from '../userService'
 import { FormValidationError } from '@/core/errors'
-import { PasswordServiceFormErrors } from '../password'
+import { PasswordServiceFormErrors } from '../../password'
 
 describe('User Service', () => {
   const dummyUser = {
@@ -143,7 +141,9 @@ describe('User Service', () => {
           description,
         })
 
-      mockUserManager.findUser.mockImplementationOnce(() => res.user)
+      mockUserManager.findByEmailOrUsername.mockImplementationOnce(
+        () => res.user,
+      )
 
       const result = await UserService.signin({
         usernameOrEmail: username,
@@ -165,7 +165,7 @@ describe('User Service', () => {
         password = 'normal',
         description = ''
 
-      mockUserManager.findUser.mockImplementationOnce(() => null)
+      mockUserManager.findByEmailOrUsername.mockImplementationOnce(() => null)
 
       try {
         await UserService.signin({
@@ -190,7 +190,9 @@ describe('User Service', () => {
           description,
         })
 
-      mockUserManager.findUser.mockImplementationOnce(() => res.user)
+      mockUserManager.findByEmailOrUsername.mockImplementationOnce(
+        () => res.user,
+      )
 
       try {
         await UserService.signin({
@@ -211,7 +213,7 @@ describe('User Service', () => {
       mockRefreshTokenManager.generateToken.mockClear()
       const res = await UserService.signup(dummyUser)
 
-      mockUserManager.getUserById.mockImplementationOnce(id => {
+      mockUserManager.byId.mockImplementationOnce(id => {
         if (id === res.user.id) return res.user
       })
 
@@ -224,7 +226,7 @@ describe('User Service', () => {
       mockRefreshTokenManager.generateToken.mockClear()
       const res = await UserService.signup(dummyUser)
 
-      mockUserManager.getUserById.mockImplementationOnce(id => {
+      mockUserManager.byId.mockImplementationOnce(id => {
         if (id === res.user.id) return null
       })
 
@@ -295,7 +297,7 @@ describe('User Service', () => {
 
   describe('update user', () => {
     beforeEach(() => {
-      mockUserManager.updateUser.mockClear()
+      mockUserManager.update.mockClear()
       mockUserManager.isUsernameTaken.mockClear()
       mockUserManager.isEmailTaken.mockClear()
     })
@@ -303,20 +305,18 @@ describe('User Service', () => {
     it('works', async () => {
       const newUsername = 'newUsername'
 
-      const result = await UserService.updateUser({
-        user: validatedUser as any,
+      const result = await UserService.updateUser(validatedUser as any, {
         username: newUsername,
         email: 'newEmail@asdfasdf.com',
       })
-      expect(mockUserManager.updateUser.mock.calls.length).toBe(1)
+      expect(mockUserManager.update.mock.calls.length).toBe(1)
       expect(result.email).toBeUndefined()
       expect(result.username).toBe(newUsername)
     })
 
     it('throws if removing email', async () => {
       try {
-        await UserService.updateUser({
-          user: validatedUser as any,
+        await UserService.updateUser(validatedUser as any, {
           username: 'newUsername',
         })
         throw new Error()
@@ -328,8 +328,7 @@ describe('User Service', () => {
 
     it('throws if bad email or username', async () => {
       expect(
-        UserService.updateUser({
-          user: {} as any,
+        UserService.updateUser({} as any, {
           username: 'new',
           email: 'new',
         }),
@@ -339,8 +338,7 @@ describe('User Service', () => {
     it('throws if taken username', async () => {
       mockUserManager.isUsernameTaken.mockImplementationOnce(async () => true)
       try {
-        await UserService.updateUser({
-          user: validatedUser as any,
+        await UserService.updateUser(validatedUser as any, {
           username: 'newUsername',
           email: validatedUser.email,
         })
@@ -352,8 +350,7 @@ describe('User Service', () => {
 
       mockUserManager.isEmailTaken.mockImplementationOnce(async () => true)
       try {
-        await UserService.updateUser({
-          user: {} as any,
+        await UserService.updateUser({} as any, {
           username: 'newUsername',
           email: 'qwer@qwer.com',
         })
@@ -365,19 +362,18 @@ describe('User Service', () => {
     })
 
     it('updates encr', async () => {
-      const encr = 'hey',
-        user = {} as any
+      const encr = 'hey'
 
       try {
-        await UserService.updateUserEncr({ user, encr: null as any })
+        await UserService.updateUserEncr('qw', null as any)
         throw new Error()
       } catch (error) {
         expect(error).toBeInstanceOf(FormValidationError)
       }
 
-      await UserService.updateUserEncr({ user, encr })
-      expect(mockUserManager.updateUser.mock.calls.length).toBe(1)
-      expect(mockUserManager.updateUser.mock.calls[0][1].encr).toBe(encr)
+      await UserService.updateUserEncr('qwer', encr)
+      expect(mockUserManager.update.mock.calls.length).toBe(1)
+      expect(mockUserManager.update.mock.calls[0][1].encr).toBe(encr)
     })
 
     it('updates invite key', async () => {
@@ -385,17 +381,15 @@ describe('User Service', () => {
         user = {} as any
 
       try {
-        await UserService.updateUserInviteKey({ user, inviteKey: null as any })
+        await UserService.updateUser(user, { inviteKey: null as any })
         throw new Error()
       } catch (error) {
         expect(error).toBeInstanceOf(FormValidationError)
       }
 
-      await UserService.updateUserInviteKey({ user, inviteKey })
-      expect(mockUserManager.updateUser.mock.calls.length).toBe(1)
-      expect(mockUserManager.updateUser.mock.calls[0][1].inviteKey).toBe(
-        inviteKey,
-      )
+      await UserService.updateUser(user, { inviteKey })
+      expect(mockUserManager.update.mock.calls.length).toBe(1)
+      expect(mockUserManager.update.mock.calls[0][1].inviteKey).toBe(inviteKey)
     })
   })
 })

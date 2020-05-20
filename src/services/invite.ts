@@ -22,7 +22,7 @@ export class InviteService {
       }
 
       const id = decryptAes<InviteObject>(invite).id
-      const user = await UserManager.getUserById(id)
+      const user = await UserManager.byId(id)
 
       if (!id || !user) throw new Error()
 

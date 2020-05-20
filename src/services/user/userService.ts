@@ -3,12 +3,12 @@ import { isBefore } from 'date-fns'
 
 import User, { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
-import { FormValidationError } from '@/core/errors'
+import { FormValidationError, AccessError } from '@/core/errors'
 import { runSchemaWithFormError } from '@/utils/yupHelpers'
 import { signJwt, verifyJwt } from '@/utils/crypto'
-import { ValidateEmailService } from './validateEmail'
-import { PasswordService, passwordScheme } from './password'
-import { InviteService } from './invite'
+import { ValidateEmailService } from '../validateEmail'
+import { PasswordService, passwordScheme } from '../password'
+import { InviteService } from '../invite'
 
 export const jwtSubject = 'sess' // session
 
@@ -26,7 +26,8 @@ const usernameScheme = yup
     .string()
     .email()
     .notRequired()
-    .nullable()
+    .nullable(),
+  inviteKeyScheme = yup.string().required()
 
 export class UserService {
   private static async generateRefreshToken(data: {
@@ -136,7 +137,7 @@ export class UserService {
     await this.checkCredentialsAvailability({ username, email })
 
     const passwordHashed = await PasswordService.hashPassword(password)
-    const user = await UserManager.createUser({
+    const user = await UserManager.create({
       username,
       password: passwordHashed,
       inviterId,
@@ -162,7 +163,7 @@ export class UserService {
   }) {
     runSchemaWithFormError(this.signinSchema, { usernameOrEmail, password })
 
-    const user = await UserManager.findUser(usernameOrEmail)
+    const user = await UserManager.findByEmailOrUsername(usernameOrEmail)
     if (!user)
       throw new FormValidationError(UserServiceFormErrors.unknownUser, {
         usernameOrEmail: [UserServiceFormErrors.unknownUser],
@@ -201,55 +202,58 @@ export class UserService {
 
     // Date constructor expects ms, but we get seconds here
     if (isBefore(decoded.exp * 1000, new Date())) throw new ExpiredToken()
-    const user = await UserManager.getUserById(decoded.id)
+    const user = await UserManager.byId(decoded.id)
 
     if (!user) throw new InvalidToken()
 
     return user
   }
 
-  private static updateUserScheme = yup.object({
-    username: usernameScheme,
-    email: emailScheme,
-  })
-  static async updateUser({
-    user,
-    username,
-    email,
-  }: {
-    user: User
-    username: string
-    email?: string
-  }) {
-    runSchemaWithFormError(this.updateUserScheme, { email, username })
-
+  static async updateUser(
+    user: User,
+    {
+      username,
+      email,
+      inviteKey,
+    }: {
+      username?: string
+      email?: string
+      inviteKey?: string
+    },
+  ) {
     if (user.email && !email)
       throw new FormValidationError(UserServiceFormErrors.cantDeleteEmail)
 
-    await this.checkCredentialsAvailability({ username, excludeId: user.id })
-    await ValidateEmailService.triggerEmailValidation(user, email)
+    let res = {} as Partial<User>
 
-    return UserManager.updateUser(user.id, { username })
+    if (typeof username !== 'undefined') {
+      runSchemaWithFormError(usernameScheme, username)
+      await this.checkCredentialsAvailability({ username, excludeId: user.id })
+      res.username = username
+    }
+
+    if (typeof email !== 'undefined') {
+      runSchemaWithFormError(emailScheme, email)
+      await ValidateEmailService.triggerEmailValidation(user, email)
+    }
+
+    if (typeof inviteKey !== 'undefined') {
+      runSchemaWithFormError(inviteKeyScheme, inviteKey)
+    }
+
+    return UserManager.update(user.id, { username, inviteKey })
   }
 
-  private static updateEncrScheme = yup.string().required()
-  static async updateUserEncr({ user, encr }: { user: User; encr: string }) {
-    runSchemaWithFormError(this.updateEncrScheme, encr)
+  static async updateUserEncr(userId: string, encr: string) {
+    runSchemaWithFormError(yup.string().required(), encr)
 
-    return UserManager.updateUser(user.id, { encr })
+    return UserManager.update(userId, { encr })
   }
 
-  private static updateInviteKeyScheme = yup.string().required()
-  static async updateUserInviteKey({
-    user,
-    inviteKey,
-  }: {
-    user: User
-    inviteKey: string
-  }) {
-    runSchemaWithFormError(this.updateInviteKeyScheme, inviteKey)
-
-    return UserManager.updateUser(user.id, { inviteKey })
+  static async fetchUserById(userId: string) {
+    const res = await UserManager.byId(userId)
+    if (!res) throw new AccessError()
+    return res
   }
 }
 

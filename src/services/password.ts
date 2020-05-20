@@ -56,7 +56,7 @@ export class PasswordService {
   }
 
   public static async requestPasswordReset(email: string) {
-    const user = await UserManager.findUser(email)
+    const user = await UserManager.findByEmailOrUsername(email)
     if (!user || !user.email)
       throw new FormValidationError(PasswordServiceFormErrors.resetNoEmail, {
         email: [PasswordServiceFormErrors.resetNoEmail],

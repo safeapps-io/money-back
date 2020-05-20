@@ -68,7 +68,7 @@ export default class User extends BaseModel<User> {
 }
 
 export class UserManager {
-  static createUser(data: {
+  static create(data: {
     email?: string
     username: string
     password: string
@@ -77,7 +77,7 @@ export class UserManager {
     return User.create(data)
   }
 
-  static getUserById(userId: string) {
+  static byId(userId: string) {
     return User.findByPk(userId)
   }
 
@@ -95,32 +95,34 @@ export class UserManager {
     return count !== 0
   }
 
-  static findUser(usernameOrEmail: string) {
+  static findByEmailOrUsername(usernameOrEmail: string) {
     return User.findOne({
       where: { [Op.or]: { username: usernameOrEmail, email: usernameOrEmail } },
     })
   }
 
   static changeUserPassword(userId: string, password: string) {
-    return User.update({ password }, { where: { id: userId } })
+    return this.update(userId, { password })
   }
 
-  static async updateUser(
-    userId: string,
-    data: {
-      username?: string
-      email?: string
-      encr?: string | null
-      inviteKey?: string | null
-    },
-  ) {
-    const resultData = Object.entries(data).reduce((acc, [key, value]) => {
-      if (typeof value !== 'undefined') acc[key] = value
-      return acc
-    }, {} as { [key: string]: any })
-
+  static async update(id: string, user: Partial<User>) {
     return (
-      await User.update(resultData, { where: { id: userId }, returning: true })
+      await User.update(user, {
+        where: { id },
+        returning: true,
+      })
     )[1][0]
+  }
+
+  static getUpdates({
+    id,
+    latestUpdated,
+  }: {
+    id: string
+    latestUpdated: Date
+  }) {
+    return User.findOne({
+      where: { id, updated: { [Op.gt]: latestUpdated } },
+    })
   }
 }

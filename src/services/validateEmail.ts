@@ -64,7 +64,7 @@ export class ValidateEmailService {
     // Excluding id in case user clicks on the link multiple times
     await this.isEmailTaken(email, userId)
 
-    return UserManager.updateUser(userId, { email })
+    return UserManager.update(userId, { email })
   }
 }
 

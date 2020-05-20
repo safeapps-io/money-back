@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express'
 const mockUserService = {
   getUserFromToken: jest.fn(),
 }
-jest.mock('@/services/user', () => ({
+jest.mock('@/services/user/userService', () => ({
   __esModule: true,
   UserService: mockUserService,
   ExpiredToken: class extends Error {},
@@ -12,7 +12,7 @@ jest.mock('@/services/user', () => ({
 
 import { isRestAuth } from '../isAuth'
 import { RequestError } from '@/core/errors'
-import { ExpiredToken, InvalidToken } from '@/services/user'
+import { ExpiredToken, InvalidToken } from '@/services/user/userService'
 
 const _next = jest.fn(),
   next = (jest.fn() as unknown) as NextFunction & typeof _next

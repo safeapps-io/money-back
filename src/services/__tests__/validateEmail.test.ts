@@ -3,7 +3,7 @@ const mockMessageService = {
   },
   mockUserManager = {
     isEmailTaken: jest.fn(),
-    updateUser: jest.fn(),
+    update: jest.fn(),
   }
 
 jest.mock('@/services/message', () => ({
@@ -69,8 +69,8 @@ describe('Email validation', () => {
     const { token } = mockMessageService.sendValidationEmail.mock.calls[0][0]
 
     await ValidateEmailService.updateEmail(token)
-    const [id, { email }] = mockUserManager.updateUser.mock.calls[0]
-    expect(mockUserManager.updateUser.mock.calls.length).toBe(1)
+    const [id, { email }] = mockUserManager.update.mock.calls[0]
+    expect(mockUserManager.update.mock.calls.length).toBe(1)
     expect(id).toBe(user.id)
     expect(email).toBe(newEmail)
   })

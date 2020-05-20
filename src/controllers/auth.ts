@@ -2,7 +2,7 @@ import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
-import { UserService } from '@/services/user'
+import { UserService } from '@/services/user/userService'
 import { getDeviceDescription } from '@/services/deviceDescription'
 import { ValidateEmailService } from '@/services/validateEmail'
 import { PasswordService } from '@/services/password'
@@ -120,7 +120,7 @@ authRouter.post(
       username: string
       email?: string
     }
-    const user = await UserService.updateUser({ ...body, user: req.user })
+    const user = await UserService.updateUser(req.user, body)
 
     res.json(user)
   }),
@@ -133,10 +133,7 @@ authRouter.post(
     const body = req.body as {
       inviteKey: string
     }
-    const user = await UserService.updateUserInviteKey({
-      ...body,
-      user: req.user,
-    })
+    const user = await UserService.updateUser(req.user, body)
 
     res.json(user)
   }),

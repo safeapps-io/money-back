@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 
-import { UserService, InvalidToken, ExpiredToken } from '@/services/user'
+import {
+  UserService,
+  InvalidToken,
+  ExpiredToken,
+} from '@/services/user/userService'
 import User from '@/models/user.model'
 import { RequestError } from '@/core/errors'
 

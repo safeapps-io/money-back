@@ -1,6 +1,6 @@
 const mockUserManager = {
     changeUserPassword: jest.fn(),
-    findUser: jest.fn(),
+    findByEmailOrUsername: jest.fn(),
   },
   mockMessageService = {
     sendPasswordResetEmail: jest.fn(),
@@ -80,9 +80,11 @@ describe('Password service', () => {
     })
 
     it('sends reset email with valid token', async () => {
-      mockUserManager.findUser.mockImplementationOnce(async findEmail => {
-        if (findEmail === email) return { id, email }
-      })
+      mockUserManager.findByEmailOrUsername.mockImplementationOnce(
+        async findEmail => {
+          if (findEmail === email) return { id, email }
+        },
+      )
 
       await PasswordService.requestPasswordReset(email)
 
@@ -102,9 +104,11 @@ describe('Password service', () => {
     })
 
     it('throws if user has no email', async () => {
-      mockUserManager.findUser.mockImplementationOnce(async findEmail => {
-        if (findEmail === email) return { id }
-      })
+      mockUserManager.findByEmailOrUsername.mockImplementationOnce(
+        async findEmail => {
+          if (findEmail === email) return { id }
+        },
+      )
       try {
         await PasswordService.requestPasswordReset(email)
         throw new Error()
@@ -132,9 +136,11 @@ describe('Password service', () => {
     })
 
     it('updates password', async () => {
-      mockUserManager.findUser.mockImplementationOnce(async findEmail => {
-        if (findEmail === email) return { id, email }
-      })
+      mockUserManager.findByEmailOrUsername.mockImplementationOnce(
+        async findEmail => {
+          if (findEmail === email) return { id, email }
+        },
+      )
 
       await PasswordService.requestPasswordReset(email)
       const {
