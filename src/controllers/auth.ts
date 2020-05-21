@@ -4,7 +4,7 @@ import ash from 'express-async-handler'
 import { isRestAuth } from '@/middlewares/isAuth'
 import { UserService } from '@/services/user/userService'
 import { getDeviceDescription } from '@/services/deviceDescription'
-import { ValidateEmailService } from '@/services/validateEmail'
+import { ValidateEmailService } from '@/services/user/validateEmailService'
 import { PasswordService } from '@/services/password'
 import { InviteService } from '@/services/invite'
 

@@ -26,7 +26,7 @@ import {
   ValidateEmailService,
   ValidateEmailServiceErrors,
   jwtSubject,
-} from '../validateEmail'
+} from '../validateEmailService'
 import User from '@/models/user.model'
 import { signJwt } from '@/utils/crypto'
 import { FormValidationError } from '@/services/errors'

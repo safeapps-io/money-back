@@ -1,8 +1,8 @@
 import User, { UserManager } from '@/models/user.model'
 import { signJwt, verifyJwt } from '@/utils/crypto'
 import { FormValidationError } from '@/services/errors'
-import { MessageService } from './message'
-import { UserPubSubService } from './user/userPubSubService'
+import { MessageService } from '../message'
+import { UserPubSubService } from './userPubSubService'
 
 export const jwtSubject = 'vem' // Validate EMail
 
