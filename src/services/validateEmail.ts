@@ -2,6 +2,7 @@ import User, { UserManager } from '@/models/user.model'
 import { signJwt, verifyJwt } from '@/utils/crypto'
 import { FormValidationError } from '@/services/errors'
 import { MessageService } from './message'
+import { UserPubSubService } from './user/userPubSubService'
 
 export const jwtSubject = 'vem' // Validate EMail
 
@@ -63,8 +64,10 @@ export class ValidateEmailService {
 
     // Excluding id in case user clicks on the link multiple times
     await this.isEmailTaken(email, userId)
+    const res = await UserManager.update(userId, { email })
 
-    return UserManager.update(userId, { email })
+    await UserPubSubService.publishUserUpdates({ user: res })
+    return res
   }
 }
 

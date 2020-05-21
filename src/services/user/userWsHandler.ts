@@ -5,12 +5,12 @@ import { DefaultWsState } from '@/services/types'
 
 enum ITypes {
   getNewAccessToken = 'getNewAccessToken',
-  getUser = 'getUser',
+  mergeUser = 'mergeUser',
 }
 
 export type UserIncomingMessages = {
   [ITypes.getNewAccessToken]: { accessToken: string; refreshToken: string }
-  [ITypes.getUser]: {}
+  [ITypes.mergeUser]: { encr: string; clientUpdated: number } | undefined
 }
 
 enum OTypes {
@@ -39,11 +39,17 @@ export class UserWsMiddleware implements M {
     wsWrapped.send({ type: OTypes.newAccessToken, data: token })
   }
 
-  static [ITypes.getUser]: M[ITypes.getUser] = async ({ wsWrapped }) => {
+  static [ITypes.mergeUser]: M[ITypes.mergeUser] = async ({
+    wsWrapped,
+    message,
+  }) => {
     if (!wsWrapped.state.user) return
 
-    const fetchedUser = await UserService.fetchUserById(wsWrapped.state.user.id)
-    wsWrapped.send({ type: OTypes.userData, data: fetchedUser })
+    const res = await UserService.incrementalUserUpdate({
+      user: wsWrapped.state.user,
+      data: message,
+    })
+    wsWrapped.send({ type: OTypes.userData, data: res })
 
     await UserPubSubService.subscribeUserUpdates({
       socketId: wsWrapped.id,

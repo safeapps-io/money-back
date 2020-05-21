@@ -9,6 +9,7 @@ import { signJwt, verifyJwt } from '@/utils/crypto'
 import { ValidateEmailService } from '../validateEmail'
 import { PasswordService, passwordScheme } from '../password'
 import { InviteService } from '../invite'
+import { UserPubSubService } from './userPubSubService'
 
 export const jwtSubject = 'sess' // session
 
@@ -212,10 +213,12 @@ export class UserService {
   static async updateUser(
     user: User,
     {
+      socketId,
       username,
       email,
       inviteKey,
     }: {
+      socketId?: string
       username?: string
       email?: string
       inviteKey?: string
@@ -224,12 +227,11 @@ export class UserService {
     if (user.email && !email)
       throw new FormValidationError(UserServiceFormErrors.cantDeleteEmail)
 
-    let res = {} as Partial<User>
-
+    let updateFields = {} as Partial<User>
     if (typeof username !== 'undefined') {
       runSchemaWithFormError(usernameScheme, username)
       await this.checkCredentialsAvailability({ username, excludeId: user.id })
-      res.username = username
+      updateFields.username = username
     }
 
     if (typeof email !== 'undefined') {
@@ -239,15 +241,42 @@ export class UserService {
 
     if (typeof inviteKey !== 'undefined') {
       runSchemaWithFormError(inviteKeyScheme, inviteKey)
+      updateFields.inviteKey = inviteKey
     }
 
-    return UserManager.update(user.id, { username, inviteKey })
+    const res = await UserManager.update(user.id, updateFields)
+
+    // We plan to use this method outside of websocket connection, so no socket id here is ok
+    await UserPubSubService.publishUserUpdates({
+      user: res,
+      socketId,
+    })
+    return res
   }
 
-  static async updateUserEncr(userId: string, encr: string) {
-    runSchemaWithFormError(yup.string().required(), encr)
+  private static encrScheme = yup.object({
+    encr: yup.string().required(),
+    clientUpdated: yup.number().required(),
+  })
+  static async incrementalUserUpdate({
+    user,
+    socketId,
+    data,
+  }: {
+    user: User
+    socketId: string
+    data?: { encr: string; clientUpdated: number }
+  }) {
+    // No client update
+    if (!data) return user
 
-    return UserManager.update(userId, { encr })
+    // Client has stale information
+    runSchemaWithFormError(this.encrScheme, data)
+    if (data.clientUpdated < user.updated.getTime()) return user
+
+    const res = await UserManager.update(user.id, { encr: data.encr })
+    await UserPubSubService.publishUserUpdates({ user: res, socketId })
+    return res
   }
 
   static async fetchUserById(userId: string) {

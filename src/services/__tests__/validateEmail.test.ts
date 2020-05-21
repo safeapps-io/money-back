@@ -4,6 +4,9 @@ const mockMessageService = {
   mockUserManager = {
     isEmailTaken: jest.fn(),
     update: jest.fn(),
+  },
+  mockUserPubSubService = {
+    publishUserUpdates: jest.fn(),
   }
 
 jest.mock('@/services/message', () => ({
@@ -13,6 +16,10 @@ jest.mock('@/services/message', () => ({
 jest.mock('@/models/user.model', () => ({
   __esModule: true,
   UserManager: mockUserManager,
+}))
+jest.mock('@/services/user/userPubSubService', () => ({
+  __esModule: true,
+  UserPubSubService: mockUserPubSubService,
 }))
 
 import {
@@ -32,89 +39,114 @@ describe('Email validation', () => {
     mockMessageService.sendValidationEmail.mockClear()
   })
 
-  it('trigger: sends email with a correct token', async () => {
-    await ValidateEmailService.triggerEmailValidation(user, newEmail)
-    expect(mockMessageService.sendValidationEmail.mock.calls.length).toBe(1)
-
-    const args = mockMessageService.sendValidationEmail.mock.calls[0][0]
-    expect(args.email).toBe(newEmail)
-    const { email, userId } = await ValidateEmailService.validateToken(
-      args.token,
-    )
-    expect(email).toBe(newEmail)
-    expect(userId).toBe(user.id)
-  })
-
-  it('trigger: does nothing if email is not changed or not defined', async () => {
-    await ValidateEmailService.triggerEmailValidation(user, user.email!)
-    await ValidateEmailService.triggerEmailValidation(user)
-
-    expect(mockMessageService.sendValidationEmail.mock.calls.length).toBe(0)
-  })
-
-  it('trigger: throws if email is already taken', async () => {
-    mockUserManager.isEmailTaken.mockImplementationOnce(async () => true)
-
-    try {
+  describe('trigger', () => {
+    it('sends email with a correct token', async () => {
       await ValidateEmailService.triggerEmailValidation(user, newEmail)
-      throw new Error()
-    } catch (err) {
-      expect(err).toBeInstanceOf(FormValidationError)
-      expect(err.message).toBe(ValidateEmailServiceErrors.emailTaken)
-    }
+      expect(mockMessageService.sendValidationEmail.mock.calls.length).toBe(1)
+
+      const args = mockMessageService.sendValidationEmail.mock.calls[0][0]
+      expect(args.email).toBe(newEmail)
+      const { email, userId } = await ValidateEmailService.validateToken(
+        args.token,
+      )
+      expect(email).toBe(newEmail)
+      expect(userId).toBe(user.id)
+    })
+
+    it('does nothing if email is not changed or not defined', async () => {
+      await ValidateEmailService.triggerEmailValidation(user, user.email!)
+      await ValidateEmailService.triggerEmailValidation(user)
+
+      expect(mockMessageService.sendValidationEmail.mock.calls.length).toBe(0)
+    })
+
+    it('throws if email is already taken', async () => {
+      mockUserManager.isEmailTaken.mockImplementationOnce(async () => true)
+
+      try {
+        await ValidateEmailService.triggerEmailValidation(user, newEmail)
+        throw new Error()
+      } catch (err) {
+        expect(err).toBeInstanceOf(FormValidationError)
+        expect(err.message).toBe(ValidateEmailServiceErrors.emailTaken)
+      }
+    })
   })
 
-  it('update: works', async () => {
-    await ValidateEmailService.triggerEmailValidation(user, newEmail)
-    const { token } = mockMessageService.sendValidationEmail.mock.calls[0][0]
+  describe('update', () => {
+    beforeEach(() => {
+      mockUserPubSubService.publishUserUpdates.mockClear()
+      mockUserManager.update.mockImplementation(async (_, data) => ({
+        ...user,
+        ...data,
+      }))
+    })
 
-    await ValidateEmailService.updateEmail(token)
-    const [id, { email }] = mockUserManager.update.mock.calls[0]
-    expect(mockUserManager.update.mock.calls.length).toBe(1)
-    expect(id).toBe(user.id)
-    expect(email).toBe(newEmail)
-  })
+    it('works', async () => {
+      await ValidateEmailService.triggerEmailValidation(user, newEmail)
+      const { token } = mockMessageService.sendValidationEmail.mock.calls[0][0]
 
-  it('update: throws if email is taken', async () => {
-    await ValidateEmailService.triggerEmailValidation(user, newEmail)
-    const { token } = mockMessageService.sendValidationEmail.mock.calls[0][0]
-
-    mockUserManager.isEmailTaken.mockImplementationOnce(async () => true)
-
-    try {
       await ValidateEmailService.updateEmail(token)
-      throw new Error()
-    } catch (err) {
-      expect(err).toBeInstanceOf(FormValidationError)
-      expect(err.message).toBe(ValidateEmailServiceErrors.emailTaken)
-    }
-  })
+      const [id, { email }] = mockUserManager.update.mock.calls[0]
+      expect(mockUserManager.update.mock.calls.length).toBe(1)
+      expect(id).toBe(user.id)
+      expect(email).toBe(newEmail)
+    })
 
-  it('update: throws if token is old', async () => {
-    const token = await signJwt(
-      { message: 'doesnt matter' },
-      { expiresIn: '-5m', subject: jwtSubject },
-    )
-    try {
-      await ValidateEmailService.updateEmail(token)
-      throw new Error()
-    } catch (err) {
-      expect(err).toBeInstanceOf(FormValidationError)
-      expect(err.message).toBe(ValidateEmailServiceErrors.invalidToken)
-    }
-  })
+    it('publishes updates to pubsub', async () => {
+      await ValidateEmailService.triggerEmailValidation(user, newEmail)
+      const { token } = mockMessageService.sendValidationEmail.mock.calls[0][0]
 
-  it('update: throws if subject is different', async () => {
-    const token = await signJwt(
-      { message: 'doesnt matter' },
-      { expiresIn: '5m', subject: 'other' },
-    )
-    try {
       await ValidateEmailService.updateEmail(token)
-      throw new Error()
-    } catch (err) {
-      expect(err).toBeInstanceOf(FormValidationError)
-      expect(err.message).toBe(ValidateEmailServiceErrors.invalidToken)
-    }
+
+      expect(mockUserPubSubService.publishUserUpdates.mock.calls.length).toBe(1)
+      const {
+        user: publishedUser,
+      } = mockUserPubSubService.publishUserUpdates.mock.calls[0][0]
+      expect(user.id).toEqual(publishedUser.id)
+    })
+
+    it('throws if email is taken', async () => {
+      await ValidateEmailService.triggerEmailValidation(user, newEmail)
+      const { token } = mockMessageService.sendValidationEmail.mock.calls[0][0]
+
+      mockUserManager.isEmailTaken.mockImplementationOnce(async () => true)
+
+      try {
+        await ValidateEmailService.updateEmail(token)
+        throw new Error()
+      } catch (err) {
+        expect(err).toBeInstanceOf(FormValidationError)
+        expect(err.message).toBe(ValidateEmailServiceErrors.emailTaken)
+      }
+    })
+
+    it('throws if token is old', async () => {
+      const token = await signJwt(
+        { message: 'doesnt matter' },
+        { expiresIn: '-5m', subject: jwtSubject },
+      )
+      try {
+        await ValidateEmailService.updateEmail(token)
+        throw new Error()
+      } catch (err) {
+        expect(err).toBeInstanceOf(FormValidationError)
+        expect(err.message).toBe(ValidateEmailServiceErrors.invalidToken)
+      }
+    })
+
+    it('throws if subject is different', async () => {
+      const token = await signJwt(
+        { message: 'doesnt matter' },
+        { expiresIn: '5m', subject: 'other' },
+      )
+      try {
+        await ValidateEmailService.updateEmail(token)
+        throw new Error()
+      } catch (err) {
+        expect(err).toBeInstanceOf(FormValidationError)
+        expect(err.message).toBe(ValidateEmailServiceErrors.invalidToken)
+      }
+    })
   })
 })

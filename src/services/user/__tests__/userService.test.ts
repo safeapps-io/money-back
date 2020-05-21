@@ -26,6 +26,9 @@ const mockRefreshTokenManager = {
   },
   mockInviteService = {
     getUserIdFromInvite: jest.fn(),
+  },
+  mockUserPubSubService = {
+    publishUserUpdates: jest.fn(),
   }
 
 jest.mock('@/models/refreshToken.model', () => ({
@@ -39,6 +42,10 @@ jest.mock('@/models/user.model', () => ({
 jest.mock('@/services/invite', () => ({
   __esModule: true,
   InviteService: mockInviteService,
+}))
+jest.mock('@/services/user/userPubSubService', () => ({
+  __esModule: true,
+  UserPubSubService: mockUserPubSubService,
 }))
 
 import {
@@ -300,6 +307,7 @@ describe('User Service', () => {
       mockUserManager.update.mockClear()
       mockUserManager.isUsernameTaken.mockClear()
       mockUserManager.isEmailTaken.mockClear()
+      mockUserPubSubService.publishUserUpdates.mockClear()
     })
 
     it('works', async () => {
@@ -312,6 +320,20 @@ describe('User Service', () => {
       expect(mockUserManager.update.mock.calls.length).toBe(1)
       expect(result.email).toBeUndefined()
       expect(result.username).toBe(newUsername)
+    })
+
+    it('publishes user to redis', async () => {
+      const newUsername = 'newUsername'
+
+      await UserService.updateUser(validatedUser as any, {
+        username: newUsername,
+        email: 'newEmail@asdfasdf.com',
+      })
+      expect(mockUserPubSubService.publishUserUpdates.mock.calls.length).toBe(1)
+      const {
+        user: publishedUser,
+      } = mockUserPubSubService.publishUserUpdates.mock.calls[0][0]
+      expect(validatedUser.id).toEqual(publishedUser.id)
     })
 
     it('throws if removing email', async () => {
@@ -361,19 +383,74 @@ describe('User Service', () => {
       }
     })
 
-    it('updates encr', async () => {
-      const encr = 'hey'
+    describe('incremental user update', () => {
+      beforeEach(() => {
+        mockUserManager.update.mockImplementationOnce(
+          async (id, mergeData) => ({ id, updated: new Date(), ...mergeData }),
+        )
+        mockUserPubSubService.publishUserUpdates.mockClear()
+      })
 
-      try {
-        await UserService.updateUserEncr('qw', null as any)
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-      }
+      const user = { id: 'test', updated: new Date() } as any,
+        encr = 'qwer',
+        socketId = 'test'
 
-      await UserService.updateUserEncr('qwer', encr)
-      expect(mockUserManager.update.mock.calls.length).toBe(1)
-      expect(mockUserManager.update.mock.calls[0][1].encr).toBe(encr)
+      it('returns user if no client update provided, or data is stale', async () => {
+        expect(
+          (await UserService.incrementalUserUpdate({ user, socketId })).id,
+        ).toEqual(user.id)
+        expect(
+          (
+            await UserService.incrementalUserUpdate({
+              user,
+              socketId,
+              data: { clientUpdated: 12341, encr },
+            })
+          ).id,
+        ).toEqual(user.id)
+
+        expect(mockUserManager.update.mock.calls.length).toBe(0)
+      })
+
+      it('throws if invalid data', async () => {
+        try {
+          await UserService.incrementalUserUpdate({
+            user,
+            socketId,
+            data: { clientUpdated: 'wer', encr: 1234 } as any,
+          })
+          throw new Error()
+        } catch (error) {
+          expect(error).toBeInstanceOf(FormValidationError)
+        }
+      })
+
+      it('updates user correctly', async () => {
+        await UserService.incrementalUserUpdate({
+          user,
+          socketId,
+          data: { clientUpdated: new Date().getTime(), encr },
+        })
+        expect(mockUserManager.update.mock.calls.length).toBe(1)
+        const [id, data] = mockUserManager.update.mock.calls[0]
+        expect(id).toBe(user.id)
+        expect(data.encr).toBe(encr)
+      })
+
+      it('publishes user to redis', async () => {
+        await UserService.incrementalUserUpdate({
+          user,
+          socketId,
+          data: { clientUpdated: new Date().getTime(), encr },
+        })
+        expect(mockUserPubSubService.publishUserUpdates.mock.calls.length).toBe(
+          1,
+        )
+        const {
+          user: publishedUser,
+        } = mockUserPubSubService.publishUserUpdates.mock.calls[0][0]
+        expect(user.id).toEqual(publishedUser.id)
+      })
     })
 
     it('updates invite key', async () => {

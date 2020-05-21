@@ -10,12 +10,13 @@ export class UserPubSubService {
     socketId,
     user,
   }: {
-    socketId: string
+    socketId?: string
     user: User
   }) {
     return redisPubSub.publish({
       channel: this.channelUserUpdates(user.id),
-      publisherId: socketId,
+      // Some of user mutation happens outside of websocket, so we make socket an optional thing
+      publisherId: socketId || '',
       data: user,
     })
   }
