@@ -1,6 +1,6 @@
 import * as yup from 'yup'
 
-import { runSchemaWithFormError } from '@/utils/yupHelpers'
+import { runSchemaWithFormError, requiredString } from '@/utils/yupHelpers'
 
 import Entity, { EntityManager } from '@/models/entity.model'
 import { WalletService } from '@/services/wallet/walletService'
@@ -71,19 +71,21 @@ export class SyncService {
   }
 
   private static entitiesUpdateSchema = yup.array(
-    yup.object({
-      id: yup.string().required(),
-      updated: yup
-        .number()
-        .positive()
-        .notRequired(),
-      clientUpdated: yup
-        .number()
-        .positive()
-        .required(),
-      walletId: yup.string().required(),
-      encr: yup.string().required(),
-    }),
+    yup
+      .object({
+        id: requiredString,
+        updated: yup
+          .number()
+          .positive()
+          .notRequired(),
+        clientUpdated: yup
+          .number()
+          .positive()
+          .required(),
+        walletId: requiredString,
+        encr: requiredString,
+      })
+      .noUnknown(),
   )
   static async handleClientUpdates({
     userId,

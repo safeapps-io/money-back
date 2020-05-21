@@ -4,7 +4,7 @@ import { isBefore } from 'date-fns'
 import User, { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
 import { FormValidationError, AccessError } from '@/services/errors'
-import { runSchemaWithFormError } from '@/utils/yupHelpers'
+import { runSchemaWithFormError, requiredString } from '@/utils/yupHelpers'
 import { signJwt, verifyJwt } from '@/utils/crypto'
 import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from '../password'
@@ -28,7 +28,7 @@ const usernameScheme = yup
     .email()
     .notRequired()
     .nullable(),
-  inviteKeyScheme = yup.string().required()
+  inviteKeyScheme = requiredString
 
 export class UserService {
   private static async generateRefreshToken(data: {
@@ -109,11 +109,13 @@ export class UserService {
       })
   }
 
-  private static signupSchema = yup.object({
-    username: usernameScheme,
-    email: emailScheme,
-    password: passwordScheme,
-  })
+  private static signupSchema = yup
+    .object({
+      username: usernameScheme,
+      email: emailScheme,
+      password: passwordScheme,
+    })
+    .noUnknown()
   static async signup({
     username,
     email,
@@ -149,10 +151,12 @@ export class UserService {
     return { ...(await this.newSignIn({ userId: user.id, description })), user }
   }
 
-  private static signinSchema = yup.object({
-    usernameOrEmail: yup.string().required(),
-    password: yup.string().required(),
-  })
+  private static signinSchema = yup
+    .object({
+      usernameOrEmail: requiredString,
+      password: requiredString,
+    })
+    .noUnknown()
   static async signin({
     usernameOrEmail,
     password,
@@ -254,10 +258,12 @@ export class UserService {
     return res
   }
 
-  private static encrScheme = yup.object({
-    encr: yup.string().required(),
-    clientUpdated: yup.number().required(),
-  })
+  private static encrScheme = yup
+    .object({
+      encr: requiredString,
+      clientUpdated: yup.number().required(),
+    })
+    .noUnknown()
   static async incrementalUserUpdate({
     user,
     socketId,

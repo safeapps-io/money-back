@@ -23,15 +23,17 @@ export const optionalString = yup
   .nullable()
   .notRequired()
 
+export const requiredString = yup.string().required()
+
 export const transformValidationErrorToObject = (err: yup.ValidationError) =>
   err.inner.reduce((acc, curr) => {
     acc[curr.path] = curr.errors
     return acc
   }, {} as { [key: string]: string[] })
 
-export const runSchemaWithFormError = (schema: yup.Schema<any>, data: any) => {
+export function runSchemaWithFormError<T>(schema: yup.Schema<any>, data: T): T {
   try {
-    schema.validateSync(data, { abortEarly: false, stripUnknown: true })
+    return schema.validateSync(data, { abortEarly: false, stripUnknown: true })
   } catch (err) {
     throw new FormValidationError(
       'error',
