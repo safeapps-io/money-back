@@ -13,6 +13,7 @@ export type WalletIncomingMessages = {
 
 enum OTypes {
   walletsUpdate = 'walletsUpdate',
+  walletsDelete = 'walletsDelete',
 }
 
 type M = WSMiddleware<WalletIncomingMessages, DefaultWsState>
@@ -23,19 +24,28 @@ export class WalletWsMiddleware implements M {
     const wallets = await WalletService.getUserWallets(wsWrapped.state.user.id)
     wsWrapped.send({ type: OTypes.walletsUpdate, data: wallets })
 
-    WalletPubSubService.subscribeWalletUpdates({
-      socketId: wsWrapped.id,
-      userId: wsWrapped.state.user.id,
-      callback: wallet => {
-        wsWrapped.send({ type: OTypes.walletsUpdate, data: [wallet] })
-      },
-    })
+    return Promise.all([
+      WalletPubSubService.subscribeWalletUpdates({
+        socketId: wsWrapped.id,
+        userId: wsWrapped.state.user.id,
+        callback: wallet => {
+          wsWrapped.send({ type: OTypes.walletsUpdate, data: [wallet] })
+        },
+      }),
+      WalletPubSubService.subscribeWalletDeletes({
+        socketId: wsWrapped.id,
+        userId: wsWrapped.state.user.id,
+        callback: walletId => {
+          wsWrapped.send({ type: OTypes.walletsDelete, data: walletId })
+        },
+      }),
+    ])
   }
 
   static close: M['close'] = async wsWrapped => {
     if (!wsWrapped.state.user) return void 0
 
-    return WalletPubSubService.unsubscribeWalletUpdates({
+    return WalletPubSubService.unsubscribe({
       socketId: wsWrapped.id,
       userId: wsWrapped.state.user.id,
     })

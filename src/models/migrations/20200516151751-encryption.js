@@ -54,7 +54,7 @@ module.exports = {
         onDelete: 'CASCADE',
       },
       chest: { type: Sequelize.STRING(2048), allowNull: true },
-      inviteId: { type: Sequelize.STRING(32), allowNull: false },
+      inviteId: { type: Sequelize.STRING(32), allowNull: true },
       accessLevel: { type: Sequelize.STRING(16), allowNull: false },
     })
   },

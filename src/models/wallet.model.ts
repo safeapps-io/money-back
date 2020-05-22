@@ -74,4 +74,12 @@ export class WalletManager {
       where: { id, updated: { [Op.gt]: latestUpdated } },
     })
   }
+
+  static create() {
+    return Wallet.create()
+  }
+
+  static destroy(walletId: string) {
+    return Wallet.destroy({ where: { id: walletId } })
+  }
 }
