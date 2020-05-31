@@ -29,15 +29,29 @@ const mockRefreshTokenManager = {
   },
   mockUserPubSubService = {
     publishUserUpdates: jest.fn(),
-  }
+  },
+  mockWalletService = {
+    updateChests: jest.fn(),
+  },
+  mockGetTransaction = jest
+    .fn()
+    .mockImplementation(async (cb: () => Promise<void>) => {
+      try {
+        cb()
+      } catch (error) {
+        throw new Error()
+      }
+    })
 
 jest.mock('@/models/refreshToken.model', () => ({
   __esModule: true,
   RefreshTokenManager: mockRefreshTokenManager,
+  default: {},
 }))
 jest.mock('@/models/user.model', () => ({
   __esModule: true,
   UserManager: mockUserManager,
+  default: {},
 }))
 jest.mock('@/services/invite', () => ({
   __esModule: true,
@@ -46,6 +60,14 @@ jest.mock('@/services/invite', () => ({
 jest.mock('@/services/user/userPubSubService', () => ({
   __esModule: true,
   UserPubSubService: mockUserPubSubService,
+}))
+jest.mock('@/services/wallet/walletService', () => ({
+  __esModule: true,
+  WalletService: mockWalletService,
+}))
+jest.mock('@/models/setup', () => ({
+  __esModule: true,
+  getTransaction: mockGetTransaction,
 }))
 
 import {
@@ -73,7 +95,7 @@ describe('User Service', () => {
     }
 
   describe('signup', () => {
-    it('works', async () => {
+    it('works fine', async () => {
       const res = await UserService.signup(dummyUser)
 
       expect(res.refreshToken).toBeDefined()
@@ -138,7 +160,7 @@ describe('User Service', () => {
   })
 
   describe('sign in', () => {
-    it('works', async () => {
+    it('works fine', async () => {
       const username = 'normal',
         password = 'normal',
         description = '',
@@ -310,77 +332,81 @@ describe('User Service', () => {
       mockUserPubSubService.publishUserUpdates.mockClear()
     })
 
-    it('works', async () => {
-      const newUsername = 'newUsername'
+    describe('usual update', () => {
+      it('works fine', async () => {
+        const newUsername = 'newUsername'
 
-      const result = await UserService.updateUser(validatedUser as any, {
-        username: newUsername,
-        email: 'newEmail@asdfasdf.com',
+        const result = await UserService.updateUser(validatedUser as any, {
+          username: newUsername,
+          email: 'newEmail@asdfasdf.com',
+        })
+        expect(mockUserManager.update.mock.calls.length).toBe(1)
+        expect(result.email).toBeUndefined()
+        expect(result.username).toBe(newUsername)
       })
-      expect(mockUserManager.update.mock.calls.length).toBe(1)
-      expect(result.email).toBeUndefined()
-      expect(result.username).toBe(newUsername)
-    })
 
-    it('publishes user to redis', async () => {
-      const newUsername = 'newUsername'
+      it('publishes user to redis', async () => {
+        const newUsername = 'newUsername'
 
-      await UserService.updateUser(validatedUser as any, {
-        username: newUsername,
-        email: 'newEmail@asdfasdf.com',
+        await UserService.updateUser(validatedUser as any, {
+          username: newUsername,
+          email: 'newEmail@asdfasdf.com',
+        })
+        expect(mockUserPubSubService.publishUserUpdates.mock.calls.length).toBe(
+          1,
+        )
+        const {
+          user: publishedUser,
+        } = mockUserPubSubService.publishUserUpdates.mock.calls[0][0]
+        expect(validatedUser.id).toEqual(publishedUser.id)
       })
-      expect(mockUserPubSubService.publishUserUpdates.mock.calls.length).toBe(1)
-      const {
-        user: publishedUser,
-      } = mockUserPubSubService.publishUserUpdates.mock.calls[0][0]
-      expect(validatedUser.id).toEqual(publishedUser.id)
-    })
 
-    it('throws if removing email', async () => {
-      try {
-        await UserService.updateUser(validatedUser as any, {
-          username: 'newUsername',
-        })
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-        expect(error.message).toBe(UserServiceFormErrors.cantDeleteEmail)
-      }
-    })
+      it('throws if removing email', async () => {
+        try {
+          await UserService.updateUser(validatedUser as any, {
+            username: 'newUsername',
+          })
+          throw new Error()
+        } catch (error) {
+          expect(error).toBeInstanceOf(FormValidationError)
+          expect(error.message).toBe(UserServiceFormErrors.cantDeleteEmail)
+        }
+      })
 
-    it('throws if bad email or username', async () => {
-      expect(
-        UserService.updateUser({} as any, {
-          username: 'new',
-          email: 'new',
-        }),
-      ).rejects.toThrowError(FormValidationError)
-    })
+      it('throws if bad email or username', async () => {
+        expect(
+          UserService.updateUser({} as any, {
+            username: 'new',
+            email: 'new',
+          }),
+        ).rejects.toThrowError(FormValidationError)
+      })
 
-    it('throws if taken username', async () => {
-      mockUserManager.isUsernameTaken.mockImplementationOnce(async () => true)
-      try {
-        await UserService.updateUser(validatedUser as any, {
-          username: 'newUsername',
-          email: validatedUser.email,
-        })
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-        expect(error.message).toBe(UserServiceFormErrors.usernameTaken)
-      }
+      it('throws if taken username', async () => {
+        mockUserManager.isUsernameTaken.mockImplementationOnce(async () => true)
+        try {
+          await UserService.updateUser(validatedUser as any, {
+            username: 'newUsername',
+            email: validatedUser.email,
+          })
+          throw new Error()
+        } catch (error) {
+          expect(error).toBeInstanceOf(FormValidationError)
+          expect(error.message).toBe(UserServiceFormErrors.usernameTaken)
+        }
 
-      mockUserManager.isEmailTaken.mockImplementationOnce(async () => true)
-      try {
-        await UserService.updateUser({} as any, {
-          username: 'newUsername',
-          email: 'qwer@qwer.com',
-        })
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-        expect(error.message).toBe(UserServiceFormErrors.emailTaken)
-      }
+        mockUserManager.isEmailTaken.mockImplementationOnce(async () => true)
+        try {
+          await UserService.updateUser({} as any, {
+            username: 'newUsername',
+            email: 'qwer@qwer.com',
+          })
+          throw new Error()
+        } catch (error) {
+          expect(error).toBeInstanceOf(FormValidationError)
+          expect(error.message).toBe(UserServiceFormErrors.emailTaken)
+        }
+      })
     })
 
     describe('incremental user update', () => {
@@ -453,20 +479,49 @@ describe('User Service', () => {
       })
     })
 
-    it('updates invite key', async () => {
+    describe('master password update', () => {
       const inviteKey = 'hey',
-        user = {} as any
+        user = validatedUser as any,
+        chests = [] as any[]
 
-      try {
-        await UserService.updateUser(user, { inviteKey: null as any })
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-      }
+      it('works fine', async () => {
+        await UserService.updateMasterPassword({
+          user,
+          inviteKey,
+          chests,
+        })
 
-      await UserService.updateUser(user, { inviteKey })
-      expect(mockUserManager.update.mock.calls.length).toBe(1)
-      expect(mockUserManager.update.mock.calls[0][1].inviteKey).toBe(inviteKey)
+        expect(mockGetTransaction.mock.calls.length).toBe(1)
+
+        expect(mockUserManager.update.mock.calls.length).toBe(1)
+        const [
+          _userId,
+          { inviteKey: _inviteKey },
+        ] = mockUserManager.update.mock.calls[0]
+        expect(_userId).toBe(user.id)
+        expect(_inviteKey).toBe(inviteKey)
+        expect(mockWalletService.updateChests.mock.calls.length).toBe(1)
+
+        const {
+          userId: __userId,
+          chests: _chests,
+        } = mockWalletService.updateChests.mock.calls[0][0]
+        expect(__userId).toBe(user.id)
+        expect(_chests).toEqual(chests)
+      })
+
+      it('throws if invalid string', async () => {
+        try {
+          await UserService.updateMasterPassword({
+            user,
+            inviteKey: null as any,
+            chests,
+          })
+          throw new Error()
+        } catch (error) {
+          expect(error).toBeInstanceOf(FormValidationError)
+        }
+      })
     })
   })
 })

@@ -50,8 +50,12 @@ export class WalletManager {
   static byId(id: string) {
     return Wallet.findOne({
       where: { id },
-      include: [{ model: User }],
+      include: [User],
     })
+  }
+
+  static byIds(ids: string[]) {
+    return Wallet.findAll({ where: { id: { [Op.in]: ids } }, include: [User] })
   }
 
   static async update(id: string, wallet: Partial<Wallet>) {

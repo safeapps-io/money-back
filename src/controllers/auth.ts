@@ -127,13 +127,18 @@ authRouter.post(
 )
 
 authRouter.post(
-  '/updateInviteKey',
+  '/updateMasterPassword',
   isRestAuth,
   ash(async (req, res) => {
-    const body = req.body as {
+    const { inviteKey, chests } = req.body as {
       inviteKey: string
+      chests: { walletId: string; chest: string }[]
     }
-    const user = await UserService.updateUser(req.user, body)
+    const user = await UserService.updateMasterPassword({
+      user: req.user,
+      inviteKey,
+      chests,
+    })
 
     res.json(user)
   }),

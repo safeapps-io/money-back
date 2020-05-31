@@ -78,12 +78,13 @@ export class WalletAccessManager {
     })
   }
 
-  static updateChest(data: {
-    walletId: string
-    userId: string
-    chest: string
-  }) {
-    const { chest, ...filters } = data
-    return WalletAccess.update({ chest }, { where: { ...filters } })
+  static updateChests(
+    data: {
+      id: string
+      chest: string
+    }[],
+  ) {
+    // Bulk create works as bulk update by key
+    return WalletAccess.bulkCreate(data, { returning: true })
   }
 }

@@ -1,15 +1,17 @@
 import * as yup from 'yup'
 import { isBefore } from 'date-fns'
 
+import { getTransaction } from '@/models/setup'
 import User, { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
-import { FormValidationError, AccessError } from '@/services/errors'
+import { FormValidationError } from '@/services/errors'
 import { runSchemaWithFormError, requiredString } from '@/utils/yupHelpers'
 import { signJwt, verifyJwt } from '@/utils/crypto'
 import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from '../password'
 import { InviteService } from '../invite'
 import { UserPubSubService } from './userPubSubService'
+import { WalletService } from '../wallet/walletService'
 
 export const jwtSubject = 'sess' // session
 
@@ -27,8 +29,7 @@ const usernameScheme = yup
     .string()
     .email()
     .notRequired()
-    .nullable(),
-  inviteKeyScheme = requiredString
+    .nullable()
 
 export class UserService {
   private static async generateRefreshToken(data: {
@@ -220,18 +221,16 @@ export class UserService {
       socketId,
       username,
       email,
-      inviteKey,
     }: {
       socketId?: string
       username?: string
       email?: string
-      inviteKey?: string
     },
   ) {
     if (user.email && !email)
       throw new FormValidationError(UserServiceFormErrors.cantDeleteEmail)
 
-    let updateFields = {} as Partial<User>
+    const updateFields = {} as Partial<User>
     if (typeof username !== 'undefined') {
       runSchemaWithFormError(usernameScheme, username)
       await this.checkCredentialsAvailability({ username, excludeId: user.id })
@@ -241,11 +240,6 @@ export class UserService {
     if (typeof email !== 'undefined') {
       runSchemaWithFormError(emailScheme, email)
       await ValidateEmailService.triggerEmailValidation(user, email)
-    }
-
-    if (typeof inviteKey !== 'undefined') {
-      runSchemaWithFormError(inviteKeyScheme, inviteKey)
-      updateFields.inviteKey = inviteKey
     }
 
     const res = await UserManager.update(user.id, updateFields)
@@ -285,10 +279,20 @@ export class UserService {
     return res
   }
 
-  static async fetchUserById(userId: string) {
-    const res = await UserManager.byId(userId)
-    if (!res) throw new AccessError()
-    return res
+  static async updateMasterPassword({
+    user,
+    inviteKey,
+    chests,
+  }: {
+    user: User
+    inviteKey: string
+    chests: { walletId: string; chest: string }[]
+  }) {
+    runSchemaWithFormError(requiredString, inviteKey)
+    getTransaction(async () => {
+      await UserManager.update(user.id, { inviteKey })
+      await WalletService.updateChests({ userId: user.id, chests })
+    })
   }
 }
 

@@ -6,6 +6,8 @@ const mockWalletManager = {
       updated: new Date(),
       users: [],
     })),
+    byIds: jest.fn(),
+    byUserId: jest.fn(),
     byIdAndUserId: jest.fn(),
     create: jest
       .fn()
@@ -16,6 +18,7 @@ const mockWalletManager = {
     createOwner: jest.fn(),
     addUser: jest.fn(),
     removeUser: jest.fn(),
+    updateChests: jest.fn(),
   },
   mockWalletPubSubService = {
     publishWalletDestroy: jest.fn(),
@@ -76,7 +79,7 @@ describe('Wallet Service', () => {
   })
 
   describe('create', () => {
-    it('works', async () => {
+    it('works fine', async () => {
       await WalletService.create(userId, chest)
 
       expect(mockWalletManager.create.mock.calls.length).toBe(1)
@@ -108,7 +111,7 @@ describe('Wallet Service', () => {
   })
 
   describe('destroy', () => {
-    it('works', async () => {
+    it('works fine', async () => {
       mockWalletManager.byId.mockImplementation(async id => ({
         id,
         updated: new Date(),
@@ -173,7 +176,7 @@ describe('Wallet Service', () => {
 
     mockWalletManager.byId.mockImplementation(async (id: any) => ({ id }))
 
-    it('works', async () => {
+    it('works fine', async () => {
       await WalletService.addUser({
         initiatorId,
         walletId,
@@ -257,97 +260,180 @@ describe('Wallet Service', () => {
       ).toBe(0)
     })
   })
-})
 
-describe('remove user', () => {
-  const initiatorId = userId
+  describe('remove user', () => {
+    const initiatorId = userId
 
-  beforeEach(() => {
-    mockClear(mockWalletAccessManager)
-    mockClear(mockWalletManager)
-    mockClear(mockWalletPubSubService)
-  })
-
-  it('works if owner removes someone', async () => {
-    await WalletService.removeUser({ initiatorId, walletId, userToRemoveId })
-
-    expect(mockWalletAccessManager.removeUser.mock.calls.length).toBe(1)
-    const {
-      walletId: _walletId,
-      userId: _userId,
-    } = mockWalletAccessManager.removeUser.mock.calls[0][0]
-    expect(_walletId).toBe(walletId)
-    expect(_userId).toBe(userToRemoveId)
-
-    expect(mockWalletPubSubService.publishWalletUpdates.mock.calls.length).toBe(
-      1,
-    )
-    const {
-      wallet: _wallet,
-    } = mockWalletPubSubService.publishWalletUpdates.mock.calls[0][0]
-    expect(_wallet.id).toBe(walletId)
-  })
-
-  it('works if someone removes self', async () => {
-    await WalletService.removeUser({
-      initiatorId: userToRemoveId,
-      walletId,
-      userToRemoveId,
+    beforeEach(() => {
+      mockClear(mockWalletAccessManager)
+      mockClear(mockWalletManager)
+      mockClear(mockWalletPubSubService)
     })
 
-    expect(mockWalletAccessManager.removeUser.mock.calls.length).toBe(1)
-    const {
-      walletId: _walletId,
-      userId: _userId,
-    } = mockWalletAccessManager.removeUser.mock.calls[0][0]
-    expect(_walletId).toBe(walletId)
-    expect(_userId).toBe(userToRemoveId)
+    it('works if owner removes someone', async () => {
+      await WalletService.removeUser({ initiatorId, walletId, userToRemoveId })
 
-    expect(mockWalletPubSubService.publishWalletUpdates.mock.calls.length).toBe(
-      1,
-    )
-    const {
-      wallet: _wallet,
-    } = mockWalletPubSubService.publishWalletUpdates.mock.calls[0][0]
-    expect(_wallet.id).toBe(walletId)
-  })
+      expect(mockWalletAccessManager.removeUser.mock.calls.length).toBe(1)
+      const {
+        walletId: _walletId,
+        userId: _userId,
+      } = mockWalletAccessManager.removeUser.mock.calls[0][0]
+      expect(_walletId).toBe(walletId)
+      expect(_userId).toBe(userToRemoveId)
 
-  it('throws if invalid data', async () => {
-    try {
-      await WalletService.removeUser({
-        initiatorId: null,
-        walletId: null,
-        userToRemoveId: null,
-      } as any)
-      throw new Error()
-    } catch (error) {
-      expect(error).toBeInstanceOf(FormValidationError)
-    }
-  })
+      expect(
+        mockWalletPubSubService.publishWalletUpdates.mock.calls.length,
+      ).toBe(1)
+      const {
+        wallet: _wallet,
+      } = mockWalletPubSubService.publishWalletUpdates.mock.calls[0][0]
+      expect(_wallet.id).toBe(walletId)
+    })
 
-  it('throws if not owner tries to remove user', async () => {
-    try {
+    it('works if someone removes self', async () => {
       await WalletService.removeUser({
         initiatorId: userToRemoveId,
         walletId,
-        userToRemoveId: userId,
-      } as any)
-      throw new Error()
-    } catch (error) {
-      expect(error).toBeInstanceOf(AccessError)
-    }
+        userToRemoveId,
+      })
+
+      expect(mockWalletAccessManager.removeUser.mock.calls.length).toBe(1)
+      const {
+        walletId: _walletId,
+        userId: _userId,
+      } = mockWalletAccessManager.removeUser.mock.calls[0][0]
+      expect(_walletId).toBe(walletId)
+      expect(_userId).toBe(userToRemoveId)
+
+      expect(
+        mockWalletPubSubService.publishWalletUpdates.mock.calls.length,
+      ).toBe(1)
+      const {
+        wallet: _wallet,
+      } = mockWalletPubSubService.publishWalletUpdates.mock.calls[0][0]
+      expect(_wallet.id).toBe(walletId)
+    })
+
+    it('throws if invalid data', async () => {
+      try {
+        await WalletService.removeUser({
+          initiatorId: null,
+          walletId: null,
+          userToRemoveId: null,
+        } as any)
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(FormValidationError)
+      }
+    })
+
+    it('throws if not owner tries to remove user', async () => {
+      try {
+        await WalletService.removeUser({
+          initiatorId: userToRemoveId,
+          walletId,
+          userToRemoveId: userId,
+        } as any)
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(AccessError)
+      }
+    })
+
+    it('throws if owner tries to remove self', async () => {
+      try {
+        await WalletService.removeUser({
+          initiatorId: userToRemoveId,
+          walletId,
+          userToRemoveId: 'werwer',
+        } as any)
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(AccessError)
+      }
+    })
   })
 
-  it('throws if owner tries to remove self', async () => {
-    try {
-      await WalletService.removeUser({
-        initiatorId: userToRemoveId,
-        walletId,
-        userToRemoveId: 'werwer',
-      } as any)
-      throw new Error()
-    } catch (error) {
-      expect(error).toBeInstanceOf(AccessError)
-    }
+  describe('update chests', () => {
+    const [walletId1, walletId2] = ['1', '2'],
+      [waWalletId1, waWalletId2] = ['1234', 'qwerqwer'],
+      chest = 'asd',
+      constructWallet = (userId: string, walletId: string, waId: string) => ({
+        id: walletId,
+        users: [
+          { id: userId, WalletAccess: { id: waId } },
+          { id: 'userIdOther', WalletAccess: { id: nanoid() } },
+        ],
+      })
+
+    it('works fine', async () => {
+      mockWalletManager.byUserId.mockImplementation(async () => [
+        constructWallet(userId, walletId1, waWalletId1),
+        constructWallet(userId, walletId2, waWalletId2),
+      ])
+      mockWalletManager.byIds.mockImplementation(async () => [
+        constructWallet(userId, walletId1, waWalletId1),
+        constructWallet(userId, walletId2, waWalletId2),
+      ])
+
+      await WalletService.updateChests({
+        userId,
+        chests: [
+          { walletId: walletId1, chest },
+          { walletId: walletId2, chest },
+        ],
+      })
+
+      expect(mockWalletAccessManager.updateChests.mock.calls.length).toBe(1)
+      expect(mockWalletAccessManager.updateChests.mock.calls[0][0]).toEqual([
+        { id: waWalletId1, chest },
+        { id: waWalletId2, chest },
+      ])
+
+      expect(
+        mockWalletPubSubService.publishWalletUpdates.mock.calls.length,
+      ).toBe(2)
+    })
+
+    it('throws if user wallets and incoming data doest are not fully represented', async () => {
+      mockWalletManager.byUserId.mockImplementation(async () => [
+        constructWallet(userId, walletId1, waWalletId1),
+      ])
+
+      try {
+        await WalletService.updateChests({
+          userId,
+          chests: [
+            { walletId: walletId1, chest },
+            { walletId: walletId2, chest },
+          ],
+        })
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(AccessError)
+      }
+
+      try {
+        await WalletService.updateChests({
+          userId,
+          chests: [{ walletId: 'newWalletId', chest }],
+        })
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(AccessError)
+      }
+    })
+
+    it('throws if data is invalid', async () => {
+      try {
+        await WalletService.updateChests({
+          userId: null as any,
+          chests: [{ walletId: null as any, chest: null as any }],
+        })
+        throw new Error()
+      } catch (error) {
+        expect(error).toBeInstanceOf(FormValidationError)
+      }
+    })
   })
 })

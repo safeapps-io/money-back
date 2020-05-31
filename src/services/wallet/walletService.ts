@@ -181,26 +181,50 @@ export class WalletService {
     return updatedWallet
   }
 
-  private static updateChestScheme = yup
-    .object({
-      userId: requiredString,
-      walletId: requiredString,
-      chest: requiredString,
-    })
-    .noUnknown()
-  static async updateChest(data: {
+  private static updateChestsScheme = yup.array(
+    yup
+      .object({
+        walletId: requiredString,
+        chest: requiredString,
+      })
+      .noUnknown(),
+  )
+  static async updateChests({
+    userId,
+    chests,
+  }: {
     userId: string
-    walletId: string
-    chest: string
+    chests: { walletId: string; chest: string }[]
   }) {
-    runSchemaWithFormError(this.updateChestScheme, data)
-    const { userId, walletId } = data
+    runSchemaWithFormError(this.updateChestsScheme, chests)
 
-    await this.getWalletByUserAndId({ userId, walletId })
-    await WalletAccessManager.updateChest(data)
+    const userWallets = await this.getUserWallets(userId),
+      userWalletIds = userWallets.map(wall => wall.id),
+      allChestsRepresented =
+        // In case user doesn't update all the chests at once for some reason
+        chests.length === userWalletIds.length &&
+        // Authorization
+        chests
+          .map(chest => userWalletIds.includes(chest.walletId))
+          .every(Boolean)
 
-    const wallet = await this.getWalletByUserAndId({ userId, walletId })
+    if (!allChestsRepresented) throw new AccessError()
 
-    return WalletPubSubService.publishWalletUpdates({ wallet })
+    const walletAccessIdsAndChests = userWallets.map(wall => {
+      const userWa = wall.users.find(u => u.id === userId)
+
+      return {
+        id: userWa!.WalletAccess.id,
+        chest: chests.find(chest => chest.walletId === wall.id)!.chest,
+      }
+    })
+    await WalletAccessManager.updateChests(walletAccessIdsAndChests)
+
+    const refetchedWallets = await WalletManager.byIds(userWalletIds)
+    return Promise.all(
+      refetchedWallets.map(wallet =>
+        WalletPubSubService.publishWalletUpdates({ wallet }),
+      ),
+    )
   }
 }
