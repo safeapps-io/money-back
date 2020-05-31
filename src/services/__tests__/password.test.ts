@@ -30,7 +30,7 @@ describe('Password service', () => {
 
     beforeEach(() => mockUserManager.changeUserPassword.mockClear())
 
-    it('works', async () => {
+    it('works fine', async () => {
       const hashedPass = await PasswordService.hashPassword(password)
 
       await PasswordService.updatePassword({

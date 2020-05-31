@@ -4,7 +4,7 @@ import nanoid from 'nanoid'
 import chunk from '@/utils/chunk'
 
 // TODO: Mama, I failed. Make this all type strict… but not like this. Too much `any`
-export type WSMiddleware<MessageMap, State> = {
+export type WSMiddleware<MessageMap, State = {}> = {
   open?: (ws: WSWrapper<State>) => Promise<void>
   close?: (ws: WSWrapper<State>) => Promise<void>
   bulk?: (data: {

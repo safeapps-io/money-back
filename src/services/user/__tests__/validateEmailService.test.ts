@@ -82,7 +82,7 @@ describe('Email validation', () => {
       }))
     })
 
-    it('works', async () => {
+    it('works fine', async () => {
       await ValidateEmailService.triggerEmailValidation(user, newEmail)
       const { token } = mockMessageService.sendValidationEmail.mock.calls[0][0]
 

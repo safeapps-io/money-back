@@ -48,6 +48,7 @@ export class UserWsMiddleware implements M {
     const res = await UserService.incrementalUserUpdate({
       user: wsWrapped.state.user,
       data: message,
+      socketId: wsWrapped.id,
     })
     wsWrapped.send({ type: OTypes.userData, data: res })
 
