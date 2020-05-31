@@ -1,6 +1,5 @@
 import { redisPubSub } from '@/services/redis/pubSub'
 import Wallet from '@/models/wallet.model'
-import { WalletService } from './walletService'
 
 export class WalletPubSubService {
   /**
@@ -19,17 +18,18 @@ export class WalletPubSubService {
     socketId?: string
     wallet: Wallet
   }) {
-    const userIds = await WalletService.getWalletUserIds(wallet.id)
-    if (!userIds) return
+    if (!wallet.users)
+      throw new Error('You need to prefetch User model for WalletPubSubService')
 
-    const promises = userIds.map(id =>
-      redisPubSub.publish({
-        channel: this.channelWalletUpdates(id),
-        // Some updates come from REST api
-        publisherId: socketId || '',
-        data: wallet,
-      }),
-    )
+    const userIds = wallet.users.map(data => data.id),
+      promises = userIds.map(id =>
+        redisPubSub.publish({
+          channel: this.channelWalletUpdates(id),
+          // Some updates come from REST api
+          publisherId: socketId || '',
+          data: wallet,
+        }),
+      )
 
     return Promise.all(promises)
   }
