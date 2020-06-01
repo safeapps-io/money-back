@@ -20,7 +20,7 @@ import {
   PasswordService,
   PasswordServiceFormErrors,
   jwtSubject,
-} from '../password'
+} from '../passwordService'
 import { signJwt } from '@/utils/crypto'
 import { SignOptions } from 'jsonwebtoken'
 

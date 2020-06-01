@@ -5,8 +5,8 @@ import { isRestAuth } from '@/middlewares/isAuth'
 import { UserService } from '@/services/user/userService'
 import { getDeviceDescription } from '@/services/deviceDescription'
 import { ValidateEmailService } from '@/services/user/validateEmailService'
-import { PasswordService } from '@/services/password'
-import { InviteService } from '@/services/invite'
+import { PasswordService } from '@/services/user/passwordService'
+import { InviteService } from '@/services/invite/inviteService'
 
 const authRouter = Router()
 

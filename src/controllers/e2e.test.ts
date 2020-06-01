@@ -4,7 +4,7 @@ import nanoid from 'nanoid'
 import appPromise from '@/app'
 import { UserServiceFormErrors } from '@/services/user/userService'
 import { UserManager } from '@/models/user.model'
-import { InviteService } from '@/services/invite'
+import { InviteService } from '@/services/invite/inviteService'
 
 describe('Error reporting', () => {
   let _invite: string

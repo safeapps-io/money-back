@@ -2,10 +2,12 @@ import argon2 from 'argon2'
 import * as yup from 'yup'
 
 import { runSchemaWithFormError } from '@/utils/yupHelpers'
-import User, { UserManager } from '@/models/user.model'
-import { FormValidationError } from '@/services/errors'
 import { signJwt, verifyJwt } from '@/utils/crypto'
-import { MessageService } from './message'
+
+import User, { UserManager } from '@/models/user.model'
+
+import { FormValidationError } from '@/services/errors'
+import { MessageService } from '../message'
 
 export const passwordScheme = yup
   .string()

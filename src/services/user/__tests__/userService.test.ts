@@ -53,7 +53,7 @@ jest.mock('@/models/user.model', () => ({
   UserManager: mockUserManager,
   default: {},
 }))
-jest.mock('@/services/invite', () => ({
+jest.mock('@/services/invite/inviteService', () => ({
   __esModule: true,
   InviteService: mockInviteService,
 }))
@@ -79,7 +79,7 @@ import {
   jwtSubject,
 } from '../userService'
 import { FormValidationError } from '@/services/errors'
-import { PasswordServiceFormErrors } from '../../password'
+import { PasswordServiceFormErrors } from '../passwordService'
 
 describe('User Service', () => {
   const dummyUser = {
