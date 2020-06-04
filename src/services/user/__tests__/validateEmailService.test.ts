@@ -5,7 +5,7 @@ const mockMessageService = {
     isEmailTaken: jest.fn(),
     update: jest.fn(),
   },
-  mockUserPubSubService = {
+  mockUserUpdatesPubSubService = {
     publishUserUpdates: jest.fn(),
   }
 
@@ -17,9 +17,9 @@ jest.mock('@/models/user.model', () => ({
   __esModule: true,
   UserManager: mockUserManager,
 }))
-jest.mock('@/services/user/userPubSubService', () => ({
+jest.mock('@/services/user/userUpdatesPubSubService', () => ({
   __esModule: true,
-  UserPubSubService: mockUserPubSubService,
+  UserUpdatesPubSubService: mockUserUpdatesPubSubService,
 }))
 
 import {
@@ -75,7 +75,7 @@ describe('Email validation', () => {
 
   describe('update', () => {
     beforeEach(() => {
-      mockUserPubSubService.publishUserUpdates.mockClear()
+      mockUserUpdatesPubSubService.publishUserUpdates.mockClear()
       mockUserManager.update.mockImplementation(async (_, data) => ({
         ...user,
         ...data,
@@ -99,10 +99,12 @@ describe('Email validation', () => {
 
       await ValidateEmailService.updateEmail(token)
 
-      expect(mockUserPubSubService.publishUserUpdates.mock.calls.length).toBe(1)
+      expect(
+        mockUserUpdatesPubSubService.publishUserUpdates.mock.calls.length,
+      ).toBe(1)
       const {
         user: publishedUser,
-      } = mockUserPubSubService.publishUserUpdates.mock.calls[0][0]
+      } = mockUserUpdatesPubSubService.publishUserUpdates.mock.calls[0][0]
       expect(user.id).toEqual(publishedUser.id)
     })
 

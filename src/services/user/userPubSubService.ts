@@ -1,43 +1,68 @@
 import { redisPubSub } from '@/services/redis/pubSub'
-import User from '@/models/user.model'
 
+export enum UserPubSubMessageTypes {
+  // UserUpdatesPubSubService
+  userUpdates = 'userUpdates',
+
+  // WalletPubSubService
+  walletUpdate = 'walletUpdate',
+  walletDestroy = 'walletDestroy',
+}
+
+/**
+ * Common pubsub service, that lets you subscribe as User and send messages to User.
+ * Has no opinion or knowledge on message types or data being published. Made just to limit
+ * the amount of channels in Redis at the same time.
+ *
+ * If you want to use it you need to define all the message types here in the enum.
+ */
 export class UserPubSubService {
-  private static channelUserUpdates(userId: string) {
-    return `user-u--${userId}`
+  private static getUserChannel(userId: string) {
+    return `user--${userId}`
   }
 
-  static async publishUserUpdates({
+  /**
+   * Publish update for a specific user
+   * @param param0
+   * @param param0.userId User that will get the message
+   * @param param0.type Message type
+   * @param param0.data Data to send
+   */
+  static async publishForUser({
+    userId,
     socketId,
-    user,
+    data,
+    type,
   }: {
+    userId: string
     socketId?: string
-    user: User
+    type: UserPubSubMessageTypes
+    data: Object
   }) {
     return redisPubSub.publish({
-      channel: this.channelUserUpdates(user.id),
-      // Some of user mutation happens outside of websocket, so we make socket an optional thing
+      channel: this.getUserChannel(userId),
       publisherId: socketId || '',
-      data: user,
+      data: { type, data },
     })
   }
 
-  static subscribeUserUpdates({
+  static subscribeSocketForUser({
     socketId,
     userId,
     callback,
   }: {
     socketId: string
     userId: string
-    callback: (data: User) => void
+    callback: (data: { type: UserPubSubMessageTypes; data: Object }) => void
   }) {
     return redisPubSub.subscribe({
-      channels: [this.channelUserUpdates(userId)],
+      channels: [this.getUserChannel(userId)],
       subscriberId: socketId,
       callback,
     })
   }
 
-  static unsubscribeUserUpdates({
+  static unsubscribeSocketForUser({
     socketId,
     userId,
   }: {
@@ -45,7 +70,7 @@ export class UserPubSubService {
     userId: string
   }) {
     return redisPubSub.unsubscribe({
-      channels: [this.channelUserUpdates(userId)],
+      channels: [this.getUserChannel(userId)],
       subscriberId: socketId,
     })
   }

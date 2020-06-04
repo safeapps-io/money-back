@@ -1,16 +1,11 @@
-import { redisPubSub } from '@/services/redis/pubSub'
 import Wallet from '@/models/wallet.model'
 
-export class WalletPubSubService {
-  /**
-   *
-   * Wallet Updates
-   *
-   */
-  private static channelWalletUpdates(userId: string) {
-    return `wal-u--${userId}`
-  }
+import {
+  UserPubSubService,
+  UserPubSubMessageTypes,
+} from '@/services/user/userPubSubService'
 
+export class WalletPubSubService {
   static async publishWalletUpdates({
     socketId,
     wallet,
@@ -22,76 +17,16 @@ export class WalletPubSubService {
       throw new Error('You need to prefetch User model for WalletPubSubService')
 
     const userIds = wallet.users.map(data => data.id),
-      promises = userIds.map(id =>
-        redisPubSub.publish({
-          channel: this.channelWalletUpdates(id),
-          // Some updates come from REST api
-          publisherId: socketId || '',
+      promises = userIds.map(userId =>
+        UserPubSubService.publishForUser({
+          userId,
+          socketId,
+          type: UserPubSubMessageTypes.walletUpdate,
           data: wallet,
         }),
       )
 
     return Promise.all(promises)
-  }
-
-  static subscribeWalletUpdates({
-    socketId,
-    userId,
-    callback,
-  }: {
-    socketId: string
-    userId: string
-    callback: (data: Wallet) => void
-  }) {
-    return redisPubSub.subscribe({
-      channels: [this.channelWalletUpdates(userId)],
-      subscriberId: socketId,
-      callback,
-    })
-  }
-
-  /**
-   * Since it is called when socket is closed we unsubscribe user from everything at once.
-   */
-  static unsubscribe({
-    socketId,
-    userId,
-  }: {
-    socketId: string
-    userId: string
-  }) {
-    return redisPubSub.unsubscribe({
-      channels: [
-        this.channelWalletUpdates(userId),
-        this.channelWalletDeletes(userId),
-      ],
-      subscriberId: socketId,
-    })
-  }
-
-  /**
-   *
-   * Wallet Destroys
-   *
-   */
-  private static channelWalletDeletes(userId: string) {
-    return `wal-d--${userId}`
-  }
-
-  static subscribeWalletDeletes({
-    socketId,
-    userId,
-    callback,
-  }: {
-    socketId: string
-    userId: string
-    callback: (data: Wallet) => void
-  }) {
-    return redisPubSub.subscribe({
-      channels: [this.channelWalletDeletes(userId)],
-      subscriberId: socketId,
-      callback,
-    })
   }
 
   static publishWalletDestroy({
@@ -101,10 +36,10 @@ export class WalletPubSubService {
     walletId: string
     connectedUserIds: string[]
   }) {
-    const promises = connectedUserIds.map(id =>
-      redisPubSub.publish({
-        channel: this.channelWalletUpdates(id),
-        publisherId: '',
+    const promises = connectedUserIds.map(userId =>
+      UserPubSubService.publishForUser({
+        userId,
+        type: UserPubSubMessageTypes.walletDestroy,
         data: walletId,
       }),
     )

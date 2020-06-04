@@ -14,7 +14,7 @@ import { WalletService } from '@/services/wallet/walletService'
 
 import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from './passwordService'
-import { UserPubSubService } from './userPubSubService'
+import { UserUpdatesPubSubService } from './userUpdatesPubSubService'
 
 export const jwtSubject = 'sess' // session
 
@@ -248,7 +248,7 @@ export class UserService {
     const res = await UserManager.update(user.id, updateFields)
 
     // We plan to use this method outside of websocket connection, so no socket id here is ok
-    await UserPubSubService.publishUserUpdates({
+    await UserUpdatesPubSubService.publishUserUpdates({
       user: res,
       socketId,
     })
@@ -278,7 +278,7 @@ export class UserService {
     if (data.clientUpdated < user.updated.getTime()) return user
 
     const res = await UserManager.update(user.id, { encr: data.encr })
-    await UserPubSubService.publishUserUpdates({ user: res, socketId })
+    await UserUpdatesPubSubService.publishUserUpdates({ user: res, socketId })
     return res
   }
 

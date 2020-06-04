@@ -9,7 +9,7 @@ const getClient = () =>
   })
 
 export let subscriptionConnection: Redis.Redis, connection: Redis.Redis
-export const initRedis = () => {
+export const initRedisConnection = () => {
   connection = getClient()
   subscriptionConnection = getClient()
 }

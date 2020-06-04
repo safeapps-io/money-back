@@ -16,11 +16,13 @@ import logger from '@/middlewares/logger'
 import sequelize from '@/models/setup'
 import router from '@/router'
 import delayOnDevMiddleware from '@/middlewares/delayOnDev'
-import { initRedis } from '@/services/redis/connection'
+import { initRedisConnection } from '@/services/redis/connection'
+import { redisPubSub } from './services/redis/pubSub'
 
 const constructApp = async () => {
   await sequelize.sync()
-  initRedis()
+  initRedisConnection()
+  redisPubSub.init()
 
   app
     .set('x-powered-by', false)

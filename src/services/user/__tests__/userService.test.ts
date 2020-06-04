@@ -27,7 +27,7 @@ const mockRefreshTokenManager = {
   mockInviteService = {
     getUserIdFromInvite: jest.fn(),
   },
-  mockUserPubSubService = {
+  mockUserUpdatesPubSubService = {
     publishUserUpdates: jest.fn(),
   },
   mockWalletService = {
@@ -57,9 +57,9 @@ jest.mock('@/services/invite/inviteService', () => ({
   __esModule: true,
   InviteService: mockInviteService,
 }))
-jest.mock('@/services/user/userPubSubService', () => ({
+jest.mock('@/services/user/userUpdatesPubSubService', () => ({
   __esModule: true,
-  UserPubSubService: mockUserPubSubService,
+  UserUpdatesPubSubService: mockUserUpdatesPubSubService,
 }))
 jest.mock('@/services/wallet/walletService', () => ({
   __esModule: true,
@@ -329,7 +329,7 @@ describe('User Service', () => {
       mockUserManager.update.mockClear()
       mockUserManager.isUsernameTaken.mockClear()
       mockUserManager.isEmailTaken.mockClear()
-      mockUserPubSubService.publishUserUpdates.mockClear()
+      mockUserUpdatesPubSubService.publishUserUpdates.mockClear()
     })
 
     describe('usual update', () => {
@@ -352,12 +352,12 @@ describe('User Service', () => {
           username: newUsername,
           email: 'newEmail@asdfasdf.com',
         })
-        expect(mockUserPubSubService.publishUserUpdates.mock.calls.length).toBe(
-          1,
-        )
+        expect(
+          mockUserUpdatesPubSubService.publishUserUpdates.mock.calls.length,
+        ).toBe(1)
         const {
           user: publishedUser,
-        } = mockUserPubSubService.publishUserUpdates.mock.calls[0][0]
+        } = mockUserUpdatesPubSubService.publishUserUpdates.mock.calls[0][0]
         expect(validatedUser.id).toEqual(publishedUser.id)
       })
 
@@ -414,7 +414,7 @@ describe('User Service', () => {
         mockUserManager.update.mockImplementationOnce(
           async (id, mergeData) => ({ id, updated: new Date(), ...mergeData }),
         )
-        mockUserPubSubService.publishUserUpdates.mockClear()
+        mockUserUpdatesPubSubService.publishUserUpdates.mockClear()
       })
 
       const user = { id: 'test', updated: new Date() } as any,
@@ -469,12 +469,12 @@ describe('User Service', () => {
           socketId,
           data: { clientUpdated: new Date().getTime(), encr },
         })
-        expect(mockUserPubSubService.publishUserUpdates.mock.calls.length).toBe(
-          1,
-        )
+        expect(
+          mockUserUpdatesPubSubService.publishUserUpdates.mock.calls.length,
+        ).toBe(1)
         const {
           user: publishedUser,
-        } = mockUserPubSubService.publishUserUpdates.mock.calls[0][0]
+        } = mockUserUpdatesPubSubService.publishUserUpdates.mock.calls[0][0]
         expect(user.id).toEqual(publishedUser.id)
       })
     })

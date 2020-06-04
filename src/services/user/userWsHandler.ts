@@ -1,5 +1,6 @@
 import { WSMiddleware } from '@/utils/wsMiddleware'
-import { UserPubSubService } from './userPubSubService'
+
+import { UserPubSubService, UserPubSubMessageTypes } from './userPubSubService'
 import { UserService } from './userService'
 import { DefaultWsState } from '@/services/types'
 
@@ -52,11 +53,15 @@ export class UserWsMiddleware implements M {
     })
     wsWrapped.send({ type: OTypes.userData, data: res })
 
-    await UserPubSubService.subscribeUserUpdates({
+    return UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
       userId: wsWrapped.state.user.id,
-      callback: user => {
-        wsWrapped.send({ type: OTypes.userData, data: user })
+      callback: ({ type, data }) => {
+        switch (type) {
+          case UserPubSubMessageTypes.userUpdates:
+            wsWrapped.send({ type: OTypes.userData, data })
+            break
+        }
       },
     })
   }
@@ -64,7 +69,7 @@ export class UserWsMiddleware implements M {
   static close: M['close'] = async wsWrapped => {
     if (!wsWrapped.state.user) return void 0
 
-    return UserPubSubService.unsubscribeUserUpdates({
+    return UserPubSubService.unsubscribeSocketForUser({
       socketId: wsWrapped.id,
       userId: wsWrapped.state.user.id,
     })
