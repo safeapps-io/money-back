@@ -71,6 +71,25 @@ export class WalletAccessManager {
     )
   }
 
+  static removeById(waId: string) {
+    return WalletAccess.destroy({ where: { id: waId } })
+  }
+
+  static removeWithJoiningError(data: {
+    userId: string
+    walletId: string
+    inviteId: string
+  }) {
+    return WalletAccess.destroy({ where: { ...data, chest: null } })
+  }
+
+  static addRejectedInvite(data: { walletId: string; inviteId: string }) {
+    return WalletAccess.create({
+      ...data,
+      accessLevel: AccessLevels.rejected,
+    })
+  }
+
   static addUser(data: { walletId: string; userId: string; inviteId: string }) {
     return WalletAccess.create({
       ...data,

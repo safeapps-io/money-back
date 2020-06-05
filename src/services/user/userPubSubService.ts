@@ -7,6 +7,12 @@ export enum UserPubSubMessageTypes {
   // WalletPubSubService
   walletUpdate = 'walletUpdate',
   walletDestroy = 'walletDestroy',
+
+  // InvitePubSubService
+  initialRequestToOwner = 'initialRequestToOwner',
+  invitationError = 'invitationError',
+  invitationReject = 'invitationReject',
+  invitationAccept = 'invitationAccept',
 }
 
 /**
