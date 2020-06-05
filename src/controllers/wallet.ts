@@ -48,24 +48,3 @@ walletRouter.post(
     res.json({})
   }),
 )
-
-walletRouter.post(
-  '/user/add',
-  isRestAuth,
-  ash(async (req, res) => {
-    const { walletId, inviteId, userId: userToAddId } = req.body as {
-      walletId: string
-      userId: string
-      inviteId: string
-    }
-
-    await WalletService.addUser({
-      initiatorId: req.user.id,
-      walletId,
-      inviteId,
-      userToAddId,
-    })
-
-    res.json({})
-  }),
-)

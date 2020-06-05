@@ -1,11 +1,10 @@
 import { WSMiddleware } from '@/utils/wsMiddleware'
 import { DefaultWsState } from '@/services/types'
-import { WalletPubSubService } from './walletPubSubService'
 import { WalletService } from './walletService'
 import {
   UserPubSubService,
   UserPubSubMessageTypes,
-} from '../user/userPubSubService'
+} from '@/services/user/userPubSubService'
 
 enum ITypes {
   getWallets = 'getWallets',
@@ -28,6 +27,7 @@ export class WalletWsMiddleware implements M {
     const wallets = await WalletService.getUserWallets(wsWrapped.state.user.id)
     wsWrapped.send({ type: OTypes.walletsUpdate, data: wallets })
 
+    // TODO: will there be any repeated subscriptions?
     return UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
       userId: wsWrapped.state.user.id,

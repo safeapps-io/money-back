@@ -81,61 +81,6 @@ export class WalletService {
     })
   }
 
-  private static addUserScheme = yup
-    .object({
-      initiatorId: requiredString,
-      walletId: requiredString,
-      userToAddId: requiredString,
-      inviteId: requiredString,
-    })
-    .noUnknown()
-  static async addUser({
-    initiatorId,
-    walletId,
-    userToAddId,
-    inviteId,
-  }: {
-    initiatorId: string
-    walletId: string
-    userToAddId: string
-    inviteId: string
-  }) {
-    runSchemaWithFormError(this.addUserScheme, {
-      initiatorId,
-      walletId,
-      userToAddId,
-      inviteId,
-    })
-
-    const wallet = await this.getWalletByUserAndId({
-        userId: initiatorId,
-        walletId: walletId,
-      }),
-      isOwner = this.isUserOwner({ wallet, userId: initiatorId })
-    if (!isOwner) throw new AccessError()
-
-    try {
-      await this.getWalletByUserAndId({
-        walletId,
-        userId: userToAddId,
-      })
-      // User is already a member. No need to do anything
-      return
-    } catch (error) {
-      // User is not a member, need to do everything by the instruction
-    }
-
-    await WalletAccessManager.addUser({
-      walletId,
-      inviteId,
-      userId: userToAddId,
-    })
-
-    const fetchedWallet = await WalletManager.byId(wallet.id)
-
-    return WalletPubSubService.publishWalletUpdates({ wallet: fetchedWallet! })
-  }
-
   private static removeUserScheme = yup
     .object({
       initiatorId: requiredString,
