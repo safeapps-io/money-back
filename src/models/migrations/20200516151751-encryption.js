@@ -30,7 +30,7 @@ module.exports = {
         },
         onDelete: 'CASCADE',
       },
-      encr: { type: Sequelize.TEXT, allowNull: false },
+      encr: { type: Sequelize.BLOB, allowNull: false },
     })
 
     return queryInterface.createTable('WalletAccesses', {
