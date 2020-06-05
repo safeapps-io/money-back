@@ -330,28 +330,32 @@ export class InviteService {
 
     // We don't do any checks, because one can only remove user using this method by
     // impersonating the user without a chest attached to the WA.
-    const { decodedInvite } = this.parseInviteString(b64InviteString),
-      [result, wallet] = await Promise.all([
-        WalletAccessManager.removeWithJoiningError({
-          userId: joiningUser.id,
-          ...decodedInvite,
-        }),
-        WalletManager.byId(decodedInvite.walletId),
-      ]),
-      owner =
-        wallet &&
-        wallet.users.find(
-          user => user.WalletAccess.accessLevel === AccessLevels.owner,
-        )
+    try {
+      const { decodedInvite } = this.parseInviteString(b64InviteString),
+        [result, wallet] = await Promise.all([
+          WalletAccessManager.removeWithJoiningError({
+            userId: joiningUser.id,
+            ...decodedInvite,
+          }),
+          WalletManager.byId(decodedInvite.walletId),
+        ]),
+        owner =
+          wallet &&
+          wallet.users.find(
+            user => user.WalletAccess.accessLevel === AccessLevels.owner,
+          )
 
-    if (!owner || result === null || !wallet) return
+      if (!owner || result === null || !wallet) return
 
-    if (result > 0)
-      return InvitePubSubService.joiningError({
-        ownerId: owner.id,
-        walletId: wallet.id,
-        username: joiningUser.username,
-      })
+      if (result > 0)
+        return InvitePubSubService.joiningError({
+          ownerId: owner.id,
+          walletId: wallet.id,
+          username: joiningUser.username,
+        })
+    } catch (error) {
+      throw new FormValidationError(InviteServiceFormErrors.unknownError)
+    }
   }
 }
 
