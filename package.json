@@ -13,7 +13,9 @@
     "prod": "pm2 ecosystem.config.js app"
   },
   "dependencies": {
+    "@peculiar/webcrypto": "^1.1.1",
     "argon2": "^0.26.1",
+    "base64-arraybuffer": "^0.2.0",
     "body-parser": "^1.19.0",
     "cls-hooked": "^4.2.2",
     "cookie-parser": "^1.4.4",
@@ -46,6 +48,7 @@
     "yup": "^0.28.0"
   },
   "devDependencies": {
+    "@types/base64-arraybuffer": "^0.1.0",
     "@types/bluebird": "^3.5.29",
     "@types/body-parser": "^1.17.1",
     "@types/cls-hooked": "^4.3.0",

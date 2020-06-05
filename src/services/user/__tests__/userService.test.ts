@@ -480,14 +480,16 @@ describe('User Service', () => {
     })
 
     describe('master password update', () => {
-      const inviteKey = 'hey',
+      const b64InvitePublicKey = 'hey',
+        b64EncryptedInvitePrivateKey = 'hey',
         user = validatedUser as any,
         chests = [] as any[]
 
       it('works fine', async () => {
         await UserService.updateMasterPassword({
           user,
-          inviteKey,
+          b64InvitePublicKey,
+          b64EncryptedInvitePrivateKey,
           chests,
         })
 
@@ -496,10 +498,14 @@ describe('User Service', () => {
         expect(mockUserManager.update.mock.calls.length).toBe(1)
         const [
           _userId,
-          { inviteKey: _inviteKey },
+          {
+            b64InvitePublicKey: _b64InvitePublicKey,
+            b64EncryptedInvitePrivateKey: _b64EncryptedInvitePrivateKey,
+          },
         ] = mockUserManager.update.mock.calls[0]
         expect(_userId).toBe(user.id)
-        expect(_inviteKey).toBe(inviteKey)
+        expect(_b64InvitePublicKey).toBe(b64InvitePublicKey)
+        expect(_b64EncryptedInvitePrivateKey).toBe(b64EncryptedInvitePrivateKey)
         expect(mockWalletService.updateChests.mock.calls.length).toBe(1)
 
         const {
@@ -514,7 +520,8 @@ describe('User Service', () => {
         try {
           await UserService.updateMasterPassword({
             user,
-            inviteKey: null as any,
+            b64InvitePublicKey: null as any,
+            b64EncryptedInvitePrivateKey: null as any,
             chests,
           })
           throw new Error()

@@ -24,8 +24,12 @@ module.exports = {
       ...baseModel,
       username: { ...requiredString, unique: true },
       email: { type: Sequelize.STRING, allowNull: true, unique: true },
-      inviteKey: { type: Sequelize.STRING(2048), allowNull: true },
-      encr: { type: Sequelize.TEXT, allowNull: true },
+      b64InvitePublicKey: { type: Sequelize.STRING(16384), allowNull: true },
+      b64EncryptedInvitePrivateKey: {
+        type: Sequelize.STRING(16384),
+        allowNull: true,
+      },
+      encr: { type: Sequelize.BLOB, allowNull: true },
       password: requiredString,
       inviterId: {
         type: Sequelize.STRING,

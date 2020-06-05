@@ -10,6 +10,7 @@ import {
   BelongsToMany,
 } from 'sequelize-typescript'
 import { Op } from 'sequelize'
+import { encode, decode } from 'base64-arraybuffer'
 
 import BaseModel from '@/models/base'
 import RefreshToken from '@/models/refreshToken.model'
@@ -32,11 +33,27 @@ export default class User extends BaseModel<User> {
 
   @AllowNull
   @Column(DataType.STRING(2048))
-  inviteKey!: string | null
+  b64InvitePublicKey!: string | null
 
   @AllowNull
-  @Column(DataType.TEXT)
-  encr!: string | null
+  @Column(DataType.STRING(2048))
+  b64EncryptedInvitePrivateKey!: string | null
+
+  @AllowNull
+  @Column({
+    type: DataType.BLOB,
+    get(this: User) {
+      const encr = this.getDataValue('encr')
+      if (typeof encr === 'string') return encr
+      else return encode(encr)
+    },
+    set(this: User, val: string | Buffer) {
+      if (typeof val === 'string')
+        this.setDataValue('encr', Buffer.from(decode(val)))
+      else this.setDataValue('encr', val)
+    },
+  })
+  encr!: Buffer | string
 
   @AllowNull
   @ForeignKey(() => User)
