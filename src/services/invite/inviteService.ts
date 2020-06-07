@@ -5,7 +5,7 @@ import { encryptAes, decryptAes } from '@/utils/crypto'
 
 import User, { UserManager } from '@/models/user.model'
 import { WalletManager } from '@/models/wallet.model'
-import { AccessLevels, WalletAccessManager } from '@/models/walletAccess.model'
+import { AccessLevels } from '@/models/walletAccess.model'
 
 import { FormValidationError } from '@/services/errors'
 import { CryptoService } from '@/services/crypto'
@@ -61,7 +61,14 @@ export class InviteService {
           Buffer.from(dataBuffer).toString('utf-8'),
         ) as WalletInviteObject
 
-      return { dataBuffer, signatureBuffer, decodedInvite }
+      return {
+        dataBuffer,
+        signatureBuffer,
+        decodedInvite: {
+          walletId: decodedInvite.walletId,
+          inviteId: decodedInvite.inviteId,
+        },
+      }
     } catch (error) {
       throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
     }
@@ -75,6 +82,10 @@ export class InviteService {
       b64PublicECDHKey: requiredString,
     })
     .noUnknown()
+  /**
+   * Event sent by joining user when he's was first invited to the wallet.
+   * Runs invite string validations and sends first notification to the wallet owner.
+   */
   static async validateInvite({
     joiningUser,
     b64InviteString,
@@ -133,7 +144,7 @@ export class InviteService {
       b64InviteString,
     })
     if (devicesReached === 0)
-      throw new FormValidationError(InviteServiceFormErrors.unknownError)
+      throw new FormValidationError(InviteServiceFormErrors.ownerOffline)
   }
 
   private static checkOwnerInvitationMessageSchema = yup
@@ -181,7 +192,7 @@ export class InviteService {
 
     const hasJoiningUserAskedToJoin = await CryptoService.verifyInvite({
       b64PublicKey: joiningUser.b64InvitePublicKey,
-      dataBuffer: decode(b64InviteString),
+      dataBuffer: Buffer.from(b64InviteString),
       signatureBuffer: decode(b64InviteSignatureByJoiningUser),
     })
     if (!hasJoiningUserAskedToJoin)
@@ -280,7 +291,7 @@ export class InviteService {
        * 3. push update about the rejection to all the wallet users
        */
       return Promise.all([
-        WalletAccessManager.addRejectedInvite(decodedInvite),
+        WalletManager.addRejectedInvite(decodedInvite),
         InvitePubSubService.invitationReject({
           walletId: wallet.id,
           joiningUser,
@@ -290,7 +301,7 @@ export class InviteService {
     }
 
     const [wa, deviceCount] = await Promise.all([
-      WalletAccessManager.addUser({
+      WalletManager.addUser({
         ...decodedInvite,
         userId: joiningUser.id,
       }),
@@ -308,7 +319,7 @@ export class InviteService {
      * for some reason. He then can use the invite once again.
      */
     if (deviceCount === 0) {
-      await WalletAccessManager.removeById(wa.id)
+      await WalletManager.removeById(wa.id)
       throw new FormValidationError(InviteServiceFormErrors.joiningUserOffline)
     } else {
       await WalletPubSubService.publishWalletUpdates({ wallet })
@@ -329,11 +340,11 @@ export class InviteService {
     runSchemaWithFormError(requiredString, b64InviteString)
 
     // We don't do any checks, because one can only remove user using this method by
-    // impersonating the user without a chest attached to the WA.
+    // impersonating the user and if he has no chest attached to the WA.
     try {
       const { decodedInvite } = this.parseInviteString(b64InviteString),
         [result, wallet] = await Promise.all([
-          WalletAccessManager.removeWithJoiningError({
+          WalletManager.removeWithJoiningError({
             userId: joiningUser.id,
             ...decodedInvite,
           }),
@@ -345,14 +356,18 @@ export class InviteService {
             user => user.WalletAccess.accessLevel === AccessLevels.owner,
           )
 
-      if (!owner || result === null || !wallet) return
+      if (!owner || typeof result !== 'number' || result === 0 || !wallet)
+        throw new Error()
 
       if (result > 0)
-        return InvitePubSubService.joiningError({
-          ownerId: owner.id,
-          walletId: wallet.id,
-          username: joiningUser.username,
-        })
+        return Promise.all([
+          InvitePubSubService.joiningError({
+            ownerId: owner.id,
+            walletId: wallet.id,
+            username: joiningUser.username,
+          }),
+          WalletPubSubService.publishWalletUpdates({ wallet }),
+        ])
     } catch (error) {
       throw new FormValidationError(InviteServiceFormErrors.unknownError)
     }
