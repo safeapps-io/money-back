@@ -61,8 +61,8 @@ describe('Password service', () => {
           newPassword: 'hey-there',
         }),
       ).rejects
-      r.toThrow(FormValidationError)
-      r.toThrow(PasswordServiceFormErrors.incorrectPassword)
+      await r.toThrow(FormValidationError)
+      await r.toThrow(PasswordServiceFormErrors.incorrectPassword)
     })
   })
 
@@ -106,8 +106,8 @@ describe('Password service', () => {
       )
       const r = await expect(PasswordService.requestPasswordReset(email))
         .rejects
-      r.toThrow(FormValidationError)
-      r.toThrow(PasswordServiceFormErrors.resetNoEmail)
+      await r.toThrow(FormValidationError)
+      await r.toThrow(PasswordServiceFormErrors.resetNoEmail)
     })
 
     it('throws if invalid token/subject/expired token', async () => {
@@ -116,8 +116,8 @@ describe('Password service', () => {
         const r = await expect(
           PasswordService.getUserIdFromPasswordResetToken(token),
         ).rejects
-        r.toThrow(FormValidationError)
-        r.toThrow(PasswordServiceFormErrors.resetInvalidToken)
+        await r.toThrow(FormValidationError)
+        await r.toThrow(PasswordServiceFormErrors.resetInvalidToken)
       }
       await runCheck({ subject: 'wrong' })
       await runCheck({ subject: jwtSubject, expiresIn: '-5m' })

@@ -203,8 +203,8 @@ describe('User Service', () => {
           description,
         }),
       ).rejects
-      r.toThrow(FormValidationError)
-      r.toThrow(UserServiceFormErrors.unknownUser)
+      await r.toThrow(FormValidationError)
+      await r.toThrow(UserServiceFormErrors.unknownUser)
     })
 
     it('throws if incorrect password', async () => {
@@ -228,8 +228,8 @@ describe('User Service', () => {
           description,
         }),
       ).rejects
-      r.toThrow(FormValidationError)
-      r.toThrow(PasswordServiceFormErrors.incorrectPassword)
+      await r.toThrow(FormValidationError)
+      await r.toThrow(PasswordServiceFormErrors.incorrectPassword)
     })
   })
 
@@ -357,8 +357,8 @@ describe('User Service', () => {
             username: 'newUsername',
           }),
         ).rejects
-        r.toThrow(FormValidationError)
-        r.toThrow(UserServiceFormErrors.cantDeleteEmail)
+        await r.toThrow(FormValidationError)
+        await r.toThrow(UserServiceFormErrors.cantDeleteEmail)
       })
 
       it('throws if bad email or username', async () => {
@@ -378,8 +378,8 @@ describe('User Service', () => {
             email: validatedUser.email,
           }),
         ).rejects
-        r.toThrow(FormValidationError)
-        r.toThrow(UserServiceFormErrors.usernameTaken)
+        await r.toThrow(FormValidationError)
+        await r.toThrow(UserServiceFormErrors.usernameTaken)
 
         mockUserManager.isEmailTaken.mockImplementationOnce(async () => true)
         r = await expect(
@@ -388,8 +388,8 @@ describe('User Service', () => {
             email: 'qwer@qwer.com',
           }),
         ).rejects
-        r.toThrow(FormValidationError)
-        r.toThrow(UserServiceFormErrors.emailTaken)
+        await r.toThrow(FormValidationError)
+        await r.toThrow(UserServiceFormErrors.emailTaken)
       })
     })
 
