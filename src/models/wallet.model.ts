@@ -86,4 +86,70 @@ export class WalletManager {
   static destroy(walletId: string) {
     return Wallet.destroy({ where: { id: walletId } })
   }
+
+  static createOwner({
+    chest,
+    userId,
+    walletId,
+  }: {
+    chest: string
+    userId: string
+    walletId: string
+  }) {
+    return WalletAccess.create({
+      userId,
+      walletId,
+      chest,
+      accessLevel: AccessLevels.owner,
+    })
+  }
+
+  static removeUser({
+    walletId,
+    userId,
+  }: {
+    walletId: string
+    userId: string
+  }) {
+    return WalletAccess.update(
+      { chest: null, userId: null, accessLevel: AccessLevels.deleted },
+      { where: { walletId, userId }, returning: true },
+    )
+  }
+
+  static removeById(waId: string) {
+    return WalletAccess.destroy({ where: { id: waId } })
+  }
+
+  static removeWithJoiningError(data: {
+    userId: string
+    walletId: string
+    inviteId: string
+  }) {
+    return WalletAccess.destroy({ where: { ...data, chest: null } })
+  }
+
+  static addRejectedInvite(data: { walletId: string; inviteId: string }) {
+    return WalletAccess.create({
+      ...data,
+      accessLevel: AccessLevels.rejected,
+    })
+  }
+
+  static addUser(data: { walletId: string; userId: string; inviteId: string }) {
+    return WalletAccess.create({
+      ...data,
+      accessLevel: AccessLevels.usual,
+    })
+  }
+
+  static updateChests(
+    data: {
+      id: string
+      chest: string
+    }[],
+  ) {
+    // Bulk create works as bulk update by key
+    return WalletAccess.bulkCreate(data, { returning: true })
+  }
 }

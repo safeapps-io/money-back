@@ -13,8 +13,6 @@ const mockWalletManager = {
       .fn()
       .mockImplementation(async () => ({ id: nanoid(), updated: new Date() })),
     destroy: jest.fn(),
-  },
-  mockWalletAccessManager = {
     createOwner: jest.fn(),
     addUser: jest.fn(),
     removeUser: jest.fn(),
@@ -28,11 +26,6 @@ const mockWalletManager = {
 jest.mock('@/models/wallet.model', () => ({
   __esModule: true,
   WalletManager: mockWalletManager,
-}))
-jest.mock('@/models/walletAccess.model', () => ({
-  __esModule: true,
-  WalletAccessManager: mockWalletAccessManager,
-  AccessLevels: { owner: 'owner', usual: 'usual' },
 }))
 jest.mock('@/services/wallet/walletPubSubService', () => ({
   __esModule: true,
@@ -73,7 +66,6 @@ mockWalletManager.byIdAndUserId.mockImplementation(
 
 describe('Wallet Service', () => {
   beforeEach(() => {
-    mockClear(mockWalletAccessManager)
     mockClear(mockWalletManager)
     mockClear(mockWalletPubSubService)
   })
@@ -84,11 +76,11 @@ describe('Wallet Service', () => {
 
       expect(mockWalletManager.create.mock.calls.length).toBe(1)
 
-      expect(mockWalletAccessManager.createOwner.mock.calls.length).toBe(1)
+      expect(mockWalletManager.createOwner.mock.calls.length).toBe(1)
       const {
         chest: _chest,
         userId: _userId,
-      } = mockWalletAccessManager.createOwner.mock.calls[0][0]
+      } = mockWalletManager.createOwner.mock.calls[0][0]
       expect(_chest).toBe(chest)
       expect(_userId).toBe(userId)
     })
@@ -159,7 +151,7 @@ describe('Wallet Service', () => {
     const initiatorId = userId
 
     beforeEach(() => {
-      mockClear(mockWalletAccessManager)
+      mockClear(mockWalletManager)
       mockClear(mockWalletManager)
       mockClear(mockWalletPubSubService)
     })
@@ -167,11 +159,11 @@ describe('Wallet Service', () => {
     it('works if owner removes someone', async () => {
       await WalletService.removeUser({ initiatorId, walletId, userToRemoveId })
 
-      expect(mockWalletAccessManager.removeUser.mock.calls.length).toBe(1)
+      expect(mockWalletManager.removeUser.mock.calls.length).toBe(1)
       const {
         walletId: _walletId,
         userId: _userId,
-      } = mockWalletAccessManager.removeUser.mock.calls[0][0]
+      } = mockWalletManager.removeUser.mock.calls[0][0]
       expect(_walletId).toBe(walletId)
       expect(_userId).toBe(userToRemoveId)
 
@@ -191,11 +183,11 @@ describe('Wallet Service', () => {
         userToRemoveId,
       })
 
-      expect(mockWalletAccessManager.removeUser.mock.calls.length).toBe(1)
+      expect(mockWalletManager.removeUser.mock.calls.length).toBe(1)
       const {
         walletId: _walletId,
         userId: _userId,
-      } = mockWalletAccessManager.removeUser.mock.calls[0][0]
+      } = mockWalletManager.removeUser.mock.calls[0][0]
       expect(_walletId).toBe(walletId)
       expect(_userId).toBe(userToRemoveId)
 
@@ -269,8 +261,8 @@ describe('Wallet Service', () => {
         ],
       })
 
-      expect(mockWalletAccessManager.updateChests.mock.calls.length).toBe(1)
-      expect(mockWalletAccessManager.updateChests.mock.calls[0][0]).toEqual([
+      expect(mockWalletManager.updateChests.mock.calls.length).toBe(1)
+      expect(mockWalletManager.updateChests.mock.calls[0][0]).toEqual([
         { id: waWalletId1, chest },
         { id: waWalletId2, chest },
       ])

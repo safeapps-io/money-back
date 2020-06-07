@@ -3,7 +3,7 @@ import * as yup from 'yup'
 import { AccessError } from '@/services/errors'
 import Wallet, { WalletManager } from '@/models/wallet.model'
 import { runSchemaWithFormError, requiredString } from '@/utils/yupHelpers'
-import { WalletAccessManager, AccessLevels } from '@/models/walletAccess.model'
+import { AccessLevels } from '@/models/walletAccess.model'
 import { WalletPubSubService } from './walletPubSubService'
 
 export class WalletService {
@@ -40,7 +40,7 @@ export class WalletService {
   static async create(userId: string, chest: string) {
     runSchemaWithFormError(this.createScheme, { userId, chest })
     const { id: walletId } = await WalletManager.create()
-    await WalletAccessManager.createOwner({ chest, userId, walletId })
+    await WalletManager.createOwner({ chest, userId, walletId })
     return WalletManager.byId(walletId)
   }
 
@@ -113,7 +113,7 @@ export class WalletService {
         (isOwner && !isRemovingSelf) || (!isOwner && isRemovingSelf)
 
     if (!allowOperation) throw new AccessError()
-    await WalletAccessManager.removeUser({
+    await WalletManager.removeUser({
       walletId: wallet.id,
       userId: userToRemoveId,
     })
@@ -163,7 +163,7 @@ export class WalletService {
         chest: chests.find(chest => chest.walletId === wall.id)!.chest,
       }
     })
-    await WalletAccessManager.updateChests(walletAccessIdsAndChests)
+    await WalletManager.updateChests(walletAccessIdsAndChests)
 
     const refetchedWallets = await WalletManager.byIds(userWalletIds)
     return Promise.all(
