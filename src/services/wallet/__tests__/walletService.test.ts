@@ -94,19 +94,13 @@ describe('Wallet Service', () => {
     })
 
     it('throws if invalid data', async () => {
-      try {
-        await WalletService.create(userId, undefined as any)
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-      }
+      await expect(
+        WalletService.create(userId, undefined as any),
+      ).rejects.toThrowError(FormValidationError)
 
-      try {
-        await WalletService.create(userId, '')
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-      }
+      await expect(WalletService.create(userId, '')).rejects.toThrowError(
+        FormValidationError,
+      )
     })
   })
 
@@ -137,12 +131,9 @@ describe('Wallet Service', () => {
     })
 
     it('throws if invalid data', async () => {
-      try {
-        await WalletService.destroy('', '')
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-      }
+      await expect(WalletService.destroy('', '')).rejects.toThrow(
+        FormValidationError,
+      )
     })
 
     it('throws if not owner', async () => {
@@ -151,22 +142,16 @@ describe('Wallet Service', () => {
           { id: 'asd', WalletAccess: { accessLevel: AccessLevels.owner } },
         ],
       }))
-      try {
-        await WalletService.destroy(userId, walletId)
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(AccessError)
-      }
+      await expect(WalletService.destroy(userId, walletId)).rejects.toThrow(
+        AccessError,
+      )
     })
 
     it('throws if user not connected to the wallet', async () => {
       mockWalletManager.byId.mockImplementationOnce(async () => null)
-      try {
-        await WalletService.destroy(userId, walletId)
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(AccessError)
-      }
+      await expect(WalletService.destroy(userId, walletId)).rejects.toThrow(
+        AccessError,
+      )
     })
   })
 
@@ -224,42 +209,33 @@ describe('Wallet Service', () => {
     })
 
     it('throws if invalid data', async () => {
-      try {
-        await WalletService.removeUser({
+      await expect(
+        WalletService.removeUser({
           initiatorId: null,
           walletId: null,
           userToRemoveId: null,
-        } as any)
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-      }
+        } as any),
+      ).rejects.toThrow(FormValidationError)
     })
 
     it('throws if not owner tries to remove user', async () => {
-      try {
-        await WalletService.removeUser({
+      await expect(
+        WalletService.removeUser({
           initiatorId: userToRemoveId,
           walletId,
           userToRemoveId: userId,
-        } as any)
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(AccessError)
-      }
+        } as any),
+      ).rejects.toThrow(AccessError)
     })
 
     it('throws if owner tries to remove self', async () => {
-      try {
-        await WalletService.removeUser({
+      await expect(
+        WalletService.removeUser({
           initiatorId: userToRemoveId,
           walletId,
           userToRemoveId: 'werwer',
-        } as any)
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(AccessError)
-      }
+        } as any),
+      ).rejects.toThrow(AccessError)
     })
   })
 
@@ -309,40 +285,31 @@ describe('Wallet Service', () => {
         constructWallet(userId, walletId1, waWalletId1),
       ])
 
-      try {
-        await WalletService.updateChests({
+      await expect(
+        WalletService.updateChests({
           userId,
           chests: [
             { walletId: walletId1, chest },
             { walletId: walletId2, chest },
           ],
-        })
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(AccessError)
-      }
+        }),
+      ).rejects.toThrow(AccessError)
 
-      try {
-        await WalletService.updateChests({
+      await expect(
+        WalletService.updateChests({
           userId,
           chests: [{ walletId: 'newWalletId', chest }],
-        })
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(AccessError)
-      }
+        }),
+      ).rejects.toThrow(AccessError)
     })
 
     it('throws if data is invalid', async () => {
-      try {
-        await WalletService.updateChests({
+      await expect(
+        WalletService.updateChests({
           userId: null as any,
           chests: [{ walletId: null as any, chest: null as any }],
-        })
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-      }
+        }),
+      ).rejects.toThrow(FormValidationError)
     })
   })
 })

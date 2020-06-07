@@ -98,16 +98,13 @@ describe('Sync service', () => {
   it('throws if object is of invalid form', async () => {
     const copy = copyEntityMap()
     delete copy[walletId].entities[0].id
-    try {
-      await SyncService.handleClientUpdates({
+    await expect(
+      SyncService.handleClientUpdates({
         userId,
         entityMap: copy,
         socketId,
-      })
-      throw new Error()
-    } catch (error) {
-      expect(error).toBeInstanceOf(FormValidationError)
-    }
+      }),
+    ).rejects.toThrow(FormValidationError)
   })
 
   it('creates transactions without updated', async () => {

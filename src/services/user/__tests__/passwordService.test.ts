@@ -42,32 +42,27 @@ describe('Password service', () => {
     })
 
     it('throws if bad new password', async () => {
-      try {
-        await PasswordService.updatePassword({
+      await expect(
+        PasswordService.updatePassword({
           user: {} as any,
           oldPassword: '',
           newPassword: 'hey',
-        })
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-      }
+        }),
+      ).rejects.toThrow(FormValidationError)
     })
 
     it('throws if invalid old password', async () => {
-      try {
-        await PasswordService.updatePassword({
+      const r = await expect(
+        PasswordService.updatePassword({
           user: {
             password: await PasswordService.hashPassword('pass', false),
           } as any,
           oldPassword: 'incorrect password',
           newPassword: 'hey-there',
-        })
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-        expect(error.message).toBe(PasswordServiceFormErrors.incorrectPassword)
-      }
+        }),
+      ).rejects
+      r.toThrow(FormValidationError)
+      r.toThrow(PasswordServiceFormErrors.incorrectPassword)
     })
   })
 
@@ -109,27 +104,20 @@ describe('Password service', () => {
           if (findEmail === email) return { id }
         },
       )
-      try {
-        await PasswordService.requestPasswordReset(email)
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-        expect(error.message).toBe(PasswordServiceFormErrors.resetNoEmail)
-      }
+      const r = await expect(PasswordService.requestPasswordReset(email))
+        .rejects
+      r.toThrow(FormValidationError)
+      r.toThrow(PasswordServiceFormErrors.resetNoEmail)
     })
 
     it('throws if invalid token/subject/expired token', async () => {
       const runCheck = async (options: SignOptions) => {
-        try {
-          const token = await signJwt({ id: 'test' }, options)
-          await PasswordService.getUserIdFromPasswordResetToken(token)
-          throw new Error()
-        } catch (error) {
-          expect(error).toBeInstanceOf(FormValidationError)
-          expect(error.message).toBe(
-            PasswordServiceFormErrors.resetInvalidToken,
-          )
-        }
+        const token = await signJwt({ id: 'test' }, options)
+        const r = await expect(
+          PasswordService.getUserIdFromPasswordResetToken(token),
+        ).rejects
+        r.toThrow(FormValidationError)
+        r.toThrow(PasswordServiceFormErrors.resetInvalidToken)
       }
       await runCheck({ subject: 'wrong' })
       await runCheck({ subject: jwtSubject, expiresIn: '-5m' })
@@ -159,14 +147,12 @@ describe('Password service', () => {
     })
 
     it('throws if bad password', async () => {
-      try {
-        await PasswordService.updatePasswordFromResetToken({
+      await expect(
+        PasswordService.updatePasswordFromResetToken({
           token: '',
           password: 'smol',
-        })
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-      }
+        }),
+      ).rejects.toThrow(FormValidationError)
     })
   })
 })

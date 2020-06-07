@@ -196,17 +196,15 @@ describe('User Service', () => {
 
       mockUserManager.findByEmailOrUsername.mockImplementationOnce(() => null)
 
-      try {
-        await UserService.signin({
+      const r = await expect(
+        UserService.signin({
           usernameOrEmail: username,
           password,
           description,
-        })
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-        expect(error.message).toBe(UserServiceFormErrors.unknownUser)
-      }
+        }),
+      ).rejects
+      r.toThrow(FormValidationError)
+      r.toThrow(UserServiceFormErrors.unknownUser)
     })
 
     it('throws if incorrect password', async () => {
@@ -223,17 +221,15 @@ describe('User Service', () => {
         () => res.user,
       )
 
-      try {
-        await UserService.signin({
+      const r = await expect(
+        UserService.signin({
           usernameOrEmail: username,
           password: 'incorrect',
           description,
-        })
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(FormValidationError)
-        expect(error.message).toBe(PasswordServiceFormErrors.incorrectPassword)
-      }
+        }),
+      ).rejects
+      r.toThrow(FormValidationError)
+      r.toThrow(PasswordServiceFormErrors.incorrectPassword)
     })
   })
 
@@ -278,12 +274,9 @@ describe('User Service', () => {
         expiresIn: '-1m',
         subject: jwtSubject,
       })
-      try {
-        await UserService.getUserFromToken(token)
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(ExpiredToken)
-      }
+      await expect(UserService.getUserFromToken(token)).rejects.toThrow(
+        ExpiredToken,
+      )
     })
 
     it('getting new access token works', async () => {
@@ -315,12 +308,9 @@ describe('User Service', () => {
         expiresIn: '5m',
         subject: 'other',
       })
-      try {
-        await UserService.getUserFromToken(token)
-        throw new Error()
-      } catch (error) {
-        expect(error).toBeInstanceOf(InvalidToken)
-      }
+      await expect(UserService.getUserFromToken(token)).rejects.toThrow(
+        InvalidToken,
+      )
     })
   })
 
@@ -362,15 +352,13 @@ describe('User Service', () => {
       })
 
       it('throws if removing email', async () => {
-        try {
-          await UserService.updateUser(validatedUser as any, {
+        const r = await expect(
+          UserService.updateUser(validatedUser as any, {
             username: 'newUsername',
-          })
-          throw new Error()
-        } catch (error) {
-          expect(error).toBeInstanceOf(FormValidationError)
-          expect(error.message).toBe(UserServiceFormErrors.cantDeleteEmail)
-        }
+          }),
+        ).rejects
+        r.toThrow(FormValidationError)
+        r.toThrow(UserServiceFormErrors.cantDeleteEmail)
       })
 
       it('throws if bad email or username', async () => {
@@ -384,28 +372,24 @@ describe('User Service', () => {
 
       it('throws if taken username', async () => {
         mockUserManager.isUsernameTaken.mockImplementationOnce(async () => true)
-        try {
-          await UserService.updateUser(validatedUser as any, {
+        let r = await expect(
+          UserService.updateUser(validatedUser as any, {
             username: 'newUsername',
             email: validatedUser.email,
-          })
-          throw new Error()
-        } catch (error) {
-          expect(error).toBeInstanceOf(FormValidationError)
-          expect(error.message).toBe(UserServiceFormErrors.usernameTaken)
-        }
+          }),
+        ).rejects
+        r.toThrow(FormValidationError)
+        r.toThrow(UserServiceFormErrors.usernameTaken)
 
         mockUserManager.isEmailTaken.mockImplementationOnce(async () => true)
-        try {
-          await UserService.updateUser({} as any, {
+        r = await expect(
+          UserService.updateUser({} as any, {
             username: 'newUsername',
             email: 'qwer@qwer.com',
-          })
-          throw new Error()
-        } catch (error) {
-          expect(error).toBeInstanceOf(FormValidationError)
-          expect(error.message).toBe(UserServiceFormErrors.emailTaken)
-        }
+          }),
+        ).rejects
+        r.toThrow(FormValidationError)
+        r.toThrow(UserServiceFormErrors.emailTaken)
       })
     })
 
@@ -439,16 +423,13 @@ describe('User Service', () => {
       })
 
       it('throws if invalid data', async () => {
-        try {
-          await UserService.incrementalUserUpdate({
+        await expect(
+          UserService.incrementalUserUpdate({
             user,
             socketId,
             data: { clientUpdated: 'wer', encr: 1234 } as any,
-          })
-          throw new Error()
-        } catch (error) {
-          expect(error).toBeInstanceOf(FormValidationError)
-        }
+          }),
+        ).rejects.toThrow(FormValidationError)
       })
 
       it('updates user correctly', async () => {
@@ -517,17 +498,14 @@ describe('User Service', () => {
       })
 
       it('throws if invalid string', async () => {
-        try {
-          await UserService.updateMasterPassword({
+        await expect(
+          UserService.updateMasterPassword({
             user,
             b64InvitePublicKey: null as any,
             b64EncryptedInvitePrivateKey: null as any,
             chests,
-          })
-          throw new Error()
-        } catch (error) {
-          expect(error).toBeInstanceOf(FormValidationError)
-        }
+          }),
+        ).rejects.toThrow(FormValidationError)
       })
     })
   })
