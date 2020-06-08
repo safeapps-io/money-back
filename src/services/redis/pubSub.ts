@@ -75,12 +75,12 @@ class RedisPubSubService {
     channels,
     subscriberId,
     callback,
-    callbackKey = '',
+    callbackKey,
   }: {
     channels: string[]
     subscriberId: string
     callback: (data: any) => void
-    callbackKey?: string
+    callbackKey: string
   }) {
     const subscribeToChannels = channels.filter(
       channel => !this.log.has(channel),
