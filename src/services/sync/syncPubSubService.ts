@@ -1,58 +1,32 @@
-import { redisPubSub } from '@/services/redis/pubSub'
-import { WalletService } from '../wallet/walletService'
 import Entity from '@/models/entity.model'
+import Wallet from '@/models/wallet.model'
+
+import {
+  UserPubSubService,
+  UserPubSubMessageTypes,
+} from '../user/userPubSubService'
 
 export class SyncPubSubService {
-  private static channelEntitiesUpdates(walletId: string) {
-    return `ent-u--${walletId}`
-  }
-
   static publishEntitiesUpdates({
     socketId,
-    walletId,
+    wallet,
     data,
   }: {
     socketId: string
-    walletId: string
+    wallet: Wallet
     data: Entity[]
   }) {
-    return redisPubSub.publish({
-      channel: this.channelEntitiesUpdates(walletId),
-      publisherId: socketId,
-      data,
-    })
-  }
+    if (!wallet.users) throw new Error('Prefetch users!')
 
-  static async subscribeEntitiesUpdates({
-    socketId,
-    userId,
-    callback,
-  }: {
-    socketId: string
-    userId: string
-    callback: (data: Entity[]) => void
-  }) {
-    const walletIds = await WalletService.getUserWalletIds(userId)
-
-    return redisPubSub.subscribe({
-      channels: walletIds.map(this.channelEntitiesUpdates),
-      subscriberId: socketId,
-      callback,
-    })
-  }
-
-  static async unsubscribeEntitiesUpdates({
-    socketId,
-    userId,
-  }: {
-    socketId: string
-    userId: string
-  }) {
-    const walletIds = await WalletService.getUserWalletIds(userId)
-
-    return redisPubSub.unsubscribe({
-      channels: walletIds.map(this.channelEntitiesUpdates),
-      subscriberId: socketId,
-    })
+    return Promise.all(
+      wallet.users.map(user =>
+        UserPubSubService.publishForUser({
+          userId: user.id,
+          socketId,
+          type: UserPubSubMessageTypes.dataChunk,
+          data,
+        }),
+      ),
+    )
   }
 }

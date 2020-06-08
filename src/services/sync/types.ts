@@ -11,3 +11,8 @@ export type ClientChangesData = {
     latestUpdated: number
   }
 }
+
+export type ServerUpdatesMap = {
+  walletId: string
+  latestUpdated: Date
+}[]

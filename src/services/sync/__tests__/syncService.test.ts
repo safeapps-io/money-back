@@ -8,7 +8,7 @@ const mockEnitityManager = {
   },
   mockWalletService = {
     checkIfUserHasAccess: jest.fn(),
-    getUserWalletIds: jest.fn(),
+    getUserWallets: jest.fn(),
   },
   mockSyncPubSubService = {
     publishEntitiesUpdates: jest.fn(),
@@ -32,6 +32,7 @@ jest.mock('@/services/sync/syncPubSubService', () => ({
 import { SyncService } from '../syncService'
 import { ClientChangesData } from '../types'
 import { FormValidationError } from '@/services/errors'
+import { clearMocks } from '@/utils/jestHelpers'
 
 describe('Sync service', () => {
   const walletId = '1234',
@@ -54,13 +55,13 @@ describe('Sync service', () => {
     copyEntityMap = () => JSON.parse(JSON.stringify(entityMap))
 
   beforeEach(() => {
-    mockWalletService.getUserWalletIds.mockClear()
-    mockWalletService.getUserWalletIds.mockImplementation(async userId => [
-      walletId,
-    ])
-    mockSyncPubSubService.publishEntitiesUpdates.mockClear()
+    clearMocks(mockWalletService)
+    clearMocks(mockSyncPubSubService)
+    clearMocks(mockEnitityManager)
 
-    mockEnitityManager.bulkCreate.mockClear()
+    mockWalletService.getUserWallets.mockImplementation(async userId => [
+      { id: walletId },
+    ])
     mockEnitityManager.bulkCreate.mockImplementation(async ents => ents)
     mockEnitityManager.update.mockImplementation(
       async ({ newEntity }) => newEntity,
@@ -78,8 +79,8 @@ describe('Sync service', () => {
 
   it('checks if user has access to wallet', async () => {
     await SyncService.handleClientUpdates({ userId, entityMap, socketId })
-    expect(mockWalletService.getUserWalletIds.mock.calls.length).toBe(1)
-    expect(mockWalletService.getUserWalletIds.mock.calls[0][0]).toBe(userId)
+    expect(mockWalletService.getUserWallets.mock.calls.length).toBe(1)
+    expect(mockWalletService.getUserWallets.mock.calls[0][0]).toBe(userId)
   })
 
   it('ignores wallets, that user has no access to', async () => {
@@ -170,7 +171,7 @@ describe('Sync service', () => {
       1,
     )
     const args = mockSyncPubSubService.publishEntitiesUpdates.mock.calls[0][0]
-    expect(args.walletId).toBe(walletId)
+    expect(args.wallet.id).toBe(walletId)
     expect(args.socketId).toBe(socketId)
     expect(args.data).toEqual(
       entityMap[walletId].entities.filter(ent => ent.walletId === walletId),

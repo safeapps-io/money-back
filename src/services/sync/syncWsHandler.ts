@@ -2,8 +2,11 @@ import { WSMiddleware } from '@/utils/wsMiddleware'
 
 import { SyncService } from './syncService'
 import { ClientChangesData } from './types'
-import { SyncPubSubService } from './syncPubSubService'
 import { DefaultWsState } from '../types'
+import {
+  UserPubSubService,
+  UserPubSubMessageTypes,
+} from '../user/userPubSubService'
 
 enum ITypes {
   clientChanges = 'clientChanges',
@@ -17,6 +20,8 @@ enum OTypes {
   serverDataChunk = 'serverDataChunk',
   syncFinished = 'syncFinished',
 }
+
+const pubSubPurpose = 'sync'
 
 type M = WSMiddleware<SyncIncomingMessages, DefaultWsState>
 export class SyncWsMiddleware implements M {
@@ -37,11 +42,16 @@ export class SyncWsMiddleware implements M {
         wsWrapped.send({
           type: OTypes.syncFinished,
           cb: () =>
-            SyncPubSubService.subscribeEntitiesUpdates({
+            UserPubSubService.subscribeSocketForUser({
               userId,
               socketId: wsWrapped.id,
-              callback: data =>
-                wsWrapped.send({ data, type: OTypes.serverDataChunk }),
+              purpose: pubSubPurpose,
+              callback: ({ data, type }) => {
+                switch (type) {
+                  case UserPubSubMessageTypes.dataChunk:
+                    wsWrapped.send({ data, type: OTypes.serverDataChunk })
+                }
+              },
             }),
         })
 
@@ -55,7 +65,7 @@ export class SyncWsMiddleware implements M {
   static close: M['close'] = async wsWrapped => {
     if (!wsWrapped.state.user) return void 0
 
-    return SyncPubSubService.unsubscribeEntitiesUpdates({
+    return UserPubSubService.unsubscribeSocketForUser({
       socketId: wsWrapped.id,
       userId: wsWrapped.state.user.id,
     })

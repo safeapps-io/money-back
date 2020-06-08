@@ -3,18 +3,19 @@ import * as yup from 'yup'
 import { runSchemaWithFormError, requiredString } from '@/utils/yupHelpers'
 
 import Entity, { EntityManager } from '@/models/entity.model'
+import Wallet from '@/models/wallet.model'
 import { WalletService } from '@/services/wallet/walletService'
-import { ClientChangesData, EntityUpdated } from './types'
+import { ClientChangesData, EntityUpdated, ServerUpdatesMap } from './types'
 import { SyncPubSubService } from './syncPubSubService'
 
 export class SyncService {
   private static async handleUpdatesByWallet({
     entities,
-    walletId,
+    wallet,
     socketId,
   }: {
     entities: EntityUpdated[]
-    walletId: string
+    wallet: Wallet
     socketId: string
   }) {
     if (!entities.length) return
@@ -38,7 +39,7 @@ export class SyncService {
 
     if (updateEntities.length) {
       const fetchedEntities = await EntityManager.byIds({
-          walletId,
+          walletId: wallet.id,
           ids: updateEntitiesIds,
         }),
         fetchedEntitiesById = fetchedEntities.reduce((acc, curr) => {
@@ -65,7 +66,7 @@ export class SyncService {
 
     return SyncPubSubService.publishEntitiesUpdates({
       data: results,
-      walletId,
+      wallet,
       socketId,
     })
   }
@@ -97,44 +98,48 @@ export class SyncService {
     entityMap: ClientChangesData
   }) {
     // Only allow access to user's wallets, filter other data out
-    const usersWalletIds = await WalletService.getUserWalletIds(userId),
-      entityMap = Object.entries(unfilteredEntityMap).reduce(
-        (acc, [walletId, entities]) => {
-          if (usersWalletIds.includes(walletId)) acc[walletId] = entities
-          return acc
-        },
-        {} as ClientChangesData,
-      )
+    const usersWallets = await WalletService.getUserWallets(userId),
+      entityMap: {
+        entities: EntityUpdated[]
+        wallet: Wallet
+      }[] = [],
+      serverUpdatesMap: ServerUpdatesMap = []
+
+    for (const [walletId, walletChanges] of Object.entries(
+      unfilteredEntityMap,
+    )) {
+      const wallet = usersWallets.find(wallet => wallet.id === walletId)
+      if (!wallet) continue
+
+      serverUpdatesMap.push({
+        walletId,
+        latestUpdated: new Date(walletChanges.latestUpdated),
+      })
+      entityMap.push({
+        wallet,
+        // It's a bit of a stretch. User can change wallet id for some other, and send it to backend.
+        // Will never happen in real life, but HACKERS ARE EVERYWHERE
+        entities: walletChanges.entities.filter(
+          ent => ent.walletId === wallet.id,
+        ),
+      })
+    }
 
     await Promise.all(
-      Object.entries(entityMap).map(
-        ([walletId, { entities: unfilteredEntities }]) => {
-          // It's a bit of a stretch. User can change wallet id for some other, and send it to backend.
-          // Will never happen in real life, but HACKERS ARE EVERYWHERE
-          const entities = unfilteredEntities.filter(
-            ent => ent.walletId === walletId,
-          )
-          runSchemaWithFormError(this.entitiesUpdateSchema, entities)
-          return this.handleUpdatesByWallet({
-            entities,
-            walletId,
-            socketId,
-          })
-        },
-      ),
-    )
-
-    return this.getServerUpdates(entityMap)
-  }
-
-  private static async getServerUpdates(entityMap: ClientChangesData) {
-    const map = Object.entries(entityMap).map(
-      ([walletId, { latestUpdated }]) => ({
-        walletId,
-        latestUpdated: new Date(latestUpdated),
+      entityMap.map(({ entities, wallet }) => {
+        runSchemaWithFormError(this.entitiesUpdateSchema, entities)
+        return this.handleUpdatesByWallet({
+          wallet,
+          entities,
+          socketId,
+        })
       }),
     )
 
-    return EntityManager.getUpdates(map)
+    return this.getServerUpdates(serverUpdatesMap)
+  }
+
+  private static async getServerUpdates(entityMap: ServerUpdatesMap) {
+    return EntityManager.getUpdates(entityMap)
   }
 }

@@ -13,6 +13,9 @@ export enum UserPubSubMessageTypes {
   invitationError = 'invitationError',
   invitationReject = 'invitationReject',
   invitationAccept = 'invitationAccept',
+
+  // SyncPubSubService
+  dataChunk = 'dataChunk',
 }
 
 /**
