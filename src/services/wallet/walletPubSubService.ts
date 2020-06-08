@@ -22,7 +22,7 @@ export class WalletPubSubService {
           userId,
           socketId,
           type: UserPubSubMessageTypes.walletUpdate,
-          data: wallet,
+          data: [wallet],
         }),
       )
 

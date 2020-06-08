@@ -55,16 +55,19 @@ export class UserPubSubService {
   static subscribeSocketForUser({
     socketId,
     userId,
+    purpose,
     callback,
   }: {
     socketId: string
     userId: string
+    purpose: string
     callback: (data: { type: UserPubSubMessageTypes; data: Object }) => void
   }) {
     return redisPubSub.subscribe({
       channels: [this.getUserChannel(userId)],
       subscriberId: socketId,
       callback,
+      callbackKey: purpose,
     })
   }
 

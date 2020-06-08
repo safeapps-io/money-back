@@ -19,6 +19,8 @@ enum OTypes {
   walletsDelete = 'walletsDelete',
 }
 
+const pubSubPurpose = 'wallet'
+
 type M = WSMiddleware<WalletIncomingMessages, DefaultWsState>
 export class WalletWsMiddleware implements M {
   static [ITypes.getWallets]: M[ITypes.getWallets] = async ({ wsWrapped }) => {
@@ -27,10 +29,10 @@ export class WalletWsMiddleware implements M {
     const wallets = await WalletService.getUserWallets(wsWrapped.state.user.id)
     wsWrapped.send({ type: OTypes.walletsUpdate, data: wallets })
 
-    // TODO: will there be any repeated subscriptions?
     return UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
       userId: wsWrapped.state.user.id,
+      purpose: pubSubPurpose,
       callback: ({ type, data }) => {
         switch (type) {
           case UserPubSubMessageTypes.walletUpdate:

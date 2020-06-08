@@ -19,6 +19,8 @@ enum OTypes {
   newAccessToken = 'newAccessToken',
 }
 
+const pubSubPurpose = 'user'
+
 type M = WSMiddleware<UserIncomingMessages, DefaultWsState>
 export class UserWsMiddleware implements M {
   static bulk: M['bulk'] = async ({ wsWrapped, parsed }) => {
@@ -56,6 +58,7 @@ export class UserWsMiddleware implements M {
     return UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
       userId: wsWrapped.state.user.id,
+      purpose: pubSubPurpose,
       callback: ({ type, data }) => {
         switch (type) {
           case UserPubSubMessageTypes.userUpdates:
