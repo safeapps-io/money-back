@@ -10,7 +10,8 @@ import {
   BelongsToMany,
 } from 'sequelize-typescript'
 import { Op } from 'sequelize'
-import { encode, decode } from 'base64-arraybuffer'
+
+import { getValue, setValue } from '@/utils/blobAsBase64'
 
 import BaseModel from '@/models/base'
 import RefreshToken from '@/models/refreshToken.model'
@@ -32,28 +33,42 @@ export default class User extends BaseModel<User> {
   password!: string
 
   @AllowNull
-  @Column(DataType.STRING(2048))
-  b64InvitePublicKey!: string | null
-
-  @AllowNull
-  @Column(DataType.STRING(2048))
-  b64EncryptedInvitePrivateKey!: string | null
+  @Column({
+    type: DataType.BLOB,
+    get(this: User) {
+      return getValue(this.getDataValue('b64InvitePublicKey'))
+    },
+    set(this: User, val: string | Buffer) {
+      setValue(val, (newVal) => this.setDataValue('b64InvitePublicKey', newVal))
+    },
+  })
+  b64InvitePublicKey!: string | Buffer | null
 
   @AllowNull
   @Column({
     type: DataType.BLOB,
     get(this: User) {
-      const encr = this.getDataValue('encr')
-      if (typeof encr === 'string') return encr
-      else return encode(encr)
+      return getValue(this.getDataValue('b64EncryptedInvitePrivateKey'))
     },
     set(this: User, val: string | Buffer) {
-      if (typeof val === 'string')
-        this.setDataValue('encr', Buffer.from(decode(val)))
-      else this.setDataValue('encr', val)
+      setValue(val, (newVal) =>
+        this.setDataValue('b64EncryptedInvitePrivateKey', newVal),
+      )
     },
   })
-  encr!: Buffer | string
+  b64EncryptedInvitePrivateKey!: string | Buffer | null
+
+  @AllowNull
+  @Column({
+    type: DataType.BLOB,
+    get(this: User) {
+      return getValue(this.getDataValue('encr'))
+    },
+    set(this: User, val: string | Buffer) {
+      setValue(val, (newVal) => this.setDataValue('encr', newVal))
+    },
+  })
+  encr!: Buffer | string | null
 
   @AllowNull
   @ForeignKey(() => User)
@@ -69,10 +84,7 @@ export default class User extends BaseModel<User> {
   @HasMany(() => RefreshToken)
   refreshTokens!: RefreshToken[]
 
-  @BelongsToMany(
-    () => Wallet,
-    () => WalletAccess,
-  )
+  @BelongsToMany(() => Wallet, () => WalletAccess)
   wallets!: Array<Wallet & { WalletAccess: WalletAccess }>
 
   public toJSON() {

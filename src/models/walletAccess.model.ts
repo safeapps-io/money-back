@@ -6,6 +6,8 @@ import {
   AllowNull,
 } from 'sequelize-typescript'
 
+import { getValue, setValue } from '@/utils/blobAsBase64'
+
 import BaseModel from '@/models/base'
 import User from '@/models/user.model'
 import Wallet from '@/models/wallet.model'
@@ -29,8 +31,16 @@ export default class WalletAccess extends BaseModel<WalletAccess> {
   walletId!: string
 
   @AllowNull
-  @Column(DataType.STRING(2048))
-  chest!: string | null
+  @Column({
+    type: DataType.BLOB,
+    get(this: WalletAccess) {
+      return getValue(this.getDataValue('chest'))
+    },
+    set(this: WalletAccess, val: string | Buffer) {
+      setValue(val, (newVal) => this.setDataValue('chest', newVal))
+    },
+  })
+  chest!: string | Buffer | null
 
   @AllowNull
   @Column(DataType.STRING(32))

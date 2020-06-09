@@ -129,7 +129,7 @@ export class InviteService {
       throw new FormValidationError(InviteServiceFormErrors.unknownError)
 
     const res = await CryptoService.verifyInvite({
-      b64PublicKey: walletOwner.b64InvitePublicKey,
+      b64PublicKey: walletOwner.b64InvitePublicKey as string,
       dataBuffer,
       signatureBuffer,
     })
@@ -191,7 +191,7 @@ export class InviteService {
       throw new FormValidationError(InviteServiceFormErrors.unknownError)
 
     const hasJoiningUserAskedToJoin = await CryptoService.verifyInvite({
-      b64PublicKey: joiningUser.b64InvitePublicKey,
+      b64PublicKey: joiningUser.b64InvitePublicKey as string,
       dataBuffer: Buffer.from(b64InviteString),
       signatureBuffer: decode(b64InviteSignatureByJoiningUser),
     })
