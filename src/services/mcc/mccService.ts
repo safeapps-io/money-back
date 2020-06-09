@@ -20,7 +20,7 @@ const getMccData = () => {
   const result: {
     [id: string]: IMCCInput
   } = {}
-  parsedData.forEach(item => (result[parseInt(item.mcc)] = item))
+  parsedData.forEach((item) => (result[parseInt(item.mcc)] = item))
   return result
 }
 const mccData = getMccData()
@@ -30,7 +30,7 @@ export class MCCService {
     codeList: string[],
   ): { code: string; description: string | null }[] {
     return codeList
-      .map(code => ({
+      .map((code) => ({
         code,
         description: mccData[code]?.edited_description,
       }))

@@ -8,10 +8,7 @@ import Entity from '@/models/entity.model'
 
 @Table
 export default class Wallet extends BaseModel<Wallet> {
-  @BelongsToMany(
-    () => User,
-    () => WalletAccess,
-  )
+  @BelongsToMany(() => User, () => WalletAccess)
   users!: Array<User & { WalletAccess: WalletAccess }>
 
   @HasMany(() => Entity)

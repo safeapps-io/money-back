@@ -8,20 +8,12 @@ export const optionalArrayOfStringsOrString = yup
     return val
   })
   .notRequired()
-  .of(
-    yup
-      .string()
-      .trim()
-      .ensure(),
-  )
+  .of(yup.string().trim().ensure())
   .compact()
 
 export const dateAsTimestamp = yup.date().transform((_, val) => new Date(val))
 
-export const optionalString = yup
-  .string()
-  .nullable()
-  .notRequired()
+export const optionalString = yup.string().nullable().notRequired()
 
 export const requiredString = yup.string().required()
 

@@ -9,12 +9,7 @@ const apiRouter = Router()
 apiRouter
   .use('/auth', authRouter)
   .use('/wallet', walletRouter)
-  .use((_, res) =>
-    res
-      .status(404)
-      .json({ error: 'No such path' })
-      .end(),
-  )
+  .use((_, res) => res.status(404).json({ error: 'No such path' }).end())
   .use(errorHandler)
 
 export default apiRouter

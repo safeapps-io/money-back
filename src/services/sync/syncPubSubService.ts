@@ -19,7 +19,7 @@ export class SyncPubSubService {
     if (!wallet.users) throw new Error('Prefetch users!')
 
     return Promise.all(
-      wallet.users.map(user =>
+      wallet.users.map((user) =>
         UserPubSubService.publishForUser({
           userId: user.id,
           socketId,

@@ -16,8 +16,8 @@ export class WalletPubSubService {
     if (!wallet.users)
       throw new Error('You need to prefetch User model for WalletPubSubService')
 
-    const userIds = wallet.users.map(data => data.id),
-      promises = userIds.map(userId =>
+    const userIds = wallet.users.map((data) => data.id),
+      promises = userIds.map((userId) =>
         UserPubSubService.publishForUser({
           userId,
           socketId,
@@ -36,7 +36,7 @@ export class WalletPubSubService {
     walletId: string
     connectedUserIds: string[]
   }) {
-    const promises = connectedUserIds.map(userId =>
+    const promises = connectedUserIds.map((userId) =>
       UserPubSubService.publishForUser({
         userId,
         type: UserPubSubMessageTypes.walletDestroy,

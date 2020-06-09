@@ -23,16 +23,8 @@ type JWTMessage = {
   exp?: number
 }
 
-const usernameScheme = yup
-    .string()
-    .required()
-    .min(5)
-    .max(50),
-  emailScheme = yup
-    .string()
-    .email()
-    .notRequired()
-    .nullable()
+const usernameScheme = yup.string().required().min(5).max(50),
+  emailScheme = yup.string().email().notRequired().nullable()
 
 export class UserService {
   private static async generateRefreshToken(data: {

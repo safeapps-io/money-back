@@ -1,5 +1,5 @@
 import request from 'supertest'
-import nanoid from 'nanoid'
+import { nanoid } from 'nanoid'
 
 import appPromise from '@/app'
 import { UserServiceFormErrors } from '@/services/user/userService'
@@ -18,10 +18,10 @@ describe('Error reporting', () => {
     return _invite
   }
 
-  it('reports error for user endpoint', async done => {
+  it('reports error for user endpoint', async (done) => {
     const app = request(await appPromise)
 
-    app.get('/saviour/api/auth/user').end(function(_, res) {
+    app.get('/saviour/api/auth/user').end(function (_, res) {
       expect(res.status).toBe(400)
       expect(res.body).toEqual({ code: 403, message: 'Invalid token' })
 
@@ -29,7 +29,7 @@ describe('Error reporting', () => {
     })
   })
 
-  it('reports error for signup', async done => {
+  it('reports error for signup', async (done) => {
     const app = request(await appPromise)
 
     app
@@ -42,13 +42,13 @@ describe('Error reporting', () => {
           password: ['password is a required field'],
         },
       })
-      .end(function(err) {
+      .end(function (err) {
         if (err) return done(err)
         done()
       })
   })
 
-  it('lets you signup', async done => {
+  it('lets you signup', async (done) => {
     const app = request(await appPromise),
       username = nanoid(),
       invite = await getInvite()
@@ -56,14 +56,14 @@ describe('Error reporting', () => {
     app
       .post('/saviour/api/auth/signup')
       .send({ username, password: nanoid(), invite })
-      .end(function(_, res) {
+      .end(function (_, res) {
         expect(res.status).toBe(200)
         expect(res.body.user.username).toBe(username)
         done()
       })
   })
 
-  it('throws if email or username is occupied', async done => {
+  it('throws if email or username is occupied', async (done) => {
     const app = request(await appPromise),
       username = nanoid(),
       email = `${nanoid()}@test.com`,
@@ -87,7 +87,7 @@ describe('Error reporting', () => {
       })
   })
 
-  it('lets you update user data', async done => {
+  it('lets you update user data', async (done) => {
     const app = request(await appPromise),
       username = nanoid(),
       email = `${nanoid()}@test.com`,

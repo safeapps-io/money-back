@@ -59,10 +59,10 @@ describe('Sync service', () => {
     clearMocks(mockSyncPubSubService)
     clearMocks(mockEnitityManager)
 
-    mockWalletService.getUserWallets.mockImplementation(async userId => [
+    mockWalletService.getUserWallets.mockImplementation(async (userId) => [
       { id: walletId },
     ])
-    mockEnitityManager.bulkCreate.mockImplementation(async ents => ents)
+    mockEnitityManager.bulkCreate.mockImplementation(async (ents) => ents)
     mockEnitityManager.update.mockImplementation(
       async ({ newEntity }) => newEntity,
     )
@@ -72,7 +72,7 @@ describe('Sync service', () => {
     await SyncService.handleClientUpdates({ userId, entityMap, socketId })
     expect(mockEnitityManager.bulkCreate.mock.calls[0][0]).toEqual(
       entityMap[walletId].entities.filter(
-        ent => ent.walletId === walletId && !ent.updated,
+        (ent) => ent.walletId === walletId && !ent.updated,
       ),
     )
   })
@@ -113,7 +113,7 @@ describe('Sync service', () => {
     expect(mockEnitityManager.bulkCreate.mock.calls.length).toBe(1)
     expect(mockEnitityManager.bulkCreate.mock.calls[0][0]).toEqual(
       entityMap[walletId].entities.filter(
-        ent => ent.walletId === walletId && !ent.updated,
+        (ent) => ent.walletId === walletId && !ent.updated,
       ),
     )
   })
@@ -174,7 +174,7 @@ describe('Sync service', () => {
     expect(args.wallet.id).toBe(walletId)
     expect(args.socketId).toBe(socketId)
     expect(args.data).toEqual(
-      entityMap[walletId].entities.filter(ent => ent.walletId === walletId),
+      entityMap[walletId].entities.filter((ent) => ent.walletId === walletId),
     )
   })
 })

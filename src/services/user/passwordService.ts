@@ -9,11 +9,7 @@ import User, { UserManager } from '@/models/user.model'
 import { FormValidationError } from '@/services/errors'
 import { MessageService } from '../message'
 
-export const passwordScheme = yup
-  .string()
-  .required()
-  .min(6)
-  .max(100)
+export const passwordScheme = yup.string().required().min(6).max(100)
 
 export const jwtSubject = 'pre' // Password REset
 

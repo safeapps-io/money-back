@@ -21,7 +21,9 @@ describe('Redis PubSub', () => {
     otherChannels = ['otherChannels'],
     subscriberId = 'subsId',
     callback = jest.fn(),
+    callbackKey = '1',
     callback2 = jest.fn(),
+    callbackKey2 = '2',
     data = 'hey'
 
   beforeEach(() => {
@@ -43,11 +45,13 @@ describe('Redis PubSub', () => {
       channels,
       subscriberId,
       callback,
+      callbackKey,
     })
     await redisPubSub.subscribe({
       channels: otherChannels,
       subscriberId,
       callback: callback2,
+      callbackKey: callbackKey2,
     })
     expect(mockSubscriptionConnection.subscribe.mock.calls.length).toBe(2)
 
@@ -71,11 +75,13 @@ describe('Redis PubSub', () => {
       channels,
       subscriberId,
       callback,
+      callbackKey,
     })
     await redisPubSub.subscribe({
       channels,
       subscriberId: 'other',
       callback,
+      callbackKey,
     })
     expect(mockSubscriptionConnection.subscribe.mock.calls.length).toBe(1)
   })
@@ -131,11 +137,13 @@ describe('Redis PubSub', () => {
       channels,
       subscriberId,
       callback,
+      callbackKey,
     })
     await redisPubSub.subscribe({
       channels,
       subscriberId: otherSubscriberId,
       callback,
+      callbackKey,
     })
 
     await redisPubSub.unsubscribe({ channels, subscriberId })

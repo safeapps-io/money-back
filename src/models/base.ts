@@ -6,7 +6,7 @@ import {
   PrimaryKey,
   Column,
 } from 'sequelize-typescript'
-import nanoid from 'nanoid'
+import { nanoid } from 'nanoid'
 
 export default class BaseModel<T> extends Model<T> {
   @PrimaryKey

@@ -26,7 +26,7 @@ import {
 } from '@/services/invite/inviteWsHandler'
 
 const syncRouter = Router() as WSRouter
-syncRouter.ws('/sync', ws => {
+syncRouter.ws('/sync', (ws) => {
   handleWsConnection<
     UserIncomingMessages &
       WalletIncomingMessages &

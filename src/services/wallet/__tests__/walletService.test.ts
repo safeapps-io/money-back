@@ -1,4 +1,4 @@
-import nanoid from 'nanoid'
+import { nanoid } from 'nanoid'
 
 const mockWalletManager = {
     byId: jest.fn().mockImplementation(async (id: string) => ({
@@ -37,7 +37,7 @@ import { FormValidationError, AccessError } from '@/services/errors'
 import { AccessLevels } from '@/models/walletAccess.model'
 
 const mockClear = (mock: Object) =>
-    Object.values(mock).forEach(i => i.mockClear()),
+    Object.values(mock).forEach((i) => i.mockClear()),
   userId = '1',
   userToAddId = '2',
   userToRemoveId = '3',
@@ -98,7 +98,7 @@ describe('Wallet Service', () => {
 
   describe('destroy', () => {
     it('works fine', async () => {
-      mockWalletManager.byId.mockImplementation(async id => ({
+      mockWalletManager.byId.mockImplementation(async (id) => ({
         id,
         updated: new Date(),
         users: [

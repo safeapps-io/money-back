@@ -24,11 +24,11 @@ export class WalletService {
   }
 
   static async getUserWalletIds(userId: string) {
-    return (await WalletManager.byUserId(userId)).map(ent => ent.id)
+    return (await WalletManager.byUserId(userId)).map((ent) => ent.id)
   }
 
   static async getWalletUserIds(walletId: string) {
-    return (await WalletManager.byId(walletId))?.users.map(user => user.id)
+    return (await WalletManager.byId(walletId))?.users.map((user) => user.id)
   }
 
   private static createScheme = yup
@@ -52,7 +52,7 @@ export class WalletService {
     userId: string
   }) {
     return wallet.users.some(
-      user =>
+      (user) =>
         user.id === userId &&
         user.WalletAccess.accessLevel === AccessLevels.owner,
     )
@@ -144,30 +144,30 @@ export class WalletService {
     runSchemaWithFormError(this.updateChestsScheme, chests)
 
     const userWallets = await this.getUserWallets(userId),
-      userWalletIds = userWallets.map(wall => wall.id),
+      userWalletIds = userWallets.map((wall) => wall.id),
       allChestsRepresented =
         // In case user doesn't update all the chests at once for some reason
         chests.length === userWalletIds.length &&
         // Authorization
         chests
-          .map(chest => userWalletIds.includes(chest.walletId))
+          .map((chest) => userWalletIds.includes(chest.walletId))
           .every(Boolean)
 
     if (!allChestsRepresented) throw new AccessError()
 
-    const walletAccessIdsAndChests = userWallets.map(wall => {
-      const userWa = wall.users.find(u => u.id === userId)
+    const walletAccessIdsAndChests = userWallets.map((wall) => {
+      const userWa = wall.users.find((u) => u.id === userId)
 
       return {
         id: userWa!.WalletAccess.id,
-        chest: chests.find(chest => chest.walletId === wall.id)!.chest,
+        chest: chests.find((chest) => chest.walletId === wall.id)!.chest,
       }
     })
     await WalletManager.updateChests(walletAccessIdsAndChests)
 
     const refetchedWallets = await WalletManager.byIds(userWalletIds)
     return Promise.all(
-      refetchedWallets.map(wallet =>
+      refetchedWallets.map((wallet) =>
         WalletPubSubService.publishWalletUpdates({ wallet }),
       ),
     )

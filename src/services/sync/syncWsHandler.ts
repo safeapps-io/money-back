@@ -62,7 +62,7 @@ export class SyncWsMiddleware implements M {
     })
   }
 
-  static close: M['close'] = async wsWrapped => {
+  static close: M['close'] = async (wsWrapped) => {
     if (!wsWrapped.state.user) return void 0
 
     return UserPubSubService.unsubscribeSocketForUser({

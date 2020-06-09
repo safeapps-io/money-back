@@ -75,14 +75,8 @@ export class SyncService {
     yup
       .object({
         id: requiredString,
-        updated: yup
-          .number()
-          .positive()
-          .notRequired(),
-        clientUpdated: yup
-          .number()
-          .positive()
-          .required(),
+        updated: yup.number().positive().notRequired(),
+        clientUpdated: yup.number().positive().required(),
         walletId: requiredString,
         encr: requiredString,
       })
@@ -108,7 +102,7 @@ export class SyncService {
     for (const [walletId, walletChanges] of Object.entries(
       unfilteredEntityMap,
     )) {
-      const wallet = usersWallets.find(wallet => wallet.id === walletId)
+      const wallet = usersWallets.find((wallet) => wallet.id === walletId)
       if (!wallet) continue
 
       serverUpdatesMap.push({
@@ -120,7 +114,7 @@ export class SyncService {
         // It's a bit of a stretch. User can change wallet id for some other, and send it to backend.
         // Will never happen in real life, but HACKERS ARE EVERYWHERE
         entities: walletChanges.entities.filter(
-          ent => ent.walletId === wallet.id,
+          (ent) => ent.walletId === wallet.id,
         ),
       })
     }

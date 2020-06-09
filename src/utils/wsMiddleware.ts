@@ -1,5 +1,5 @@
 import * as wsType from 'ws'
-import nanoid from 'nanoid'
+import { nanoid } from 'nanoid'
 
 import chunk from '@/utils/chunk'
 
@@ -35,7 +35,7 @@ export async function handleWsConnection<IncomingMessages, State>(
   const id = nanoid(),
     wsWrapped = new WSWrapper<State>(id, ws)
 
-  ws.on('message', async raw => {
+  ws.on('message', async (raw) => {
     let type, data, parsed
     try {
       parsed = JSON.parse(raw as string) as Message<IncomingMessages>

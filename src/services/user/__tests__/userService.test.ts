@@ -1,9 +1,9 @@
-import nanoid from 'nanoid'
+import { nanoid } from 'nanoid'
 import argon2 from 'argon2'
 import jwt from 'jsonwebtoken'
 
 const mockRefreshTokenManager = {
-    generateToken: jest.fn().mockImplementation(data => ({
+    generateToken: jest.fn().mockImplementation((data) => ({
       ...data,
       id: nanoid(),
       key: nanoid(),
@@ -11,7 +11,7 @@ const mockRefreshTokenManager = {
     tokenExists: jest.fn(),
   },
   mockUserManager = {
-    create: jest.fn().mockImplementation(data => ({ ...data, id: nanoid() })),
+    create: jest.fn().mockImplementation((data) => ({ ...data, id: nanoid() })),
     isUsernameTaken: jest.fn(),
     isEmailTaken: jest.fn(),
     findByEmailOrUsername: jest.fn(),
@@ -106,7 +106,7 @@ describe('User Service', () => {
     it('forbids the same username', async () => {
       const takenUsername = 'test2'
       mockUserManager.isUsernameTaken.mockImplementationOnce(
-        async username => username === takenUsername,
+        async (username) => username === takenUsername,
       )
 
       try {
@@ -124,7 +124,7 @@ describe('User Service', () => {
     it('forbids the same email', async () => {
       const takenEmail = 'test@test2.com'
       mockUserManager.isEmailTaken.mockImplementationOnce(
-        async email => email === takenEmail,
+        async (email) => email === takenEmail,
       )
 
       try {
@@ -238,7 +238,7 @@ describe('User Service', () => {
       mockRefreshTokenManager.generateToken.mockClear()
       const res = await UserService.signup(dummyUser)
 
-      mockUserManager.byId.mockImplementationOnce(id => {
+      mockUserManager.byId.mockImplementationOnce((id) => {
         if (id === res.user.id) return res.user
       })
 
@@ -251,7 +251,7 @@ describe('User Service', () => {
       mockRefreshTokenManager.generateToken.mockClear()
       const res = await UserService.signup(dummyUser)
 
-      mockUserManager.byId.mockImplementationOnce(id => {
+      mockUserManager.byId.mockImplementationOnce((id) => {
         if (id === res.user.id) return null
       })
 

@@ -76,7 +76,7 @@ describe('Password service', () => {
 
     it('sends reset email with valid token', async () => {
       mockUserManager.findByEmailOrUsername.mockImplementationOnce(
-        async findEmail => {
+        async (findEmail) => {
           if (findEmail === email) return { id, email }
         },
       )
@@ -100,7 +100,7 @@ describe('Password service', () => {
 
     it('throws if user has no email', async () => {
       mockUserManager.findByEmailOrUsername.mockImplementationOnce(
-        async findEmail => {
+        async (findEmail) => {
           if (findEmail === email) return { id }
         },
       )
@@ -125,7 +125,7 @@ describe('Password service', () => {
 
     it('updates password', async () => {
       mockUserManager.findByEmailOrUsername.mockImplementationOnce(
-        async findEmail => {
+        async (findEmail) => {
           if (findEmail === email) return { id, email }
         },
       )

@@ -42,7 +42,7 @@ describe('isAuth middleware', () => {
       throw new ExpiredToken()
     })
     let error: any
-    next.mockImplementation(err => (error = err))
+    next.mockImplementation((err) => (error = err))
 
     const req = ({ headers: { authorization: '' } } as unknown) as Request,
       res = (null as unknown) as Response
@@ -58,7 +58,7 @@ describe('isAuth middleware', () => {
       throw new InvalidToken()
     })
     let error: any
-    next.mockImplementation(err => (error = err))
+    next.mockImplementation((err) => (error = err))
 
     const req = ({ headers: { authorization: '' } } as unknown) as Request,
       res = (null as unknown) as Response

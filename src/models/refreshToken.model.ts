@@ -1,5 +1,5 @@
 import { Table, Column, ForeignKey, BelongsTo } from 'sequelize-typescript'
-import nanoid from 'nanoid'
+import { nanoid } from 'nanoid'
 
 import BaseModel from '@/models/base'
 import User from '@/models/user.model'

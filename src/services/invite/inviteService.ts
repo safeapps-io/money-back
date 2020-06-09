@@ -185,7 +185,7 @@ export class InviteService {
       throw new FormValidationError(InviteServiceFormErrors.unknownError)
 
     const dbWalletOwner = wallet.users.find(
-      user => user.WalletAccess.accessLevel === AccessLevels.owner,
+      (user) => user.WalletAccess.accessLevel === AccessLevels.owner,
     )
     if (!dbWalletOwner || dbWalletOwner.id !== walletOwner.id)
       throw new FormValidationError(InviteServiceFormErrors.unknownError)
@@ -353,7 +353,7 @@ export class InviteService {
         owner =
           wallet &&
           wallet.users.find(
-            user => user.WalletAccess.accessLevel === AccessLevels.owner,
+            (user) => user.WalletAccess.accessLevel === AccessLevels.owner,
           )
 
       if (!owner || typeof result !== 'number' || result === 0 || !wallet)
