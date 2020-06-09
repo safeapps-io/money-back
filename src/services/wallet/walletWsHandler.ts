@@ -7,27 +7,27 @@ import {
 } from '@/services/user/userPubSubService'
 
 enum ITypes {
-  getWallets = 'getWallets',
+  get = 'wallet/get',
 }
 
 export type WalletIncomingMessages = {
-  [ITypes.getWallets]: {}
+  [ITypes.get]: {}
 }
 
 enum OTypes {
-  walletsUpdate = 'walletsUpdate',
-  walletsDelete = 'walletsDelete',
+  data = 'wallet/data',
+  delete = 'wallet/delete',
 }
 
 const pubSubPurpose = 'wallet'
 
 type M = WSMiddleware<WalletIncomingMessages, DefaultWsState>
 export class WalletWsMiddleware implements M {
-  static [ITypes.getWallets]: M[ITypes.getWallets] = async ({ wsWrapped }) => {
+  static [ITypes.get]: M[ITypes.get] = async ({ wsWrapped }) => {
     if (!wsWrapped.state.user) return
 
     const wallets = await WalletService.getUserWallets(wsWrapped.state.user.id)
-    wsWrapped.send({ type: OTypes.walletsUpdate, data: wallets })
+    wsWrapped.send({ type: OTypes.data, data: wallets })
 
     return UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
@@ -35,12 +35,12 @@ export class WalletWsMiddleware implements M {
       purpose: pubSubPurpose,
       callback: ({ type, data }) => {
         switch (type) {
-          case UserPubSubMessageTypes.walletUpdate:
-            wsWrapped.send({ type: OTypes.walletsUpdate, data })
+          case UserPubSubMessageTypes.walletData:
+            wsWrapped.send({ type: OTypes.data, data })
             break
 
-          case UserPubSubMessageTypes.walletDestroy:
-            wsWrapped.send({ type: OTypes.walletsDelete, data })
+          case UserPubSubMessageTypes.walletDelete:
+            wsWrapped.send({ type: OTypes.delete, data })
             break
         }
       },

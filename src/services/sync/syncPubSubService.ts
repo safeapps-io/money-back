@@ -23,7 +23,7 @@ export class SyncPubSubService {
         UserPubSubService.publishForUser({
           userId: user.id,
           socketId,
-          type: UserPubSubMessageTypes.dataChunk,
+          type: UserPubSubMessageTypes.syncData,
           data,
         }),
       ),

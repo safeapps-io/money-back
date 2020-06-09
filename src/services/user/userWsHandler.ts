@@ -5,18 +5,20 @@ import { UserService } from './userService'
 import { DefaultWsState } from '@/services/types'
 
 enum ITypes {
-  getNewAccessToken = 'getNewAccessToken',
-  mergeUser = 'mergeUser',
+  newAccessToken = 'user/newAccessToken',
+  incrementalUpdate = 'user/incrementalUpdate',
 }
 
 export type UserIncomingMessages = {
-  [ITypes.getNewAccessToken]: { accessToken: string; refreshToken: string }
-  [ITypes.mergeUser]: { encr: string; clientUpdated: number } | undefined
+  [ITypes.newAccessToken]: { accessToken: string; refreshToken: string }
+  [ITypes.incrementalUpdate]:
+    | { encr: string; clientUpdated: number }
+    | undefined
 }
 
 enum OTypes {
-  userData = 'userData',
-  newAccessToken = 'newAccessToken',
+  data = 'user/data',
+  newAccessToken = 'user/newAccessToken',
 }
 
 const pubSubPurpose = 'user'
@@ -33,7 +35,7 @@ export class UserWsMiddleware implements M {
     }
   }
 
-  static [ITypes.getNewAccessToken]: M[ITypes.getNewAccessToken] = async ({
+  static [ITypes.newAccessToken]: M[ITypes.newAccessToken] = async ({
     wsWrapped,
     message,
   }) => {
@@ -42,7 +44,7 @@ export class UserWsMiddleware implements M {
     wsWrapped.send({ type: OTypes.newAccessToken, data: token })
   }
 
-  static [ITypes.mergeUser]: M[ITypes.mergeUser] = async ({
+  static [ITypes.incrementalUpdate]: M[ITypes.incrementalUpdate] = async ({
     wsWrapped,
     message,
   }) => {
@@ -53,7 +55,7 @@ export class UserWsMiddleware implements M {
       data: message,
       socketId: wsWrapped.id,
     })
-    wsWrapped.send({ type: OTypes.userData, data: res })
+    wsWrapped.send({ type: OTypes.data, data: res })
 
     return UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
@@ -61,8 +63,8 @@ export class UserWsMiddleware implements M {
       purpose: pubSubPurpose,
       callback: ({ type, data }) => {
         switch (type) {
-          case UserPubSubMessageTypes.userUpdates:
-            wsWrapped.send({ type: OTypes.userData, data })
+          case UserPubSubMessageTypes.userData:
+            wsWrapped.send({ type: OTypes.data, data })
             break
         }
       },

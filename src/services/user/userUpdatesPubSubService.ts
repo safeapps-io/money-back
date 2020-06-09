@@ -15,7 +15,7 @@ export class UserUpdatesPubSubService {
     return UserPubSubService.publishForUser({
       userId: user.id,
       socketId,
-      type: UserPubSubMessageTypes.userUpdates,
+      type: UserPubSubMessageTypes.userData,
       data: User,
     })
   }

@@ -2,20 +2,20 @@ import { redisPubSub } from '@/services/redis/pubSub'
 
 export enum UserPubSubMessageTypes {
   // UserUpdatesPubSubService
-  userUpdates = 'userUpdates',
+  userData = 'user/data',
 
   // WalletPubSubService
-  walletUpdate = 'walletUpdate',
-  walletDestroy = 'walletDestroy',
+  walletData = 'wallet/data',
+  walletDelete = 'wallet/delete',
 
   // InvitePubSubService
-  initialRequestToOwner = 'initialRequestToOwner',
-  invitationError = 'invitationError',
-  invitationReject = 'invitationReject',
-  invitationAccept = 'invitationAccept',
+  inviteValidate = 'invite/validate',
+  inviteError = 'invite/error',
+  inviteReject = 'invite/reject',
+  inviteAccept = 'invite/accept',
 
   // SyncPubSubService
-  dataChunk = 'dataChunk',
+  syncData = 'sync/data',
 }
 
 /**

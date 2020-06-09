@@ -319,7 +319,7 @@ export class InviteService {
      * for some reason. He then can use the invite once again.
      */
     if (deviceCount === 0) {
-      await WalletManager.removeById(wa.id)
+      await WalletManager.removeUserByWaId(wa.id)
       throw new FormValidationError(InviteServiceFormErrors.joiningUserOffline)
     } else {
       await WalletPubSubService.publishWalletUpdates({ wallet })

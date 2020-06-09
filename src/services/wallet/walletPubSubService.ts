@@ -21,7 +21,7 @@ export class WalletPubSubService {
         UserPubSubService.publishForUser({
           userId,
           socketId,
-          type: UserPubSubMessageTypes.walletUpdate,
+          type: UserPubSubMessageTypes.walletData,
           data: [wallet],
         }),
       )
@@ -39,7 +39,7 @@ export class WalletPubSubService {
     const promises = connectedUserIds.map((userId) =>
       UserPubSubService.publishForUser({
         userId,
-        type: UserPubSubMessageTypes.walletDestroy,
+        type: UserPubSubMessageTypes.walletDelete,
         data: walletId,
       }),
     )

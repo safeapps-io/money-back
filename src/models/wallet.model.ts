@@ -114,7 +114,7 @@ export class WalletManager {
     )
   }
 
-  static removeById(waId: string) {
+  static removeUserByWaId(waId: string) {
     return WalletAccess.destroy({ where: { id: waId } })
   }
 

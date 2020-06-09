@@ -7,7 +7,7 @@ const mockUserManager = {
     byId: jest.fn(),
     addRejectedInvite: jest.fn(),
     addUser: jest.fn(),
-    removeById: jest.fn(),
+    removeUserByWaId: jest.fn(),
     removeWithJoiningError: jest.fn(),
   },
   mockInvitePubSubService = {
@@ -501,7 +501,7 @@ describe('Invite service', () => {
         await r.toThrow(FormValidationError)
         await r.toThrow(InviteServiceFormErrors.joiningUserOffline)
 
-        const c = mockWalletManager.removeById.mock.calls
+        const c = mockWalletManager.removeUserByWaId.mock.calls
         expect(c.length).toBe(1)
         expect(c[0][0]).toBe(waId)
       })

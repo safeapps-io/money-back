@@ -23,7 +23,7 @@ export class InvitePubSubService {
   }) {
     return UserPubSubService.publishForUser({
       userId: walletOwner.id,
-      type: UserPubSubMessageTypes.initialRequestToOwner,
+      type: UserPubSubMessageTypes.inviteValidate,
       data: {
         b64InviteString,
         b64InviteSignatureByJoiningUser,
@@ -45,7 +45,7 @@ export class InvitePubSubService {
   }) {
     return UserPubSubService.publishForUser({
       userId: joiningUser.id,
-      type: UserPubSubMessageTypes.invitationError,
+      type: UserPubSubMessageTypes.inviteError,
       data: {
         walletId,
       },
@@ -65,7 +65,7 @@ export class InvitePubSubService {
   }) {
     return UserPubSubService.publishForUser({
       userId: joiningUser.id,
-      type: UserPubSubMessageTypes.invitationAccept,
+      type: UserPubSubMessageTypes.inviteAccept,
       data: {
         walletId,
         encryptedSecretKey,
@@ -83,7 +83,7 @@ export class InvitePubSubService {
   }) {
     return UserPubSubService.publishForUser({
       userId: joiningUser.id,
-      type: UserPubSubMessageTypes.invitationReject,
+      type: UserPubSubMessageTypes.inviteReject,
       data: {
         walletId,
       },
@@ -101,7 +101,7 @@ export class InvitePubSubService {
   }) {
     return UserPubSubService.publishForUser({
       userId: ownerId,
-      type: UserPubSubMessageTypes.invitationError,
+      type: UserPubSubMessageTypes.inviteError,
       data: {
         walletId,
         username,

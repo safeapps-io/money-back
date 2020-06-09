@@ -9,23 +9,23 @@ import {
 } from '../user/userPubSubService'
 
 enum ITypes {
-  clientChanges = 'clientChanges',
+  clientData = 'sync/data',
 }
 
 export type SyncIncomingMessages = {
-  [ITypes.clientChanges]: ClientChangesData
+  [ITypes.clientData]: ClientChangesData
 }
 
 enum OTypes {
-  serverDataChunk = 'serverDataChunk',
-  syncFinished = 'syncFinished',
+  backData = 'sync/data',
+  finished = 'sync/finished',
 }
 
 const pubSubPurpose = 'sync'
 
 type M = WSMiddleware<SyncIncomingMessages, DefaultWsState>
 export class SyncWsMiddleware implements M {
-  static [ITypes.clientChanges]: M[ITypes.clientChanges] = async ({
+  static [ITypes.clientData]: M[ITypes.clientData] = async ({
     wsWrapped,
     message,
   }) => {
@@ -40,7 +40,7 @@ export class SyncWsMiddleware implements M {
       }),
       finishCallback = () =>
         wsWrapped.send({
-          type: OTypes.syncFinished,
+          type: OTypes.finished,
           cb: () =>
             UserPubSubService.subscribeSocketForUser({
               userId,
@@ -48,15 +48,15 @@ export class SyncWsMiddleware implements M {
               purpose: pubSubPurpose,
               callback: ({ data, type }) => {
                 switch (type) {
-                  case UserPubSubMessageTypes.dataChunk:
-                    wsWrapped.send({ data, type: OTypes.serverDataChunk })
+                  case UserPubSubMessageTypes.syncData:
+                    wsWrapped.send({ data, type: OTypes.backData })
                 }
               },
             }),
         })
 
     wsWrapped.sequentialSend({
-      type: OTypes.serverDataChunk,
+      type: OTypes.backData,
       items,
       finishCallback,
     })
