@@ -31,7 +31,7 @@ export class UserService {
     userId: string
     description: string
   }) {
-    return (await RefreshTokenManager.generateToken(data)).key
+    return (await RefreshTokenManager.create(data)).key
   }
 
   private static async generateToken({
@@ -44,7 +44,7 @@ export class UserService {
     withCheck?: boolean
   }) {
     if (withCheck) {
-      const tokenValid = await RefreshTokenManager.tokenExists({
+      const tokenValid = await RefreshTokenManager.exists({
         token: refreshToken,
         userId,
       })

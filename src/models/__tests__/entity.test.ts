@@ -1,10 +1,11 @@
 import { isEqual } from 'lodash'
 import { nanoid } from 'nanoid'
+import { encode } from 'base64-arraybuffer'
+
+import sequelize from '../setup'
 
 import { EntityManager } from '../entity.model'
-import sequelize from '../setup'
-import { WalletManager } from '../wallet.model'
-import { encode } from 'base64-arraybuffer'
+import Wallet from '../wallet.model'
 
 describe('Entity model manager', () => {
   let walletId: string
@@ -13,7 +14,7 @@ describe('Entity model manager', () => {
 
   beforeAll(async () => {
     await sequelize.sync()
-    const wallet = await WalletManager.create()
+    const wallet = await Wallet.create()
     walletId = wallet.id
   })
 

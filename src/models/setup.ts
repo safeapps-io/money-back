@@ -10,7 +10,7 @@ Sequelize.useCLS(namespace)
 const sequelize = new Sequelize(config[process.env.NODE_ENV as string])
 sequelize.addModels([join(__dirname, '**', '*.model.ts')])
 
-export const getTransaction = (cb: () => Promise<void>) =>
+export const getTransaction = <T>(cb: () => Promise<T>) =>
   sequelize.transaction(cb)
 
 export default sequelize

@@ -21,14 +21,14 @@ export default class RefreshToken extends BaseModel<RefreshToken> {
 }
 
 export class RefreshTokenManager {
-  static generateToken(data: {
+  static create(data: {
     userId: string
     description?: string
   }): Promise<RefreshToken> {
     return RefreshToken.create(data)
   }
 
-  static async tokenExists({
+  static async exists({
     token,
     userId,
   }: {

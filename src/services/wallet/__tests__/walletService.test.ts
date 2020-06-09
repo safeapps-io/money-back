@@ -75,12 +75,10 @@ describe('Wallet Service', () => {
       await WalletService.create(userId, chest)
 
       expect(mockWalletManager.create.mock.calls.length).toBe(1)
-
-      expect(mockWalletManager.createOwner.mock.calls.length).toBe(1)
       const {
         chest: _chest,
         userId: _userId,
-      } = mockWalletManager.createOwner.mock.calls[0][0]
+      } = mockWalletManager.create.mock.calls[0][0]
       expect(_chest).toBe(chest)
       expect(_userId).toBe(userId)
     })

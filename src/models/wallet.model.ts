@@ -1,6 +1,8 @@
 import { Table, BelongsToMany, HasMany } from 'sequelize-typescript'
 import { Op } from 'sequelize'
 
+import { getTransaction } from '@/models/setup'
+
 import BaseModel from '@/models/base'
 import User from '@/models/user.model'
 import WalletAccess, { AccessLevels } from '@/models/walletAccess.model'
@@ -76,8 +78,25 @@ export class WalletManager {
     })
   }
 
-  static create() {
-    return Wallet.create()
+  static create({
+    userId,
+    chest,
+  }: {
+    userId: string
+    chest: string
+  }): Promise<Wallet> {
+    return getTransaction(async () => {
+      const wallet = await Wallet.create()
+
+      await WalletAccess.create({
+        userId,
+        walletId: wallet.id,
+        chest,
+        accessLevel: AccessLevels.owner,
+      })
+
+      return this.byId(wallet.id)
+    })
   }
 
   static destroy(walletId: string) {

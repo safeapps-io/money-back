@@ -3,12 +3,12 @@ import argon2 from 'argon2'
 import jwt from 'jsonwebtoken'
 
 const mockRefreshTokenManager = {
-    generateToken: jest.fn().mockImplementation((data) => ({
+    create: jest.fn().mockImplementation((data) => ({
       ...data,
       id: nanoid(),
       key: nanoid(),
     })),
-    tokenExists: jest.fn(),
+    exists: jest.fn(),
   },
   mockUserManager = {
     create: jest.fn().mockImplementation((data) => ({ ...data, id: nanoid() })),
@@ -235,20 +235,20 @@ describe('User Service', () => {
 
   describe('token', () => {
     it('returns valid refresh and access tokens', async () => {
-      mockRefreshTokenManager.generateToken.mockClear()
+      mockRefreshTokenManager.create.mockClear()
       const res = await UserService.signup(dummyUser)
 
       mockUserManager.byId.mockImplementationOnce((id) => {
         if (id === res.user.id) return res.user
       })
 
-      expect(mockRefreshTokenManager.generateToken.mock.calls.length).toBe(1)
+      expect(mockRefreshTokenManager.create.mock.calls.length).toBe(1)
       const user = await UserService.getUserFromToken(res.accessToken)
       expect(user).toEqual(res.user)
     })
 
     it('throws if there is no such user id', async () => {
-      mockRefreshTokenManager.generateToken.mockClear()
+      mockRefreshTokenManager.create.mockClear()
       const res = await UserService.signup(dummyUser)
 
       mockUserManager.byId.mockImplementationOnce((id) => {
@@ -281,7 +281,7 @@ describe('User Service', () => {
 
     it('getting new access token works', async () => {
       const res = await UserService.signup(dummyUser)
-      mockRefreshTokenManager.tokenExists.mockImplementationOnce(
+      mockRefreshTokenManager.exists.mockImplementationOnce(
         ({ token, userId }) => {
           return userId === res.user.id && token === res.refreshToken
         },
@@ -296,7 +296,7 @@ describe('User Service', () => {
 
     it('getting new access token throws if invalid access-refresh pair', async () => {
       const res = await UserService.signup(dummyUser)
-      mockRefreshTokenManager.tokenExists.mockImplementationOnce(() => false)
+      mockRefreshTokenManager.exists.mockImplementationOnce(() => false)
 
       expect(
         UserService.getNewAccessToken(res.accessToken, res.refreshToken),

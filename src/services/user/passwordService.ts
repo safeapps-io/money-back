@@ -50,7 +50,7 @@ export class PasswordService {
     await this.verifyPassword(user.password, oldPassword)
 
     const passwordHashed = await this.hashPassword(newPassword)
-    await UserManager.changeUserPassword(user.id, passwordHashed)
+    await UserManager.changePassword(user.id, passwordHashed)
   }
 
   public static async requestPasswordReset(email: string) {
@@ -89,7 +89,7 @@ export class PasswordService {
 
     const userId = await this.getUserIdFromPasswordResetToken(token),
       hashedPassword = await this.hashPassword(password)
-    return UserManager.changeUserPassword(userId, hashedPassword)
+    return UserManager.changePassword(userId, hashedPassword)
   }
 }
 

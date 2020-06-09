@@ -1,5 +1,5 @@
 const mockUserManager = {
-    changeUserPassword: jest.fn(),
+    changePassword: jest.fn(),
     findByEmailOrUsername: jest.fn(),
   },
   mockMessageService = {
@@ -28,7 +28,7 @@ describe('Password service', () => {
   describe('change password', () => {
     const password = 'password'
 
-    beforeEach(() => mockUserManager.changeUserPassword.mockClear())
+    beforeEach(() => mockUserManager.changePassword.mockClear())
 
     it('works fine', async () => {
       const hashedPass = await PasswordService.hashPassword(password)
@@ -38,7 +38,7 @@ describe('Password service', () => {
         oldPassword: password,
         newPassword: 'hey-there',
       })
-      expect(mockUserManager.changeUserPassword.mock.calls.length).toBe(1)
+      expect(mockUserManager.changePassword.mock.calls.length).toBe(1)
     })
 
     it('throws if bad new password', async () => {
@@ -71,7 +71,7 @@ describe('Password service', () => {
       id = '1'
     beforeEach(() => {
       mockMessageService.sendPasswordResetEmail.mockClear()
-      mockUserManager.changeUserPassword.mockClear()
+      mockUserManager.changePassword.mockClear()
     })
 
     it('sends reset email with valid token', async () => {
@@ -141,8 +141,8 @@ describe('Password service', () => {
         password,
       })
 
-      expect(mockUserManager.changeUserPassword.mock.calls.length).toBe(1)
-      const hashedPassword = mockUserManager.changeUserPassword.mock.calls[0][1]
+      expect(mockUserManager.changePassword.mock.calls.length).toBe(1)
+      const hashedPassword = mockUserManager.changePassword.mock.calls[0][1]
       expect(await PasswordService.verifyPassword(hashedPassword, password))
     })
 

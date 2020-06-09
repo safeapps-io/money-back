@@ -130,7 +130,7 @@ export class UserManager {
     })
   }
 
-  static changeUserPassword(userId: string, password: string) {
+  static changePassword(userId: string, password: string) {
     return this.update(userId, { password })
   }
 

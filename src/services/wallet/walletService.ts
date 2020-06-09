@@ -39,9 +39,7 @@ export class WalletService {
     .noUnknown()
   static async create(userId: string, chest: string) {
     runSchemaWithFormError(this.createScheme, { userId, chest })
-    const { id: walletId } = await WalletManager.create()
-    await WalletManager.createOwner({ chest, userId, walletId })
-    return WalletManager.byId(walletId)
+    return WalletManager.create({ userId, chest })
   }
 
   private static isUserOwner({
