@@ -50,13 +50,28 @@ export default class User extends BaseModel<User> {
     get(this: User) {
       return getValue(this.getDataValue('b64EncryptedInvitePrivateKey'))
     },
-    set(this: User, val: string | Buffer) {
+    set(this: User, val: string) {
       setValue(val, (newVal) =>
-        this.setDataValue('b64EncryptedInvitePrivateKey', newVal),
+        this.setDataValue(
+          'b64EncryptedInvitePrivateKey',
+          newVal as string | null,
+        ),
       )
     },
   })
-  b64EncryptedInvitePrivateKey!: string | Buffer | null
+  b64EncryptedInvitePrivateKey!: string | null
+
+  @AllowNull
+  @Column({
+    type: DataType.BLOB,
+    get(this: User) {
+      return getValue(this.getDataValue('b64salt'))
+    },
+    set(this: User, val: string | Buffer) {
+      setValue(val, (newVal) => this.setDataValue('b64salt', newVal))
+    },
+  })
+  b64salt!: string | Buffer | null
 
   @AllowNull
   @Column({

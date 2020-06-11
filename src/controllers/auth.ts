@@ -131,10 +131,12 @@ authRouter.post(
   isRestAuth,
   ash(async (req, res) => {
     const {
+      b64salt,
       b64InvitePublicKey,
       b64EncryptedInvitePrivateKey,
       chests,
     } = req.body as {
+      b64salt: string
       b64InvitePublicKey: string
       b64EncryptedInvitePrivateKey: string
       chests: { walletId: string; chest: string }[]
@@ -143,6 +145,7 @@ authRouter.post(
       user: req.user,
       b64InvitePublicKey,
       b64EncryptedInvitePrivateKey,
+      b64salt,
       chests,
     })
 

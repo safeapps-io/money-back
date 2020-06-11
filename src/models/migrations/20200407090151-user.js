@@ -26,6 +26,7 @@ module.exports = {
       email: { type: Sequelize.STRING, allowNull: true, unique: true },
       b64InvitePublicKey: { type: Sequelize.BLOB, allowNull: true },
       b64EncryptedInvitePrivateKey: { type: Sequelize.BLOB, allowNull: true },
+      b64salt: { type: Sequelize.BLOB, allowNull: true },
       encr: { type: Sequelize.BLOB, allowNull: true },
       password: requiredString,
       inviterId: {

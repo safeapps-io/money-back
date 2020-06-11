@@ -275,26 +275,31 @@ export class UserService {
   }
 
   private static updateMasterPasswordScheme = yup.object({
+    b64salt: requiredString,
     b64InvitePublicKey: requiredString,
     b64EncryptedInvitePrivateKey: requiredString,
   })
   static async updateMasterPassword({
     user,
+    b64salt,
     b64InvitePublicKey,
     b64EncryptedInvitePrivateKey,
     chests,
   }: {
     user: User
+    b64salt: string
     b64InvitePublicKey: string
     b64EncryptedInvitePrivateKey: string
     chests: { walletId: string; chest: string }[]
   }) {
     runSchemaWithFormError(this.updateMasterPasswordScheme, {
+      b64salt,
       b64InvitePublicKey,
       b64EncryptedInvitePrivateKey,
     })
     getTransaction(async () => {
       await UserManager.update(user.id, {
+        b64salt,
         b64InvitePublicKey,
         b64EncryptedInvitePrivateKey,
       })
