@@ -171,8 +171,9 @@ export class UserService {
       })
 
     await PasswordService.verifyPassword(user.password, password)
+    const tokens = await this.newSignIn({ userId: user.id, description })
 
-    return this.newSignIn({ userId: user.id, description })
+    return { ...tokens, user }
   }
 
   static async getNewAccessToken(accessToken: string, refreshToken: string) {
