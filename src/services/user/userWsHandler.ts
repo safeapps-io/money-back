@@ -4,19 +4,19 @@ import { UserPubSubService, UserPubSubMessageTypes } from './userPubSubService'
 import { UserService } from './userService'
 import { DefaultWsState } from '@/services/types'
 
-enum ITypes {
+enum ClientTypes {
   newAccessToken = 'user/newAccessToken',
   incrementalUpdate = 'user/incrementalUpdate',
 }
 
 export type UserIncomingMessages = {
-  [ITypes.newAccessToken]: { accessToken: string; refreshToken: string }
-  [ITypes.incrementalUpdate]:
+  [ClientTypes.newAccessToken]: { accessToken: string; refreshToken: string }
+  [ClientTypes.incrementalUpdate]:
     | { encr: string; clientUpdated: number }
     | undefined
 }
 
-enum OTypes {
+enum BackTypes {
   data = 'user/data',
   newAccessToken = 'user/newAccessToken',
 }
@@ -35,16 +35,16 @@ export class UserWsMiddleware implements M {
     }
   }
 
-  static [ITypes.newAccessToken]: M[ITypes.newAccessToken] = async ({
+  static [ClientTypes.newAccessToken]: M[ClientTypes.newAccessToken] = async ({
     wsWrapped,
     message,
   }) => {
     const { accessToken, refreshToken } = message
     const token = await UserService.getNewAccessToken(accessToken, refreshToken)
-    wsWrapped.send({ type: OTypes.newAccessToken, data: token })
+    wsWrapped.send({ type: BackTypes.newAccessToken, data: token })
   }
 
-  static [ITypes.incrementalUpdate]: M[ITypes.incrementalUpdate] = async ({
+  static [ClientTypes.incrementalUpdate]: M[ClientTypes.incrementalUpdate] = async ({
     wsWrapped,
     message,
   }) => {
@@ -55,7 +55,7 @@ export class UserWsMiddleware implements M {
       data: message,
       socketId: wsWrapped.id,
     })
-    wsWrapped.send({ type: OTypes.data, data: res })
+    wsWrapped.send({ type: BackTypes.data, data: res })
 
     return UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
@@ -64,7 +64,7 @@ export class UserWsMiddleware implements M {
       callback: ({ type, data }) => {
         switch (type) {
           case UserPubSubMessageTypes.userData:
-            wsWrapped.send({ type: OTypes.data, data })
+            wsWrapped.send({ type: BackTypes.data, data })
             break
         }
       },

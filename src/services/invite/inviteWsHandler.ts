@@ -2,7 +2,7 @@ import { WSMiddleware } from '@/utils/wsMiddleware'
 import { DefaultWsState } from '@/services/types'
 import { InviteService } from './inviteService'
 
-enum ITypes {
+enum ClientTypes {
   validateInvite = 'validateInvite',
 
   invitationError = 'invitationError',
@@ -12,17 +12,17 @@ enum ITypes {
 }
 
 export type InviteIncomingMessages = {
-  [ITypes.validateInvite]: {
+  [ClientTypes.validateInvite]: {
     b64InviteString: string
     b64InviteSignatureByJoiningUser: string
     b64PublicECDHKey: string
   }
-  [ITypes.invitationError]: {
+  [ClientTypes.invitationError]: {
     joiningUserId: string
     b64InviteSignatureByJoiningUser: string
     b64InviteString: string
   }
-  [ITypes.invitationResolution]: {
+  [ClientTypes.invitationResolution]: {
     allowJoin: boolean
     joiningUserId: string
     b64InviteString: string
@@ -31,12 +31,12 @@ export type InviteIncomingMessages = {
     b64PublicECDHKey?: string
     encryptedSecretKey?: string
   }
-  [ITypes.joiningError]: {
+  [ClientTypes.joiningError]: {
     b64InviteString: string
   }
 }
 
-enum OTypes {
+enum BackTypes {
   validateTriggerSuccess = 'validateTriggerSuccess',
   validateTriggerError = 'validateTriggerError',
 
@@ -45,7 +45,7 @@ enum OTypes {
 
 type M = WSMiddleware<InviteIncomingMessages, DefaultWsState>
 export class InviteWsMiddleware implements M {
-  static [ITypes.validateInvite]: M[ITypes.validateInvite] = async ({
+  static [ClientTypes.validateInvite]: M[ClientTypes.validateInvite] = async ({
     wsWrapped,
     message,
   }) => {
@@ -56,16 +56,16 @@ export class InviteWsMiddleware implements M {
         joiningUser: wsWrapped.state.user,
         ...message,
       })
-      wsWrapped.send({ type: OTypes.validateTriggerSuccess })
+      wsWrapped.send({ type: BackTypes.validateTriggerSuccess })
     } catch (error) {
       wsWrapped.send({
-        type: OTypes.validateTriggerError,
+        type: BackTypes.validateTriggerError,
         data: { error: error.message },
       })
     }
   }
 
-  static [ITypes.invitationError]: M[ITypes.invitationError] = async ({
+  static [ClientTypes.invitationError]: M[ClientTypes.invitationError] = async ({
     wsWrapped,
     message,
   }) => {
@@ -78,11 +78,11 @@ export class InviteWsMiddleware implements M {
       })
     } catch (error) {
       // Seems to be a malware alike case
-      wsWrapped.send({ type: OTypes.error })
+      wsWrapped.send({ type: BackTypes.error })
     }
   }
 
-  static [ITypes.invitationResolution]: M[ITypes.invitationResolution] = async ({
+  static [ClientTypes.invitationResolution]: M[ClientTypes.invitationResolution] = async ({
     wsWrapped,
     message,
   }) => {
@@ -94,11 +94,11 @@ export class InviteWsMiddleware implements M {
         ...message,
       })
     } catch (error) {
-      wsWrapped.send({ type: OTypes.error, data: { error: error.message } })
+      wsWrapped.send({ type: BackTypes.error, data: { error: error.message } })
     }
   }
 
-  static [ITypes.joiningError]: M[ITypes.joiningError] = async ({
+  static [ClientTypes.joiningError]: M[ClientTypes.joiningError] = async ({
     wsWrapped,
     message,
   }) => {
@@ -110,7 +110,7 @@ export class InviteWsMiddleware implements M {
         ...message,
       })
     } catch (error) {
-      wsWrapped.send({ type: OTypes.error, data: { error: error.message } })
+      wsWrapped.send({ type: BackTypes.error, data: { error: error.message } })
     }
   }
 }

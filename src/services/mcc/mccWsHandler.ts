@@ -1,25 +1,25 @@
 import { WSMiddleware } from '@/utils/wsMiddleware'
 import { MCCService } from './mccService'
 
-enum ITypes {
+enum ClientTypes {
   clientMCCDescription = 'clientMCCDescription',
 }
 
 export type MCCIncomingMessages = {
-  [ITypes.clientMCCDescription]: { codeList: string[] }
+  [ClientTypes.clientMCCDescription]: { codeList: string[] }
 }
 
-enum OTypes {
+enum BackTypes {
   serverMCCDescription = 'serverMCCDescription',
 }
 
 type M = WSMiddleware<MCCIncomingMessages>
 export class MCCWsMiddleware implements M {
-  static [ITypes.clientMCCDescription]: M[ITypes.clientMCCDescription] = async ({
+  static [ClientTypes.clientMCCDescription]: M[ClientTypes.clientMCCDescription] = async ({
     wsWrapped,
     message,
   }) => {
     const items = MCCService.getCodeDescription(message.codeList)
-    wsWrapped.sequentialSend({ type: OTypes.serverMCCDescription, items })
+    wsWrapped.sequentialSend({ type: BackTypes.serverMCCDescription, items })
   }
 }

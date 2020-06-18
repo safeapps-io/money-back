@@ -8,15 +8,15 @@ import {
   UserPubSubMessageTypes,
 } from '../user/userPubSubService'
 
-enum ITypes {
+enum ClientTypes {
   clientData = 'sync/data',
 }
 
 export type SyncIncomingMessages = {
-  [ITypes.clientData]: ClientChangesData
+  [ClientTypes.clientData]: ClientChangesData
 }
 
-enum OTypes {
+enum BackTypes {
   backData = 'sync/data',
   finished = 'sync/finished',
 }
@@ -25,7 +25,7 @@ const pubSubPurpose = 'sync'
 
 type M = WSMiddleware<SyncIncomingMessages, DefaultWsState>
 export class SyncWsMiddleware implements M {
-  static [ITypes.clientData]: M[ITypes.clientData] = async ({
+  static [ClientTypes.clientData]: M[ClientTypes.clientData] = async ({
     wsWrapped,
     message,
   }) => {
@@ -40,7 +40,7 @@ export class SyncWsMiddleware implements M {
       }),
       finishCallback = () =>
         wsWrapped.send({
-          type: OTypes.finished,
+          type: BackTypes.finished,
           cb: () =>
             UserPubSubService.subscribeSocketForUser({
               userId,
@@ -49,14 +49,14 @@ export class SyncWsMiddleware implements M {
               callback: ({ data, type }) => {
                 switch (type) {
                   case UserPubSubMessageTypes.syncData:
-                    wsWrapped.send({ data, type: OTypes.backData })
+                    wsWrapped.send({ data, type: BackTypes.backData })
                 }
               },
             }),
         })
 
     wsWrapped.sequentialSend({
-      type: OTypes.backData,
+      type: BackTypes.backData,
       items,
       finishCallback,
     })
