@@ -28,6 +28,10 @@ export class RefreshTokenManager {
     return RefreshToken.create(data)
   }
 
+  static destroy(data: { userId: string; key: string }) {
+    return RefreshToken.destroy({ where: data })
+  }
+
   static async exists({
     token,
     userId,

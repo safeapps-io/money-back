@@ -166,18 +166,16 @@ authRouter.post(
 )
 
 authRouter.post(
-  '/newToken',
+  '/logout',
+  isRestAuth,
   ash(async (req, res) => {
-    const body = req.body as {
-      accessToken: string
-      refreshToken: string
-    }
+    const body = req.body as { refreshToken: string }
 
-    const token = await UserService.getNewAccessToken(
-      body.accessToken,
-      body.refreshToken,
-    )
-    res.json({ token })
+    await UserService.logout({
+      user: req.user,
+      refreshToken: body.refreshToken,
+    })
+    res.json({})
   }),
 )
 

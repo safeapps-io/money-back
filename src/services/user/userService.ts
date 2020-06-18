@@ -260,7 +260,7 @@ export class UserService {
     data,
   }: {
     user: User
-    socketId: string
+    socketId?: string
     data?: { encr: string; clientUpdated: number }
   }) {
     // No client update
@@ -306,6 +306,12 @@ export class UserService {
       })
       await WalletService.updateChests({ userId: user.id, chests })
     })
+  }
+
+  static logout({ user, refreshToken }: { user: User; refreshToken: string }) {
+    runSchemaWithFormError(requiredString, refreshToken)
+
+    return RefreshTokenManager.destroy({ userId: user.id, key: refreshToken })
   }
 }
 

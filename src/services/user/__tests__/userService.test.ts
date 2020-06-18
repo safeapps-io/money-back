@@ -9,6 +9,7 @@ const mockRefreshTokenManager = {
       key: nanoid(),
     })),
     exists: jest.fn(),
+    destroy: jest.fn(),
   },
   mockUserManager = {
     create: jest.fn().mockImplementation((data) => ({ ...data, id: nanoid() })),
@@ -512,6 +513,28 @@ describe('User Service', () => {
           }),
         ).rejects.toThrow(FormValidationError)
       })
+    })
+  })
+
+  describe('logout', () => {
+    it('works', async () => {
+      const refreshToken = 'hey'
+
+      await UserService.logout({ user: validatedUser as any, refreshToken })
+
+      expect(mockRefreshTokenManager.destroy.mock.calls.length).toBe(1)
+      const { userId, key } = mockRefreshTokenManager.destroy.mock.calls[0][0]
+      expect(userId).toBe(validatedUser.id)
+      expect(key).toBe(refreshToken)
+    })
+
+    it('throws if invalid input', () => {
+      expect(() =>
+        UserService.logout({
+          user: validatedUser as any,
+          refreshToken: null as any,
+        }),
+      ).toThrow(FormValidationError)
     })
   })
 })
