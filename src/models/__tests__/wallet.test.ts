@@ -23,4 +23,19 @@ describe('Wallet manager', () => {
     expect(user.id).toBe(userId)
     expect(user.WalletAccess.accessLevel).toBe(AccessLevels.owner)
   })
+
+  it('fetches users wallets only', async () => {
+    const newUser = await UserManager.create({
+        password: '',
+        username: nanoid(),
+      }),
+      [w1, w2] = await Promise.all([
+        WalletManager.create({ userId: newUser.id, chest: '' }),
+        WalletManager.create({ userId: newUser.id, chest: '' }),
+      ]),
+      refetched = await WalletManager.byUserId(newUser.id)
+
+    expect(refetched.length).toBe(2)
+    expect(refetched.map((w) => w.id)).toEqual([w1.id, w2.id])
+  })
 })

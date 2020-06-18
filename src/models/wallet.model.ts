@@ -22,6 +22,7 @@ export class WalletManager {
     include: [
       {
         model: User,
+        required: true,
         through: {
           where: { accessLevel: { [Op.not]: AccessLevels.rejected }, userId },
         },

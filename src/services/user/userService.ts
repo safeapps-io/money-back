@@ -298,13 +298,15 @@ export class UserService {
       b64InvitePublicKey,
       b64EncryptedInvitePrivateKey,
     })
-    getTransaction(async () => {
-      await UserManager.update(user.id, {
+    return getTransaction(async () => {
+      const updatedUser = await UserManager.update(user.id, {
         b64salt,
         b64InvitePublicKey,
         b64EncryptedInvitePrivateKey,
       })
       await WalletService.updateChests({ userId: user.id, chests })
+
+      return updatedUser
     })
   }
 

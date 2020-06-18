@@ -33,7 +33,7 @@ jest.mock('@/services/wallet/walletPubSubService', () => ({
 }))
 
 import { WalletService } from '../walletService'
-import { FormValidationError, AccessError } from '@/services/errors'
+import { FormValidationError, RequestError } from '@/services/errors'
 import { AccessLevels } from '@/models/walletAccess.model'
 
 const mockClear = (mock: Object) =>
@@ -133,14 +133,14 @@ describe('Wallet Service', () => {
         ],
       }))
       await expect(WalletService.destroy(userId, walletId)).rejects.toThrow(
-        AccessError,
+        RequestError,
       )
     })
 
     it('throws if user not connected to the wallet', async () => {
       mockWalletManager.byId.mockImplementationOnce(async () => null)
       await expect(WalletService.destroy(userId, walletId)).rejects.toThrow(
-        AccessError,
+        RequestError,
       )
     })
   })
@@ -215,7 +215,7 @@ describe('Wallet Service', () => {
           walletId,
           userToRemoveId: userId,
         } as any),
-      ).rejects.toThrow(AccessError)
+      ).rejects.toThrow(RequestError)
     })
 
     it('throws if owner tries to remove self', async () => {
@@ -225,7 +225,7 @@ describe('Wallet Service', () => {
           walletId,
           userToRemoveId: 'werwer',
         } as any),
-      ).rejects.toThrow(AccessError)
+      ).rejects.toThrow(RequestError)
     })
   })
 
@@ -283,14 +283,14 @@ describe('Wallet Service', () => {
             { walletId: walletId2, chest },
           ],
         }),
-      ).rejects.toThrow(AccessError)
+      ).rejects.toThrow(RequestError)
 
       await expect(
         WalletService.updateChests({
           userId,
           chests: [{ walletId: 'newWalletId', chest }],
         }),
-      ).rejects.toThrow(AccessError)
+      ).rejects.toThrow(RequestError)
     })
 
     it('throws if data is invalid', async () => {

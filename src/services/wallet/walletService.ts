@@ -1,6 +1,6 @@
 import * as yup from 'yup'
 
-import { AccessError } from '@/services/errors'
+import { AccessError, RequestError } from '@/services/errors'
 import Wallet, { WalletManager } from '@/models/wallet.model'
 import { runSchemaWithFormError, requiredString } from '@/utils/yupHelpers'
 import { AccessLevels } from '@/models/walletAccess.model'
@@ -66,10 +66,10 @@ export class WalletService {
     runSchemaWithFormError(this.destroyScheme, { userId, walletId })
 
     const wallet = await WalletManager.byId(walletId)
-    if (!wallet) throw new AccessError()
+    if (!wallet) throw new RequestError('No such wallet')
 
     const isOwner = this.isUserOwner({ wallet, userId })
-    if (!isOwner) throw new AccessError()
+    if (!isOwner) throw new RequestError('You are not an owner')
 
     const connectedUserIds = await this.getWalletUserIds(wallet.id)
     await WalletManager.destroy(walletId)
@@ -110,7 +110,7 @@ export class WalletService {
       allowOperation =
         (isOwner && !isRemovingSelf) || (!isOwner && isRemovingSelf)
 
-    if (!allowOperation) throw new AccessError()
+    if (!allowOperation) throw new RequestError('Operation not allowed')
     await WalletManager.removeUser({
       walletId: wallet.id,
       userId: userToRemoveId,
@@ -151,7 +151,8 @@ export class WalletService {
           .map((chest) => userWalletIds.includes(chest.walletId))
           .every(Boolean)
 
-    if (!allChestsRepresented) throw new AccessError()
+    if (!allChestsRepresented)
+      throw new RequestError('Not all chests are represented')
 
     const walletAccessIdsAndChests = userWallets.map((wall) => {
       const userWa = wall.users.find((u) => u.id === userId)
