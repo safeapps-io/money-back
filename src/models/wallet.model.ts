@@ -30,6 +30,7 @@ export default class Wallet extends BaseModel<Wallet> {
 
 export class WalletManager {
   private static filterByUser = (userId: string) => ({
+    attributes: ['id'],
     include: [
       {
         model: User,
@@ -41,21 +42,32 @@ export class WalletManager {
     ],
   })
 
-  static byIdAndUserId({
+  static async byIdAndUserId({
     userId,
     walletId,
   }: {
     userId: string
     walletId: string
   }) {
-    return Wallet.findOne({
-      ...this.filterByUser(userId),
-      where: { id: walletId },
-    })
+    const res = await this.byUserId(userId)
+    return res.find((wallet) => wallet.id === walletId)
   }
 
-  static byUserId(userId: string) {
-    return Wallet.findAll({ ...this.filterByUser(userId) })
+  static async byUserId(userId: string) {
+    /**
+     * TODO: make it one query
+     * Looks pretty ugly to me. It requires two queries, because I don't quite get joins.
+     */
+    const ids = (await Wallet.findAll(this.filterByUser(userId))).map(
+      (ent) => ent.id,
+    )
+
+    return Wallet.findAll({
+      where: { id: { [Op.in]: ids } },
+      include: [
+        { model: User, through: { where: { userId: { [Op.not]: null } } } },
+      ],
+    })
   }
 
   static byId(id: string) {

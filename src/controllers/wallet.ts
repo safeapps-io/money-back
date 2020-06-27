@@ -39,12 +39,12 @@ walletRouter.post(
       userId: string
     }
 
-    await WalletService.removeUser({
+    const wallet = await WalletService.removeUser({
       initiatorId: req.user.id,
       walletId,
       userToRemoveId,
     })
 
-    res.json({})
+    res.json(wallet)
   }),
 )

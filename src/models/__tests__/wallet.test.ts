@@ -36,7 +36,37 @@ describe('Wallet manager', () => {
       refetched = await WalletManager.byUserId(newUser.id)
 
     expect(refetched.length).toBe(2)
-    expect(refetched.map((w) => w.id)).toEqual([w1.id, w2.id])
+    const arr = refetched.map((w) => w.id)
+    expect(arr.includes(w1.id)).toBeTruthy()
+    expect(arr.includes(w2.id)).toBeTruthy()
+  })
+
+  it('fetches all wallet users', async () => {
+    const newUser = await UserManager.create({
+        password: '',
+        username: nanoid(),
+      }),
+      newUser2 = await UserManager.create({
+        password: '',
+        username: nanoid(),
+      }),
+      w1 = await WalletManager.create({ userId: newUser.id, chest: '' })
+
+    await WalletManager.addUser({
+      walletId: w1.id,
+      userId: newUser2.id,
+      inviteId: nanoid(),
+    })
+
+    const refetched = await WalletManager.byUserId(newUser.id)
+
+    expect((await WalletManager.byId(w1.id))!.users.length).toBe(2)
+
+    expect(refetched[0].users.length).toBe(2)
+    expect(refetched[0].users.map((u) => u.id)).toEqual([
+      newUser.id,
+      newUser2.id,
+    ])
   })
 
   it('serializes wallet users without private data', () => {
