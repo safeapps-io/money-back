@@ -183,13 +183,25 @@ export class WalletManager {
     })
   }
 
-  static updateChests(
-    data: {
-      id: string
-      chest: string
-    }[],
-  ) {
-    // Bulk create works as bulk update by key
-    return WalletAccess.bulkCreate(data, { returning: true })
+  static bulkUpdate(data: WalletAccess[]) {
+    /**
+     * TODO: Need to use upsert here.
+     * For some very unobvious reason `bulkCreate` fails. Now it generates SQL with empty
+     * `ON CONFLICT()` braces, which is a syntax error.
+     *
+     * I found that this is a known behaviour for composite key situation, they even have
+     * a fix for Sequelize v6, but no for v5: https://github.com/sequelize/sequelize/pull/11984
+     * I'm stuck with Sequelize v5 for now, because I rely on sequelize-typescript lib:
+     * https://github.com/RobinBuschmann/sequelize-typescript/issues/804
+     *
+     * This behaviour is strange, because I in fact do not have any composite keys here. I've
+     * created a small repo alongside this one in Projects/temp/sequelize-update-issue,
+     * that shows that upsert should work ok in my case. But it doesn't.
+     * Which makes me think, that sequelize-typescript somehow instructs Sequelize the wrong way,
+     * making it think I have some composite keys, which I do not.
+     * Maybe it wouldn't hurt a lot if I dropped sequelize-typescript at all, since it doesn't
+     * really make a lot of difference in this project.
+     */
+    return Promise.all(data.map((wa) => wa.save()))
   }
 }

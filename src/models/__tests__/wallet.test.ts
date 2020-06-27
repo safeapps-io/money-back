@@ -83,4 +83,16 @@ describe('Wallet manager', () => {
     expect(user.WalletAccess.userId).toBeUndefined()
     expect(user.WalletAccess.walletId).toBeUndefined()
   })
+
+  it('updates WalletAccess correctly in bulk mode', async () => {
+    const initialChest = 'qwer',
+      wallet = await WalletManager.create({ userId, chest: initialChest }),
+      overwrittenChest = 'qwerqwer'
+
+    const overwrittenWa = wallet.users[0].WalletAccess
+    overwrittenWa.chest = overwrittenChest
+
+    const res = await WalletManager.bulkUpdate([overwrittenWa])
+    expect(res[0].chest).toBe(overwrittenChest)
+  })
 })

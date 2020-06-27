@@ -155,14 +155,11 @@ export class WalletService {
       throw new RequestError('Not all chests are represented')
 
     const walletAccessIdsAndChests = userWallets.map((wall) => {
-      const userWa = wall.users.find((u) => u.id === userId)
-
-      return {
-        id: userWa!.WalletAccess.id,
-        chest: chests.find((chest) => chest.walletId === wall.id)!.chest,
-      }
+      const userWa = wall.users.find((u) => u.id === userId)!.WalletAccess
+      userWa.chest = chests.find((chest) => chest.walletId === wall.id)!.chest
+      return userWa
     })
-    await WalletManager.updateChests(walletAccessIdsAndChests)
+    await WalletManager.bulkUpdate(walletAccessIdsAndChests)
 
     const refetchedWallets = await WalletManager.byIds(userWalletIds)
     return Promise.all(

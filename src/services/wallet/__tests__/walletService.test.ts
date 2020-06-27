@@ -16,7 +16,7 @@ const mockWalletManager = {
     createOwner: jest.fn(),
     addUser: jest.fn(),
     removeUser: jest.fn(),
-    updateChests: jest.fn(),
+    bulkUpdate: jest.fn(),
   },
   mockWalletPubSubService = {
     publishWalletDestroy: jest.fn(),
@@ -259,8 +259,8 @@ describe('Wallet Service', () => {
         ],
       })
 
-      expect(mockWalletManager.updateChests.mock.calls.length).toBe(1)
-      expect(mockWalletManager.updateChests.mock.calls[0][0]).toEqual([
+      expect(mockWalletManager.bulkUpdate.mock.calls.length).toBe(1)
+      expect(mockWalletManager.bulkUpdate.mock.calls[0][0]).toEqual([
         { id: waWalletId1, chest },
         { id: waWalletId2, chest },
       ])
