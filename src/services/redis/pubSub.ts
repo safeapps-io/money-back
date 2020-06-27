@@ -27,7 +27,9 @@ class RedisPubSubService {
   }
 
   init() {
-    subscriptionConnection.on('message', this.handleMessage)
+    subscriptionConnection.on('message', (channel: string, message: string) =>
+      this.handleMessage(channel, message),
+    )
   }
 
   handleMessage(channel: string, message: string) {
@@ -42,7 +44,7 @@ class RedisPubSubService {
         // Preventing users from getting their own updates
         ([subscriberId, fns]) =>
           publisherId !== subscriberId &&
-          Object.values(fns).forEach(fn => fn(data)),
+          Object.values(fns).forEach((fn) => fn(data)),
       )
     } catch (error) {
       // Maybe logging? Something went wrong with either parsing or function handler
@@ -83,7 +85,7 @@ class RedisPubSubService {
     callbackKey: string
   }) {
     const subscribeToChannels = channels.filter(
-      channel => !this.log.has(channel),
+      (channel) => !this.log.has(channel),
     )
 
     if (subscribeToChannels.length)
