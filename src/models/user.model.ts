@@ -102,10 +102,18 @@ export default class User extends BaseModel<User> {
   @BelongsToMany(() => Wallet, () => WalletAccess)
   wallets!: Array<Wallet & { WalletAccess: WalletAccess }>
 
-  public toJSON() {
-    const prev = super.toJSON()
-    const curr = { ...prev, password: '' }
+  public toJSON(includePrivateData = true) {
+    const curr = super.toJSON() as any
     delete curr.password
+
+    if (!includePrivateData) {
+      delete curr.inviterId
+      delete curr.email
+      delete curr.b64InvitePublicKey
+      delete curr.b64EncryptedInvitePrivateKey
+      delete curr.b64salt
+      delete curr.encr
+    }
 
     return curr
   }

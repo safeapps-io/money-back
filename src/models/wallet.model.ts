@@ -15,6 +15,17 @@ export default class Wallet extends BaseModel<Wallet> {
 
   @HasMany(() => Entity)
   entities!: Entity[]
+
+  public toJSON() {
+    const curr = super.toJSON() as any,
+      users = this.users.map((user) => ({
+        ...user.toJSON(false),
+        WalletAccess: user.WalletAccess.toJSON(),
+      }))
+
+    curr.users = users
+    return curr
+  }
 }
 
 export class WalletManager {

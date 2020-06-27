@@ -48,4 +48,12 @@ export default class WalletAccess extends BaseModel<WalletAccess> {
 
   @Column(DataType.STRING(16))
   accessLevel!: AccessLevels
+
+  public toJSON() {
+    const curr = super.toJSON() as any
+    delete curr.userId
+    delete curr.walletId
+
+    return curr
+  }
 }
