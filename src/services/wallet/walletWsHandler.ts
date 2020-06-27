@@ -15,7 +15,8 @@ export type WalletIncomingMessages = {
 }
 
 enum BackTypes {
-  data = 'wallet/data',
+  all = 'wallet/all',
+  single = 'wallet/single',
   delete = 'wallet/delete',
 }
 
@@ -27,7 +28,7 @@ export class WalletWsMiddleware implements M {
     if (!wsWrapped.state.user) return
 
     const wallets = await WalletService.getUserWallets(wsWrapped.state.user.id)
-    wsWrapped.send({ type: BackTypes.data, data: wallets })
+    wsWrapped.send({ type: BackTypes.all, data: wallets })
 
     return UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
@@ -36,7 +37,7 @@ export class WalletWsMiddleware implements M {
       callback: ({ type, data }) => {
         switch (type) {
           case UserPubSubMessageTypes.walletData:
-            wsWrapped.send({ type: BackTypes.data, data })
+            wsWrapped.send({ type: BackTypes.single, data })
             break
 
           case UserPubSubMessageTypes.walletDelete:
