@@ -6,6 +6,7 @@
   "scripts": {
     "migrate": "sequelize-cli db:migrate",
     "shell": "ts-node -T -r tsconfig-paths/register -r ./src/shell.ts",
+    "recreateSeeds": "sequelize-cli db:drop --env development && sequelize-cli db:create && sequelize-cli db:migrate && sequelize-cli db:seed:all",
     "pretest": "sequelize-cli db:drop --env test && sequelize-cli db:create --env test && sequelize-cli db:migrate --env test",
     "test": "jest --watch -i",
     "coverage": "jest --coverage",

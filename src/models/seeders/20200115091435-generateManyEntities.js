@@ -27,6 +27,22 @@ const encrAlgo = 'AES-GCM',
     )
   }
 
+const EntityTypes = {
+  wallet: 'w',
+
+  walletUser: 'wu',
+  category: 'c',
+  searchFilter: 'sf',
+
+  balanceCorrectionTransaction: 'bct',
+  balanceReferenceTransaction: 'brt',
+
+  transaction: 't',
+  ignoredTransaction: 'it',
+
+  deleted: 'd',
+}
+
 const endDate = new Date(),
   startDate = dateFns.sub(endDate, { months: 12 })
 
@@ -154,6 +170,7 @@ module.exports = {
       const categories = _.range(50).map(() => ({
           ...buildBaseEntity(walletId),
           decr: {
+            type: EntityTypes.category,
             title: faker.commerce.department(),
             color: faker.internet.color(),
             isIncome: Math.random() < 0.1,
@@ -166,10 +183,18 @@ module.exports = {
           .filter((cat) => !cat.decr.isIncome)
           .map((cat) => cat.id)
 
+      const walletData = {
+        ...buildBaseEntity(walletId),
+        decr: {
+          type: EntityTypes.wallet,
+          name: faker.commerce.department(),
+        },
+      }
+
       const walletUsers = users.map((user) => ({
         ...buildBaseEntity(walletId),
         decr: {
-          type: 'user',
+          type: EntityTypes.walletUser,
           userId: user.id,
           name: user.username,
         },
@@ -181,6 +206,7 @@ module.exports = {
             ...buildBaseEntity(walletId),
             id: firstSearchFilterId,
             decr: {
+              type: EntityTypes.searchFilter,
               title: 'Всё',
               parameters: JSON.stringify({
                 datetime: {},
@@ -194,6 +220,7 @@ module.exports = {
           {
             ...buildBaseEntity(walletId),
             decr: {
+              type: EntityTypes.searchFilter,
               title: 'По месяцу, без 3 тегов',
               parameters: JSON.stringify({
                 datetime: { type: 'calendar', period: 'month' },
@@ -209,7 +236,7 @@ module.exports = {
       const correctionTeansactions = _.range(10).map(() => ({
           ...buildBaseEntity(walletId),
           decr: {
-            type: 'balanceCorrection',
+            type: EntityTypes.balanceCorrectionTransaction,
             isActiveReference: null,
             amount: _.random(-5000, 5000),
             searchFilterId: firstSearchFilterId,
@@ -218,15 +245,16 @@ module.exports = {
         referenceTransactions = _.range(3).map((i) => ({
           ...buildBaseEntity(walletId),
           decr: {
-            type: 'balanceReference',
+            type: EntityTypes.balanceReferenceTransaction,
             isActiveReference: i === 0,
             amount: _.random(500000, 1000000),
             searchFilterId: firstSearchFilterId,
           },
         }))
 
-      const transactions = _.range(500).map(() => {
+      const transactions = _.range(_.random(500, 600)).map(() => {
         const decr = {
+          type: EntityTypes.transaction,
           isIncome: Math.random() < 0.05,
           userId: _.sample(userIdChoices),
           description:
@@ -264,6 +292,7 @@ module.exports = {
       })
 
       entitiesDecr.push(
+        walletData,
         ...categories,
         ...searchFilters,
         ...walletUsers,
