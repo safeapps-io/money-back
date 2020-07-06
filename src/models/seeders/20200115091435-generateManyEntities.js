@@ -171,7 +171,7 @@ module.exports = {
           ...buildBaseEntity(walletId),
           decr: {
             type: EntityTypes.category,
-            title: faker.commerce.department(),
+            name: faker.commerce.department(),
             color: faker.internet.color(),
             isIncome: Math.random() < 0.1,
           },
@@ -207,7 +207,7 @@ module.exports = {
             id: firstSearchFilterId,
             decr: {
               type: EntityTypes.searchFilter,
-              title: 'Всё',
+              name: 'Всё',
               parameters: JSON.stringify({
                 datetime: {},
                 category: {},
@@ -221,7 +221,7 @@ module.exports = {
             ...buildBaseEntity(walletId),
             decr: {
               type: EntityTypes.searchFilter,
-              title: 'По месяцу, без 3 тегов',
+              name: 'По месяцу, без 3 тегов',
               parameters: JSON.stringify({
                 datetime: { type: 'calendar', period: 'month' },
                 category: {},
