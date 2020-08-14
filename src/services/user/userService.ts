@@ -227,7 +227,7 @@ export class UserService {
       throw new FormValidationError(UserServiceFormErrors.cantDeleteEmail)
 
     const updateFields = {} as Partial<User>
-    if (typeof username !== 'undefined') {
+    if (typeof username !== 'undefined' && user.username !== username) {
       runSchemaWithFormError(usernameScheme, username)
       await this.checkCredentialsAvailability({ username, excludeId: user.id })
       updateFields.username = username
@@ -237,6 +237,8 @@ export class UserService {
       runSchemaWithFormError(emailScheme, email)
       await ValidateEmailService.triggerEmailValidation(user, email)
     }
+
+    if (!updateFields.username) return user
 
     const res = await UserManager.update(user.id, updateFields)
 
