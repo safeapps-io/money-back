@@ -30,6 +30,8 @@ const encrAlgo = 'AES-GCM',
 const EntityTypes = {
   wallet: 'w',
 
+  asset: 'a',
+
   walletUser: 'wu',
   category: 'c',
   searchFilter: 'sf',
@@ -47,7 +49,7 @@ const endDate = new Date(),
   startDate = dateFns.sub(endDate, { months: 12 })
 
 // prettier-ignore
-const tagsChoices = ['Отпуск', 'MetPet', 'Семья', 'CleverPay', 'Privacy'],
+const tagsChoices = ['Отпуск', 'MetPet', 'Семья', 'CleverPay', 'Privacy', 'tag1', 'hey hey hey', 'GO FOR IT', 'SEND NUDES'],
   mccChoices = ['0742', '0763', '0780', '1740', '1761', '1799', '3000', '3193', '3423', '3733', '5912', '7941', '9402']
 
 const buildBase = () => {
@@ -68,7 +70,7 @@ const buildBase = () => {
   }
 
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
+  up: async (queryInterface) => {
     /**
      * Account passwords: `qwerty123456`
      * Master passwords: `password-{username}`
@@ -135,8 +137,7 @@ module.exports = {
           'eyJpdiI6ImdFL0h4QTlaOXFMa0pUYlFCRTNBM1Q4VUE1VVFBLzdRQzVFdlJpQ01kYmhsSko2T3dydVA5aGd5VVF4VXh3VmVvQzNPT05EOTlZNUQvbmJiMElxdFZIanNDbDdGa1o5QzZ3V2xad09vSUhBZE13QVp6MGpxVUdGQm1YQktzWFMzOXE0TFB2K2tjOGEvNFltZmpaVnJuSHNDYVhzSVFOdW05UXcyekVPOWtHMD0iLCJkYXRhIjoiMXl2aDF3TXQ4c1lpaVFOeS94SEx3QkpiK1VPTmd0SXdKN2xkbk9JcXlwWWQzakdUc2NadWJOOWlRRGxobTYyRSJ9',
         ),
       ),
-      users = [dkzlvData, amaData],
-      userIdChoices = [dkzlvData.id, amaData.id]
+      users = [dkzlvData, amaData]
 
     await queryInterface.bulkInsert(
       'Users',
@@ -188,6 +189,17 @@ module.exports = {
         decr: {
           type: EntityTypes.wallet,
           name: faker.commerce.department(),
+
+          balance: true,
+        },
+      }
+
+      const asset = {
+        ...buildBaseEntity(walletId),
+        decr: {
+          type: EntityTypes.asset,
+
+          code: _.sample(['USD', 'RUB', 'EUR']),
         },
       }
 
@@ -200,55 +212,65 @@ module.exports = {
         },
       }))
 
-      const firstSearchFilterId = nanoid(),
-        searchFilters = [
-          {
-            ...buildBaseEntity(walletId),
-            id: firstSearchFilterId,
-            decr: {
-              type: EntityTypes.searchFilter,
-              name: 'Всё',
-              parameters: JSON.stringify({
-                datetime: {},
-                category: {},
-                tag: {},
-              }),
-              balanceType: 'independent',
-              sharedBalanceSearchFilterId: null,
+      const searchFilters = [
+        {
+          ...buildBaseEntity(walletId),
+          decr: {
+            type: EntityTypes.searchFilter,
+            name: '',
+            protected: true,
+            group: 'all',
+            balance: true,
+
+            parameters: {
+              category: { oneOf: [], noneOf: [] },
+              tag: { oneOf: [], noneOf: [] },
             },
           },
-          {
-            ...buildBaseEntity(walletId),
-            decr: {
-              type: EntityTypes.searchFilter,
-              name: 'По месяцу, без 3 тегов',
-              parameters: JSON.stringify({
-                datetime: { type: 'calendar', period: 'month' },
-                category: {},
-                tag: { exclude: _.sampleSize(tagsChoices, 3) },
-              }),
-              balanceType: 'reference',
-              sharedBalanceSearchFilterId: firstSearchFilterId,
+        },
+        {
+          ...buildBaseEntity(walletId),
+          decr: {
+            type: EntityTypes.searchFilter,
+            name: 'По месяцу, без 3 тегов',
+            group: 'month',
+            protected: false,
+
+            parameters: {
+              category: { oneOf: [], noneOf: [] },
+              tag: { oneOf: [], noneOf: _.sampleSize(tagsChoices, 3) },
             },
           },
-        ]
+        },
+      ]
+
+      const userIdChoices = walletUsers.map((wu) => wu.id)
 
       const correctionTeansactions = _.range(10).map(() => ({
           ...buildBaseEntity(walletId),
           decr: {
             type: EntityTypes.balanceCorrectionTransaction,
-            isActiveReference: null,
+            datetime: randomDateBetween(
+              dateFns.sub(new Date(), { years: 1 }),
+              new Date(),
+            ).getTime(),
+            walletUserId: _.sample(userIdChoices),
+            assetId: asset.id,
             amount: _.random(-5000, 5000),
-            searchFilterId: firstSearchFilterId,
           },
         })),
         referenceTransactions = _.range(3).map((i) => ({
           ...buildBaseEntity(walletId),
           decr: {
             type: EntityTypes.balanceReferenceTransaction,
-            isActiveReference: i === 0,
+            isActive: i === 0,
             amount: _.random(500000, 1000000),
-            searchFilterId: firstSearchFilterId,
+            assetId: asset.id,
+
+            datetime: randomDateBetween(
+              dateFns.sub(new Date(), { years: 1 }),
+              new Date(),
+            ).getTime(),
           },
         }))
 
@@ -256,20 +278,25 @@ module.exports = {
         const decr = {
           type: EntityTypes.transaction,
           isIncome: Math.random() < 0.05,
-          userId: _.sample(userIdChoices),
+          walletUserId: _.sample(userIdChoices),
+          assetId: asset.id,
+          datetime: randomDateBetween(
+            dateFns.sub(new Date(), { years: 1 }),
+            new Date(),
+          ).getTime(),
           description:
             Math.random() < 0.1 ? faker.commerce.productName() : null,
-          autocompleteData: {},
+          autocomplete: {},
         }
 
         if (decr.isIncome) {
           decr.amount = _.random(20000, 100000)
           decr.categoryId = _.sample(incomeCategoryId)
         } else {
-          decr.amount = _.random(50, 5000)
+          decr.amount = _.random(-5000, -50)
           decr.categoryId = _.sample(expenseCategoryId)
           if (Math.random() < 0.1) {
-            decr.originalAmount = _.random(1, 100)
+            decr.originalAmount = _.random(-100, -1)
             let curr
             while (!curr || curr.split(' ').length === 2)
               curr = faker.finance.currencyCode()
@@ -277,15 +304,15 @@ module.exports = {
             decr.currency = curr
           }
           if (Math.random() < 0.8) {
-            decr.autocompleteData.mcc = _.sample(mccChoices)
-            decr.autocompleteData.accNumber = _.random(2500, 9000).toString()
-            decr.autocompleteData.merchant = faker.company.companyName()
+            decr.autocomplete.mcc = _.sample(mccChoices)
+            decr.autocomplete.accNumber = _.random(2500, 9000).toString()
+            decr.autocomplete.merchant = faker.company.companyName()
           }
         }
         decr.isDraft = Math.random() < 0.01
         decr.tags =
-          Math.random() < 0.2
-            ? [Array(_.random(1, 2)).keys()].map(() => _.sample(tagsChoices))
+          Math.random() < 0.4
+            ? [Array(_.random(1, 3)).keys()].map(() => _.sample(tagsChoices))
             : []
 
         return { ...buildBaseEntity(walletId), decr }
@@ -293,6 +320,7 @@ module.exports = {
 
       entitiesDecr.push(
         walletData,
+        asset,
         ...categories,
         ...searchFilters,
         ...walletUsers,
@@ -314,6 +342,7 @@ module.exports = {
       }))
 
     toSave.forEach((e) => delete e.decr)
+
     return queryInterface.bulkInsert('Entities', toSave)
   },
 }
