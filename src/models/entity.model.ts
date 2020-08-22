@@ -70,4 +70,15 @@ export class EntityManager {
       order: [['updated', 'ASC']],
     })
   }
+
+  static async bulkDelete(deleteMap: { walletId: string; ids: string[] }[]) {
+    const query = {
+      [Op.or]: deleteMap.map(({ walletId, ids }) => ({
+        id: { [Op.or]: ids },
+        walletId,
+      })),
+    }
+
+    return Entity.destroy({ where: query })
+  }
 }

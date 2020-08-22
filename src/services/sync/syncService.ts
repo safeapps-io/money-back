@@ -136,4 +136,31 @@ export class SyncService {
   private static async getServerUpdates(entityMap: ServerUpdatesMap) {
     return EntityManager.getUpdates(entityMap)
   }
+
+  private static entitiesDeleteSchema = yup.array(
+    yup
+      .object({
+        walletId: requiredString,
+        ids: yup.array(requiredString),
+      })
+      .noUnknown(),
+  )
+  public static async deleteEntitiesById({
+    deleteMap,
+    userId,
+  }: {
+    deleteMap: { walletId: string; ids: string[] }[]
+    userId: string
+  }) {
+    runSchemaWithFormError(this.entitiesDeleteSchema, deleteMap)
+
+    const usersWalletIds = (await WalletService.getUserWallets(userId)).map(
+        (wallet) => wallet.id,
+      ),
+      filteredMap = deleteMap.filter((item) =>
+        usersWalletIds.includes(item.walletId),
+      )
+
+    return EntityManager.bulkDelete(filteredMap)
+  }
 }
