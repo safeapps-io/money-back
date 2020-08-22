@@ -1,24 +1,22 @@
 import * as wsType from 'ws'
-import nanoid from 'nanoid'
+import { nanoid } from 'nanoid'
 
 import chunk from '@/utils/chunk'
 
 // TODO: Mama, I failed. Make this all type strict… but not like this. Too much `any`
-export type WSMiddleware<MessageMap> = {
-  open?: (ws: any) => Promise<void>
-  close?: (ws: any) => Promise<void>
+export type WSMiddleware<MessageMap, State = {}> = {
+  open?: (ws: WSWrapper<State>) => Promise<void>
+  close?: (ws: WSWrapper<State>) => Promise<void>
   bulk?: (data: {
-    wsWrapped: WSWrapper
+    wsWrapped: WSWrapper<State>
     message: any
     parsed: any
-    state: any
   }) => Promise<object | void>
 } & {
   [messageType in keyof MessageMap]?: (data: {
-    wsWrapped: WSWrapper
+    wsWrapped: WSWrapper<State>
     message: MessageMap[messageType]
     parsed: any
-    state: any
   }) => Promise<object | void>
 }
 
@@ -30,17 +28,15 @@ type Message<MessageMap> = {
   type: keyof MessageMap
 } & BaseMessage
 
-export async function handleWsConnection<IncomingMessages>(
+export async function handleWsConnection<IncomingMessages, State>(
   ws: wsType,
-  ...middlewares: WSMiddleware<IncomingMessages>[]
+  ...middlewares: WSMiddleware<IncomingMessages, State>[]
 ) {
   const id = nanoid(),
-    wsWrapped = new WSWrapper(id, ws)
+    wsWrapped = new WSWrapper<State>(id, ws)
 
-  ws.on('message', async raw => {
-    const state = {}
+  ws.on('message', async (raw) => {
     let type, data, parsed
-
     try {
       parsed = JSON.parse(raw as string) as Message<IncomingMessages>
       type = parsed.type
@@ -55,7 +51,6 @@ export async function handleWsConnection<IncomingMessages>(
           wsWrapped,
           message: data,
           parsed,
-          state,
         })
       if (!middleware[type]) continue
 
@@ -64,7 +59,6 @@ export async function handleWsConnection<IncomingMessages>(
           wsWrapped,
           message: data,
           parsed,
-          state,
         })
       } catch (error) {
         /**
@@ -100,8 +94,12 @@ export async function handleWsConnection<IncomingMessages>(
   }
 }
 
-class WSWrapper {
-  constructor(public id: string, private ws: wsType) {}
+class WSWrapper<State> {
+  constructor(
+    public id: string,
+    private ws: wsType,
+    public state = {} as State,
+  ) {}
 
   send({
     type,
@@ -120,12 +118,12 @@ class WSWrapper {
   sequentialSend({
     type,
     items,
-    finishMessage,
+    finishCallback,
     threshold = 100,
   }: {
     type: string
     items: Array<any>
-    finishMessage?: { type: string; data?: any }
+    finishCallback?: () => void
     threshold?: number
   }) {
     const chunkedItems = chunk(items, threshold)
@@ -136,9 +134,7 @@ class WSWrapper {
         data: chunkedItems[index],
         cb: () => {
           if (chunkedItems[index + 1]) recursiveSend(index + 1)
-          else
-            finishMessage &&
-              this.send({ type: finishMessage.type, data: finishMessage.data })
+          else if (finishCallback) finishCallback()
         },
       })
 

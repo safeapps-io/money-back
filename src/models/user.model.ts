@@ -7,11 +7,16 @@ import {
   HasMany,
   ForeignKey,
   BelongsTo,
+  BelongsToMany,
 } from 'sequelize-typescript'
-
-import BaseModel from './base'
 import { Op } from 'sequelize'
-import RefreshToken from './refreshToken.model'
+
+import { getValue, setValue } from '@/utils/blobAsBase64'
+
+import BaseModel from '@/models/base'
+import RefreshToken from '@/models/refreshToken.model'
+import Wallet from '@/models/wallet.model'
+import WalletAccess from '@/models/walletAccess.model'
 
 @Table
 export default class User extends BaseModel<User> {
@@ -28,6 +33,59 @@ export default class User extends BaseModel<User> {
   password!: string
 
   @AllowNull
+  @Column({
+    type: DataType.BLOB,
+    get(this: User) {
+      return getValue(this.getDataValue('b64InvitePublicKey'))
+    },
+    set(this: User, val: string | Buffer) {
+      setValue(val, (newVal) => this.setDataValue('b64InvitePublicKey', newVal))
+    },
+  })
+  b64InvitePublicKey!: string | Buffer | null
+
+  @AllowNull
+  @Column({
+    type: DataType.BLOB,
+    get(this: User) {
+      return getValue(this.getDataValue('b64EncryptedInvitePrivateKey'))
+    },
+    set(this: User, val: string) {
+      setValue(val, (newVal) =>
+        this.setDataValue(
+          'b64EncryptedInvitePrivateKey',
+          newVal as string | null,
+        ),
+      )
+    },
+  })
+  b64EncryptedInvitePrivateKey!: string | null
+
+  @AllowNull
+  @Column({
+    type: DataType.BLOB,
+    get(this: User) {
+      return getValue(this.getDataValue('b64salt'))
+    },
+    set(this: User, val: string | Buffer) {
+      setValue(val, (newVal) => this.setDataValue('b64salt', newVal))
+    },
+  })
+  b64salt!: string | Buffer | null
+
+  @AllowNull
+  @Column({
+    type: DataType.BLOB,
+    get(this: User) {
+      return getValue(this.getDataValue('encr'))
+    },
+    set(this: User, val: string | Buffer) {
+      setValue(val, (newVal) => this.setDataValue('encr', newVal))
+    },
+  })
+  encr!: Buffer | string | null
+
+  @AllowNull
   @ForeignKey(() => User)
   @Column(DataType.STRING)
   inviterId!: string | null
@@ -41,17 +99,28 @@ export default class User extends BaseModel<User> {
   @HasMany(() => RefreshToken)
   refreshTokens!: RefreshToken[]
 
-  public toJSON() {
-    const prev = super.toJSON()
-    const curr = { ...prev, password: '' }
+  @BelongsToMany(() => Wallet, () => WalletAccess)
+  wallets!: Array<Wallet & { WalletAccess: WalletAccess }>
+
+  public toJSON(includePrivateData = true) {
+    const curr = super.toJSON() as any
     delete curr.password
+
+    if (!includePrivateData) {
+      delete curr.inviterId
+      delete curr.email
+      delete curr.b64InvitePublicKey
+      delete curr.b64EncryptedInvitePrivateKey
+      delete curr.b64salt
+      delete curr.encr
+    }
 
     return curr
   }
 }
 
 export class UserManager {
-  static createUser(data: {
+  static create(data: {
     email?: string
     username: string
     password: string
@@ -60,7 +129,7 @@ export class UserManager {
     return User.create(data)
   }
 
-  static getUserById(userId: string) {
+  static byId(userId: string) {
     return User.findByPk(userId)
   }
 
@@ -78,22 +147,34 @@ export class UserManager {
     return count !== 0
   }
 
-  static findUser(usernameOrEmail: string) {
+  static findByEmailOrUsername(usernameOrEmail: string) {
     return User.findOne({
       where: { [Op.or]: { username: usernameOrEmail, email: usernameOrEmail } },
     })
   }
 
-  static changeUserPassword(userId: string, password: string) {
-    return User.update({ password }, { where: { id: userId } })
+  static changePassword(userId: string, password: string) {
+    return this.update(userId, { password })
   }
 
-  static async updateUser(
-    userId: string,
-    data: { username?: string; email?: string },
-  ) {
+  static async update(id: string, user: Partial<User>) {
     return (
-      await User.update(data, { where: { id: userId }, returning: true })
+      await User.update(user, {
+        where: { id },
+        returning: true,
+      })
     )[1][0]
+  }
+
+  static getUpdates({
+    id,
+    latestUpdated,
+  }: {
+    id: string
+    latestUpdated: Date
+  }) {
+    return User.findOne({
+      where: { id, updated: { [Op.gt]: latestUpdated } },
+    })
   }
 }

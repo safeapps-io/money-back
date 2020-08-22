@@ -2,13 +2,14 @@ import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
-import { UserService } from '@/services/user'
-import { getDeviceDescription } from '@/services/deviceDescription'
-import { ValidateEmailService } from '@/services/validateEmail'
-import { PasswordService } from '@/services/password'
-import { InviteService } from '@/services/invite'
 
-const authRouter = Router()
+import { UserService } from '@/services/user/userService'
+import { getDeviceDescription } from '@/services/deviceDescription'
+import { ValidateEmailService } from '@/services/user/validateEmailService'
+import { PasswordService } from '@/services/user/passwordService'
+import { InviteService } from '@/services/invite/inviteService'
+
+export const authRouter = Router()
 
 authRouter.get('/user', isRestAuth, (req, res) => {
   res.json(req.user)
@@ -120,7 +121,34 @@ authRouter.post(
       username: string
       email?: string
     }
-    const user = await UserService.updateUser({ ...body, user: req.user })
+    const user = await UserService.updateUser(req.user, body)
+
+    res.json(user)
+  }),
+)
+
+authRouter.post(
+  '/updateMasterPassword',
+  isRestAuth,
+  ash(async (req, res) => {
+    const {
+      b64salt,
+      b64InvitePublicKey,
+      b64EncryptedInvitePrivateKey,
+      chests,
+    } = req.body as {
+      b64salt: string
+      b64InvitePublicKey: string
+      b64EncryptedInvitePrivateKey: string
+      chests: { walletId: string; chest: string }[]
+    }
+    const user = await UserService.updateMasterPassword({
+      user: req.user,
+      b64InvitePublicKey,
+      b64EncryptedInvitePrivateKey,
+      b64salt,
+      chests,
+    })
 
     res.json(user)
   }),
@@ -139,19 +167,15 @@ authRouter.post(
 )
 
 authRouter.post(
-  '/newToken',
+  '/logout',
+  isRestAuth,
   ash(async (req, res) => {
-    const body = req.body as {
-      accessToken: string
-      refreshToken: string
-    }
+    const body = req.body as { refreshToken: string }
 
-    const token = await UserService.getNewAccessToken(
-      body.accessToken,
-      body.refreshToken,
-    )
-    res.json({ token })
+    await UserService.logout({
+      user: req.user,
+      refreshToken: body.refreshToken,
+    })
+    res.json({})
   }),
 )
-
-export default authRouter

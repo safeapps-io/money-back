@@ -1,6 +1,6 @@
 'use strict'
 
-const nanoid = require('nanoid')
+const nanoid = require('nanoid').nanoid
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {

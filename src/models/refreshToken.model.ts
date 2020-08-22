@@ -1,8 +1,8 @@
 import { Table, Column, ForeignKey, BelongsTo } from 'sequelize-typescript'
-import nanoid from 'nanoid'
+import { nanoid } from 'nanoid'
 
-import BaseModel from './base'
-import User from './user.model'
+import BaseModel from '@/models/base'
+import User from '@/models/user.model'
 
 @Table
 export default class RefreshToken extends BaseModel<RefreshToken> {
@@ -21,14 +21,18 @@ export default class RefreshToken extends BaseModel<RefreshToken> {
 }
 
 export class RefreshTokenManager {
-  static generateToken(data: {
+  static create(data: {
     userId: string
     description?: string
   }): Promise<RefreshToken> {
     return RefreshToken.create(data)
   }
 
-  static async tokenExists({
+  static destroy(data: { userId: string; key: string }) {
+    return RefreshToken.destroy({ where: data })
+  }
+
+  static async exists({
     token,
     userId,
   }: {

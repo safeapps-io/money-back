@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { RequestError, FormValidationError } from '@/core/errors'
+import { RequestError, FormValidationError } from '@/services/errors'
 
 export const errorHandler = (
   err: Error,

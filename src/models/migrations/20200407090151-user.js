@@ -1,6 +1,6 @@
 'use strict'
 
-const nanoid = require('nanoid')
+const nanoid = require('nanoid').nanoid
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
@@ -24,6 +24,10 @@ module.exports = {
       ...baseModel,
       username: { ...requiredString, unique: true },
       email: { type: Sequelize.STRING, allowNull: true, unique: true },
+      b64InvitePublicKey: { type: Sequelize.BLOB, allowNull: true },
+      b64EncryptedInvitePrivateKey: { type: Sequelize.BLOB, allowNull: true },
+      b64salt: { type: Sequelize.BLOB, allowNull: true },
+      encr: { type: Sequelize.BLOB, allowNull: true },
       password: requiredString,
       inviterId: {
         type: Sequelize.STRING,
