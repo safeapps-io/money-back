@@ -2,13 +2,14 @@ import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
+
 import { UserService } from '@/services/user/userService'
 import { getDeviceDescription } from '@/services/deviceDescription'
 import { ValidateEmailService } from '@/services/user/validateEmailService'
 import { PasswordService } from '@/services/user/passwordService'
 import { InviteService } from '@/services/invite/inviteService'
 
-const authRouter = Router()
+export const authRouter = Router()
 
 authRouter.get('/user', isRestAuth, (req, res) => {
   res.json(req.user)
@@ -178,5 +179,3 @@ authRouter.post(
     res.json({})
   }),
 )
-
-export default authRouter
