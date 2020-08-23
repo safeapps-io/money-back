@@ -190,24 +190,26 @@ describe('Sync service', () => {
 
   describe('delete', () => {
     it('works', async () => {
-      const map = [{ walletId, ids: ['123'] }]
+      const map = { [walletId]: ['123'] }
       await SyncService.deleteEntitiesById({ userId, deleteMap: map })
       expect(mockEnitityManager.bulkDelete.mock.calls.length).toBe(1)
       expect(mockEnitityManager.bulkDelete.mock.calls[0][0]).toEqual(map)
     })
 
     it('ignores wallets, that user has no access to', async () => {
-      const map = [
-        { walletId, ids: ['123'] },
-        { walletId: 'qwer', ids: ['123123'] },
-      ]
+      const map = {
+        [walletId]: ['123'],
+        qwer: ['123123'],
+      }
       await SyncService.deleteEntitiesById({ userId, deleteMap: map })
       expect(mockWalletService.getUserWallets.mock.calls.length).toBe(1)
-      expect(mockEnitityManager.bulkDelete.mock.calls[0][0].length).toBe(1)
+      expect(
+        Object.keys(mockEnitityManager.bulkDelete.mock.calls[0][0]).length,
+      ).toBe(1)
     })
 
     it('throws for invalid scheme', async () => {
-      const map = [{ walletId: null, ids: '' }] as any
+      const map = { walletId: null, ids: '' } as any
       return expect(
         SyncService.deleteEntitiesById({ userId, deleteMap: map }),
       ).rejects.toThrow(FormValidationError)

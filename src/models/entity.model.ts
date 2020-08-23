@@ -71,9 +71,9 @@ export class EntityManager {
     })
   }
 
-  static async bulkDelete(deleteMap: { walletId: string; ids: string[] }[]) {
+  static async bulkDelete(deleteMap: { [walletId: string]: string[] }) {
     const query = {
-      [Op.or]: deleteMap.map(({ walletId, ids }) => ({
+      [Op.or]: Object.entries(deleteMap).map(([walletId, ids]) => ({
         id: { [Op.or]: ids },
         walletId,
       })),

@@ -137,30 +137,25 @@ export class SyncService {
     return EntityManager.getUpdates(entityMap)
   }
 
-  private static entitiesDeleteSchema = yup.array(
-    yup
-      .object({
-        walletId: requiredString,
-        ids: yup.array(requiredString),
-      })
-      .noUnknown(),
-  )
+  private static entitiesDeleteSchema = yup.array(yup.array(requiredString))
   public static async deleteEntitiesById({
     deleteMap,
     userId,
   }: {
-    deleteMap: { walletId: string; ids: string[] }[]
+    deleteMap: { [walletId: string]: string[] }
     userId: string
   }) {
-    runSchemaWithFormError(this.entitiesDeleteSchema, deleteMap)
+    runSchemaWithFormError(this.entitiesDeleteSchema, Object.values(deleteMap))
 
     const usersWalletIds = (await WalletService.getUserWallets(userId)).map(
-        (wallet) => wallet.id,
-      ),
-      filteredMap = deleteMap.filter((item) =>
-        usersWalletIds.includes(item.walletId),
-      )
+      (wallet) => wallet.id,
+    )
 
-    return EntityManager.bulkDelete(filteredMap)
+    Object.keys(deleteMap).forEach(
+      (walletId) =>
+        !usersWalletIds.includes(walletId) && delete deleteMap[walletId],
+    )
+
+    return EntityManager.bulkDelete(deleteMap)
   }
 }
