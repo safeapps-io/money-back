@@ -11,9 +11,7 @@ dataRouter.delete(
   '/entity',
   isRestAuth,
   ash(async (req, res) => {
-    const { deleteMap } = req.body as {
-      deleteMap: { [walletId: string]: string[] }
-    }
+    const deleteMap = req.body as { [walletId: string]: string[] }
     await SyncService.deleteEntitiesById({ userId: req.user.id, deleteMap })
     res.json({})
   }),
