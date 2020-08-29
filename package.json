@@ -1,5 +1,5 @@
 {
-  "name": "saviour",
+  "name": "money-back",
   "version": "0.0.1",
   "license": "UNLICENSED",
   "private": true,
@@ -7,13 +7,14 @@
     "migrate": "sequelize-cli db:migrate",
     "shell": "ts-node -T -r tsconfig-paths/register -r ./src/shell.ts",
     "recreateSeeds": "sequelize-cli db:drop --env development && sequelize-cli db:create && sequelize-cli db:migrate && sequelize-cli db:seed:all",
-    "pretest": "sequelize-cli db:drop --env test && sequelize-cli db:create --env test && sequelize-cli db:migrate --env test",
+    "pretest": "sequelize-cli db:drop --env test && sequelize-cli db:create --env test && sequelize-cli db:migrate --env test && sequelize-cli db:seed:all --env test",
     "test": "jest --watch -i",
     "coverage": "jest --coverage",
     "dev": "nodemon -q --watch src --ignore 'src/**/*.spec.ts' --exec 'ts-node -r tsconfig-paths/register' src/server.ts | pino-pretty",
     "prod": "pm2 ecosystem.config.js app"
   },
   "dependencies": {
+    "@peculiar/webcrypto": "^1.1.1",
     "argon2": "^0.26.2",
     "base64-arraybuffer": "^0.2.0",
     "body-parser": "^1.19.0",
@@ -41,7 +42,6 @@
     "yup": "^0.29.1"
   },
   "devDependencies": {
-    "@peculiar/webcrypto": "^1.1.1",
     "@types/base64-arraybuffer": "^0.1.0",
     "@types/bluebird": "^3.5.32",
     "@types/body-parser": "^1.19.0",

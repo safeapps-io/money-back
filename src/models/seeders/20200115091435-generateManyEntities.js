@@ -7,7 +7,8 @@ const nanoid = require('nanoid').nanoid,
   dateFns = require('date-fns'),
   { Crypto } = require('@peculiar/webcrypto'),
   cryptoOld = new Crypto(),
-  { decode } = require('base64-arraybuffer')
+  { decode } = require('base64-arraybuffer'),
+  testData = require('../../services/crypto/testData.json')
 
 function randomDateBetween(start, end) {
   return new Date(_.random(start.getTime(), end.getTime()))
@@ -71,74 +72,43 @@ const buildBase = () => {
 
 module.exports = {
   up: async (queryInterface) => {
-    /**
-     * Account passwords: `qwerty123456`
-     * Master passwords: `password-{username}`
-     *
-     * Exported secret key is below.
-     */
-
     const encryptionKey = await cryptoOld.subtle.importKey(
         'raw',
-        decode('0V3UEOpG7D1886MEW3FvgHk+qkhRR+ItHyAvvCcnF/w='),
+        decode(testData.exportedEncryptionKey),
         encrAlgo,
         false,
         ['encrypt'],
       ),
       pass = await argon2.hash('qwerty123456'),
       dkzlvData = {
-        id: nanoid(),
+        id: testData.users.dkzlv.id,
         username: 'dkzlv',
         password: pass,
-        b64salt: Buffer.from(
-          decode(
-            'dxuRJ+JV60+q7WFxFQxaU1QgFDosDoQLgdX2qyHI5Q4PFcM2+gj1iTgYfY2t4D7lujipeFCHZb5bE8qEegDZGQiY/2cnyGnaml8x6KUrCQqhOWsQx6eHPW5Q0KZzgsI7N6Cq0NGgnYz4ATxe1LBR/VjvBD/yAIsoQXAosUHJcQ5WKHc9C8+V3jhB64EUAAjnXtJr9f+b8G02Xoo0NKgXfKA8+Y2FiOCFhhZDMvyV0YA88Q91zuF6NqmEEzG9Ek/M8qsoK6CZ98KqkUBUpOReA5niuCMoiLOwx4anLU/tedqD5U645o6ILr3SPrutXQzLlmRZp2x5Hg/Vmw7HfgEkPQ==',
-          ),
-        ),
+        b64salt: Buffer.from(decode(testData.users.dkzlv.b64salt)),
         b64EncryptedInvitePrivateKey: Buffer.from(
-          decode(
-            'eyJpdiI6IlpNRllnaU8zZVJNekQ4REtzSmpoUlM1cVdJdHdPRkwrcm9LS3RFdE9yM1ZCOHZDVFhJNGJBamp0MktqNkkzcS8wR1JKUWp0WFBqdTZ1WjRuYVd5cTRNMURVVGVtQUVHTHRqZndHOTJUUWpWVE1BN0JUckxnL2RzZXFpVW1ESWt5U0ZMSHZrRlo4ckVnZFprbmNsWkVwdXlPSVZleXlBTWdtRS9ST3kxZXBpWT0iLCJkYXRhIjoiZGJUSENHbUtNMng2WjFiWE1sOUtkc0NIUFRhZWZxbXFBa0NIaXRxNTBmYjlRSUZlNWVUcnNmMmEzMi9qWk52cFAxTm81aFdUOEZjdCtvMWhiRVJORGV0MVhidmdpTmdrU1k2L1RZS1drRU9kWUVBRFNXcE5uRmlnMHMvUjJkZmhNL3RDRzB1Y3BJMWJKR1NObGxzcU5tN2NUczZOTVpZbkRQc3R5aHFMVmQ1VURsYmRRajdyNFpENUxhUXRFYmN4WnNtTVZNeVNYWDFXYmpGeVJiU2NKaXR3QWhZYlJGajNJNGc0aEtNT3hqQURGQ3Vlek5rWkpKVitUeFUvbUpyYTkyeGVBVGJHZGFLSSt0bUpEcmVldjFGZGd4cUl1akx4dGlrOG9nWnJaNlNPNHZjLzZnWjVsWk1YbnpMUGJpNFVqbUNkb0FjZDdWcitYZXpuVGZjazdqWWxrdW9hQjgvM0xQQWI0WHVQTyt5cE0yYk1uNTJ6WGd5WmFYTytzSmxZYzcrcUhtOHVYaGdMclZLMUV5NndTblE3bkpINktBMUJtTzV5WWxuM2s3RWtiLzlhQlk4NFBnWmIwSEFrNUxUQlpMV2pSNWs2dFNrbTdFWlpxYmNHclFFQjNQYTZjRUJBL2QxSTlWWTVocElsdDdkR0E0a3M1dDdHTXlSNTNCbUU0NmphS2s4L3VYdDNLbFpYbFBhVzB6TnVVWTlIQ0M3dUpQRjdPZ3ZGbzRSaTlQbnNQb2plK0tSZGRKMFQ3K2tqK0hRMVZmV0ZKbkQzbklEUFVkdmNBbE5yQjZrSWdhblhISUlVT05qZTFTSUQ1ZUdYY1JzeVlJOEJ6TE9UZ0FIQnRGUlB5RU9ZNzEwZWJiSGkxbzgwWEtPY2JGenRnQ3pSYjRYSi9lVHIxSHpPRVp4aDYybHRmV093NlhnNWh4bDJod1RPMjBEQ21yVmp1R3F2TnlmalZ4VStGdHdUQ054ZTNPNDk5WFpxemRQSVFsS3N0ckNXV2xTVkt2NXZjNGZhQ3MrOGtYNjl0M09XdUEyZVh6OFRFZmFEOXZNaUZhdW03bHJJK2VCTFkwdFZVbitrYUJEaGRxbU5jWVhiYzJhR1dpUTBGTlZEVXVNMWg0dlJsTWJJY2tBdTRmQlNqTENpMnpJaW85L3lpVUw5MlQ5ZjRjWHJoSVNkQWp2eFVhdjBITEQ5V04wem9NbElDcTU0VnZmOTJuekJiUEhuZWk5WklRK0YwZ2V4UVNEVUZzd1FOWVMxU1VDek9RcW1RdDZPWTRBWjJxKzBGcVdsdWNRU2dDS2tQd2ozQUhWaFhzVmJ0S2d2SzRUa0svdXRJMStpRGJjYTRzQXNLTFR3dmI2c1dsTWxTaUxOSFA4dGo1eVBhaWJpc0x4dVBkZWZzd3dZNkdMRnlrbk1KUG9tbWlydlk5MC9aR0UxK1NzUkE0U0JGV0U3S0hHalNGaHNQbmNBR1BIc2pJZjFmbzJSblMvbWh4YmQydm9iOENDaytZS0RHa0dpK3ZnUWttUzUvSENQZlQwbWtuZVV3ZWtmaXYxWlBzYUhmTTJSVkFKcWR6WDBJb3BqOWhsc2I5Q2hHajk0NXY5S3k5OHhqZ3psMSswSnI1SlJ4dVRkc29lNWl1ZFlsUW1ObjVUdUY1VFE4SWVYVFRXdi9jZGZRTHlNaEtFVnp2VktwRW9OWVc4Z09IMEdSSy81d29FaTV2N0lPMnoxejRmS0JEWmxuTFB3NThibmx2ZEpUeW1BdC9NNnFlVXhyY05QZDBoMDBhd0Z0Qm9KYXVVTUs1bFROU3RHTWcvRExKRXc2QUVyaEFwT2x3Ync3czNxMFNJejRUYU1NN0tHSmw2MUtFKzVVK0lNSzJOa3lrWjIyNjNwZkhjVUVXZ2ppMDRodDZVM3E2NlFjenpIQWJ3SkZGL0tjRklpREs0RWpXVE9PVkZRczdpU01rOG9GTmNZR21aM3Faa0srV25TT0t0Ukg0ZURMUmZ4VTZjZFh6Z0lIbE13RzdDT2l0Z2R0OHN5NHoyVkN6Rnk5d2pvSU9FVnN6YmlNbmRsQTRXNUkrUTcwTmZMSHY0T0ZrdUwzZStnNEhQQ3VoSmxzQkFHbXg0Qml4dFE5R1F4MVNObGRzeVRqclFCNW9xWFpxSnI2TDEzdDg0aUFML1VkVlJERDBlTUMvZ0R2SC9GNE84PSJ9',
-          ),
+          decode(testData.users.dkzlv.b64EncryptedInvitePrivateKey),
         ),
         b64InvitePublicKey: Buffer.from(
-          decode(
-            'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsllDjXdhxeRHhMMVkqYGKUImcb2Bt+bM/vLtDYgWwZVS7HWvAhBSiDP3uQnxa9XjOGlOn9a0iwD81eKX4sVkt4+xFBJtvGsNzDhz2yKoGKuBe9dumB7AK9uYvIi9HnLou6ViM9HT+jmKrswTwrHwUVrZVLH5+mufb5MGBRAVutVh7PfamKg975X2xzaX5JZOP0s+F31fDa79Oz84MbxBqjnMvEQn7TXvicHfshRMY+3DC5bEhX+nMKuYbhZQ4LMM6Ia7JtnGLfkHZ3iIccVcsRSk439vF+pUxg/Yvi/eRdLzZ51cxcgW7azWkaXelLdOemdyHXfbnhNhZVHoGKMkvQIDAQAB',
-          ),
+          decode(testData.users.dkzlv.b64InvitePublicKey),
         ),
+        inviteMonthlyLimit: 100000,
       },
-      dkzlvChest = Buffer.from(
-        decode(
-          'eyJpdiI6IjFLc0Z6enNpdmY2MXVyckFSRXN1aitoNTUzQlZDMTFrVGg4YURKWEZwMm5jWVdscUZtYVF6amhBOU9zUVhpN216UG1WaGNkd2F0N3ZkMEQzdFpJbXhEb3R6RzE3WlZ4Y2VvR2x1NUJleWltZ3puT0tLdHRIRVBXeFlGamNmd0ZDWldVRzdwMnRxV1FJdGFkWnppNlI4cU8wQ3BBNk9SdEtKSUdhWXNuUm1Sbz0iLCJkYXRhIjoiOGdPa0lpRHZjNnVJMDQwNmFDWFFHL1FyN21aYUIwcEJpQkJBYkdYTmxOUlJMNzhvUzB5VzRvdk5mVHZQN2NvbiJ9',
-        ),
-      ),
+      dkzlvChest = Buffer.from(decode(testData.users.dkzlv.chest)),
       amaData = {
-        id: nanoid(),
+        id: testData.users.ama.id,
         username: 'ama',
         password: pass,
         inviterId: dkzlvData.id,
-        b64salt: Buffer.from(
-          decode(
-            'pDC4j9ziloQwcuuQnTMPEZcPxvI32vH2AFWcAcjX3ALks48e80PmI+pS+ZhpwoweR0I2TAibyUAgI6lTDMv2OlR4ilNITbjv6WxlJVZKECjBIVd/8FZ4plugXH+bZFJu/WsRFQ/yn5NXFu4YpS8PIMxVVeKXAjhRIx80AymaCry56/nRjK7NlV2apPmpDr6FshYPp1jnDi4Ise9oThwBUmSmo8V7d1hMcRm3MRCZgTlCAltjlQho7Mnff36wPnDhfCmQ769xXeaQyjficqDxhrUjVa+FrM5jJ/cEmyIl+twE4fac7gtU7QELEm3nyhPqcJ3vKdkyrnjKMdME8CP06Q==',
-          ),
-        ),
+        b64salt: Buffer.from(decode(testData.users.ama.b64salt)),
         b64EncryptedInvitePrivateKey: Buffer.from(
-          decode(
-            'eyJpdiI6InkzS0hQMzZ4dkhiTGM2UWVXcHhvMG9sbzljOXhNcXNMd1Z6UnJCMW1nbDFVaUJoNzJkZDRIUGVZMnZ6Zzd4RGRLS1VOaGwvTmFpMTdaaUNJZ25RYzJnbitxUUdYQlkxYkdBZ0JhOElxc1lLWkUvSVAwZWZaYnY4bmZTV2ZCdUg5bWwyRExyZXdRd05Sc28yZXNvQ2NwZ1hrNFBxd3ZCU0wvcWgvRWJyOXV6TT0iLCJkYXRhIjoieHZyQmJnTEFnZjUxc0RtNVZQN1YxVUFISjc2VTF1VFdxY1U3a3NTNXR1MWYvQnJvaWlFclJKWWZmYThBZjRXNGU2S1ZadjhmaysxbUdZRDVsS042eTdSUG1ESHUvV2VZQ09vOHFEdzdUSTl0dnZubjhvTzl6UEFYZ0JBZHZQT2Z0QTZ2U282cFN6aGcvMUpaeHpDZzBWV3Jya0JVR2xUdDkvaWxtRnd1SW4vVHFLUlBMdDI1NDlVTTZFUjN5UlRNOWZBd0hWUXpGcnZ1eW8zVXNPZHZyRTJ1MWhxc3BoSVZuWUFQTWhxL2ZsVFF5Sld4a0ZDdVNzUU1qQzlkZFc0VE9NR1lnMDdpb1RFb1hZVU56Rko5WHNOMFlTR0xxY0dhUGgxbXpHVlZtNmNJdDZNRTNJNVBNaHd6c1VQTDUvUmQ3ODVCYnJsbW5KZ1dDczJOaytHanp6enpWYVJtNkdDTUpWd0FQbi81T3RIT1M2TGl2OC8wOUNwT1R1dGoxdWdPM0lJWSs2b0FBaHRmSkUvZ3BidUZLdFFIbUVyWTUvRjJBUVRlYnBkTzZJRTJicVJYTWpjeGR6bXg4WnZ3Qis2L0kwdE05cFE1TWJNTmNxaXZWenlCMFZNb3RENnVXT2xIR0NmS20vaGNkUENoZTNwSjdkMnIrRU9LSDNNUG14VlcvU2RzR0pyaklSQkJjQVNVUnA3S2F0bGs0U1llaXNhd3pielRXZHJta2p0VW1CREZ0U0dyanI4NTJEWXB6d0tIYWxDSUx3VUJPcUIxNnhKQVVQOWdKL3A4VitaZHkvbnI2OEV4TkhoTWJuT3dFSFk3Q0ZYemlZUlQrYUtTR2g1QWRIeHdBR2RiRFpXNm9reHl6T2xjbFhEbGNHZC90TDc3ajNoWEVrNklubG1weTgycG1MdnpVVEFSakFBRUc1N2k2MU1vaDN2TnQ4TzYzSXFoRUlpcE44SkhrS0pJS3lOMXJkazBMb3lFR1Mxeld4aHhJSWJtY04zZkFCekRSVU1UREZVZlZjSEFPNDRFdzR0eHkra0VsZEljWGhZeWtORllkUmRUcVFNZHZQRGtVS2JMV05rd3E1K0YzUjY1YWhKM2dtaVlTVjU3UXRnTEtXSlNraXZ2OWc4cnBOamFsUDZXTGdhN1lSSkNIYlhuakd4cGhIYnVsR3lycXFzZGpxek9JWm5HQVR3eVUxMTJVcmdHK1FYZ0hNd1hLaFBBL2pkWTc0dWdVeUxWSmpZdElFN2hHdjNST3RqWXBwdHBGL0Z6dlMvQnI3eUFQblNGZWhLS1dIWFpOenY2czJuNklYbFZ3OTV2SmdJdGZhSWtaem1Nd3Zpd0JUZUhjZnJyeFcxRGdna1YrMTNaVk1oWndKK25PalRhcGlCWXV4U2RWLzFTSmNqTUNmNzNBVHRZL2dhOE9aVDJXak5pS25vTXVyaXIrV2h0Vkl6TWI1U1VzQXMrcmZFZDVJdnVCNENmVXBycDA0cGNacDdHcDIwLzEvaWRtZ3h5OGw4L253UjdsWG9SQzRDSjhMQlFSQjlmRUwvRzFRNTFlK25Pb1BXRnMvN3NCRExpYWhXUW94R0NvM0lGTms2VHV5Y1llaXZKQzBtTm1iNFQwZDlIbUllckF4N2tObktzS3NmMDhQM2E0S1ZrRFM5SzBiWWwwL3NhaU1CNFBQUm1SVHB6N3p1aWFhWEVkMExqRmNBbGwyTEdHb1FWZXN3NHBuNzJUMDVheGlBcFhFNjAxRk1qT05OQ3NjQnBIZzdKZ1o4V1pqUXFBMWJ0WlJCOFNBWXN1Y011RkEvSkdXQjBXN3MwTmNQb3lVcm5aRWwxRnFWakpVZCtiSzJoSkNqWE9ONEdVR2lsRmJPOGhVUFZ1SGJEdUl1b2FEc0I4ajB5TUxneTFJbFIvQkNwQ29md2RzTFFrRk9iODRQWWprWk5zdnd2UEJYa2NUWTRZSjIvOVlNdThGZHhsZ29XUXpacjF2cVhUMi8rVERPWXZuNVhKbThGenpaYVk1ZE5YS2U5eDU4bUFuM2w4YWNYMk15QTgrQStYR3BKZzhUMGRnZG14U0pQZHQwdTBidnJkTWthenJKLy9KVm9NU1ZKU21lalNzS1JqZVFRaVF6QjJDeHJUZmFDbER2eE5RYjZWM0s1UGttSG83Ujc4MGJETUNydGV4V29tdk5hTkE9PSJ9',
-          ),
+          decode(testData.users.ama.b64EncryptedInvitePrivateKey),
         ),
         b64InvitePublicKey: Buffer.from(
-          decode(
-            'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApQYVBQuZC35rkQhJCJUtLTc3Jha956L9qh8OGQZ7cOsH4JD3sOExAqCEBhVzStcemghILGv+S78LtHJ8lJH2HVpx0CGymp/D3MFyC3yu1U75d6IBBaBMQtDcb3WhsgZaP/Y/afCcSlShbEiWIDwIp30AcmtXQm5bqMGW5jAybPhsp4A+2IrcHuy1PGpMLHjfldXfkbLApr3e4yf8bmYPnEJ8n01AHAb9afaDLu+4F4oLEMQwqh4PJEDeJl73lL9fhGmKY16vrpUZD+sTqXNEuqQ8nDiY2HSWV2WeaCFJ/YvZ/DGosIHKfRllWaVyI9Kad9gKV8CkX83pbQGMtqRNTQIDAQAB',
-          ),
+          decode(testData.users.ama.b64InvitePublicKey),
         ),
       },
-      amaChest = Buffer.from(
-        decode(
-          'eyJpdiI6ImdFL0h4QTlaOXFMa0pUYlFCRTNBM1Q4VUE1VVFBLzdRQzVFdlJpQ01kYmhsSko2T3dydVA5aGd5VVF4VXh3VmVvQzNPT05EOTlZNUQvbmJiMElxdFZIanNDbDdGa1o5QzZ3V2xad09vSUhBZE13QVp6MGpxVUdGQm1YQktzWFMzOXE0TFB2K2tjOGEvNFltZmpaVnJuSHNDYVhzSVFOdW05UXcyekVPOWtHMD0iLCJkYXRhIjoiMXl2aDF3TXQ4c1lpaVFOeS94SEx3QkpiK1VPTmd0SXdKN2xkbk9JcXlwWWQzakdUc2NadWJOOWlRRGxobTYyRSJ9',
-        ),
-      ),
+      amaChest = Buffer.from(decode(testData.users.ama.chest)),
       users = [dkzlvData, amaData]
-
     await queryInterface.bulkInsert(
       'Users',
       users.map((d) => ({

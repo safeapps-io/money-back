@@ -86,6 +86,10 @@ export default class User extends BaseModel<User> {
   encr!: Buffer | string | null
 
   @AllowNull
+  @Column(DataType.INTEGER)
+  inviteMonthlyLimit!: number | null
+
+  @AllowNull
   @ForeignKey(() => User)
   @Column(DataType.STRING)
   inviterId!: string | null
@@ -107,6 +111,7 @@ export default class User extends BaseModel<User> {
     delete curr.password
 
     if (!includePrivateData) {
+      delete curr.inviteMonthlyLimit
       delete curr.inviterId
       delete curr.email
       delete curr.b64InvitePublicKey
@@ -175,6 +180,23 @@ export class UserManager {
   }) {
     return User.findOne({
       where: { id, updated: { [Op.gt]: latestUpdated } },
+    })
+  }
+
+  static countInvitedBetweenDates({
+    userId,
+    startDate,
+    endDate,
+  }: {
+    userId: string
+    startDate: Date
+    endDate: Date
+  }) {
+    return User.count({
+      where: {
+        inviterId: userId,
+        created: { [Op.gt]: startDate, [Op.lt]: endDate },
+      },
     })
   }
 }

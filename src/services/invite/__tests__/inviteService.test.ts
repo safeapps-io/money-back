@@ -2,6 +2,7 @@ import { clearMocks } from '@/utils/jestHelpers'
 
 const mockUserManager = {
     byId: jest.fn(),
+    countInvitedBetweenDates: jest.fn(),
   },
   mockWalletManager = {
     byId: jest.fn(),
@@ -41,93 +42,105 @@ jest.mock('@/services/wallet/walletPubSubService', () => ({
 import { InviteService, InviteServiceFormErrors } from '../inviteService'
 import { FormValidationError } from '@/services/errors'
 import { AccessLevels } from '@/models/walletAccess.model'
+import testData from '@/services/crypto/testData.json'
 
 describe('Invite service', () => {
-  describe('common invites', () => {
-    beforeEach(() => {
-      clearMocks(mockUserManager)
+  beforeEach(() => {
+    clearMocks(mockUserManager)
+    clearMocks(mockWalletManager)
+    clearMocks(mockInvitePubSubService)
+    clearMocks(mockWalletPubSubService)
+
+    mockUserManager.byId.mockImplementation(async (id: string) => ({
+      id,
+      b64InvitePublicKey,
+    }))
+    mockUserManager.countInvitedBetweenDates.mockImplementation(async () => 0)
+    mockWalletManager.byId.mockImplementation(async () => ({
+      id: walletId,
+      users: [
+        {
+          ...walletOwner,
+          WalletAccess: { accessLevel: AccessLevels.owner },
+        },
+      ],
+    }))
+    mockInvitePubSubService.requestToOwner.mockImplementation(async () => 1)
+  })
+
+  const walletId = '098765',
+    ownerId = 'ownerId',
+    joiningUserId = 'joiningId',
+    // For generating other signatures I saved private key there
+    b64InvitePublicKey = testData.users.dkzlv.b64InvitePublicKey,
+    b64PublicECDHKey = 'nonce',
+    encryptedSecretKey = 'nonce',
+    inviteId = '123456',
+    b64GenericInvite = testData.users.dkzlv.signedInvite,
+    b64InviteString =
+      'eyJpbnZpdGVJZCI6IjEyMzQ1NiIsIndhbGxldElkIjoiMDk4NzY1IiwidXNlckludml0ZXJJZCI6Im93bmVySWQifQ==___d/6RXZRQLqpuAeZLfDqlh274dVm+PfLK4WEZv9MVQleUCmhNsKLJnHcm0UF0XMIFVrFHaBzEETQsZyebPfGDeGS1oZ2usVp7OMaE665wV0R+BxXiDKrkALNfadWumS6h8UanHGbxRa6i8ZnihY6ucY32UXKiuRkwRMKtQVZ7wvT8LH4ap5oURcNDSreULvLrBElnf5DbYMFgv17SHoLBHnO9VaUBrz028AKSs/ABfQMRLG78SNcy+kOW5teRiI4boGyCId6vCFjQbq7z0lWVgAky0+RtVfptCyJVAUxdNT5m7l2tvtHb6vsOLCfHUlWl8Nzw1mPB1zEhxJtT2QHCiw==',
+    b64InviteSignatureByJoiningUser =
+      'AGXuLUwapcFc/idZrNeppIHKFMDq9cTixZLSU6dsLGXqPsSUg2mPwh2qQdMmQgDl2+lh58QzQyyTYLbkqguCLfBGtTIdBfnEzy9gQ3Qx/qA6bL0a6mkZK07gwB5R6WyGVM820T9wpnLOMpbXWzwWg4OH8tQwooHpeMOoRnLot+8ed4lVCPThB2Pb/bPgdboGmPN3TSZyndzPtm6Yfy0lhxcrK4bGfwXxIisjM8MUL9r+H2xd65JHqEaGruK/GqE7LIg6eAv6sXyFslR9Lx78I37hL92/o+ENV2ZXqf6cclu25os7MErFFPJRh06lSZlc0rDnzGec8nasPKoCeOGBYQ==',
+    walletOwner = {
+      id: ownerId,
+      username: 'owner',
+      b64InvitePublicKey,
+    } as any,
+    joiningUser = {
+      id: joiningUserId,
+      username: 'joiningUser',
+      // Using the same key for simplicity
+      b64InvitePublicKey,
+    } as any
+
+  describe('generic invites', () => {
+    it('works', async () => {
+      const res = await InviteService.parseAndValidateInvite(b64GenericInvite)
+      expect(res.decodedInvite.userInviterId).toBe(ownerId)
     })
 
-    it('generates valid invite and validates it correctly', async () => {
-      mockUserManager.byId.mockImplementation(async () => true)
-
-      const id = 'testId'
-      const inviteId = InviteService.generateInviteString(id)
-      const res = await InviteService.getUserIdFromInvite(inviteId)
-      expect(res).toBe(id)
-    })
-
-    it('throws if invite is invalid', async () => {
-      mockUserManager.byId.mockImplementation(async () => true)
-
+    it('fails if user has invited enough users', async () => {
+      mockUserManager.countInvitedBetweenDates.mockImplementationOnce(
+        async () => 10,
+      )
       const r = await expect(
-        InviteService.getUserIdFromInvite('19823746918723649817236123'),
+        InviteService.parseAndValidateInvite(b64GenericInvite),
+      ).rejects
+
+      await r.toThrow(FormValidationError)
+      await r.toThrow(InviteServiceFormErrors.limitReached)
+    })
+
+    it('throws if invalid data', async () => {
+      await expect(
+        InviteService.parseAndValidateInvite(null as any),
+      ).rejects.toThrowError(Error)
+    })
+
+    it('throws if invalid invite string (not JSON, no signature)', async () => {
+      let r: any
+
+      r = await expect(
+        InviteService.parseAndValidateInvite(
+          b64InviteString.split('___').join('_'),
+        ),
       ).rejects
       await r.toThrow(FormValidationError)
       await r.toThrow(InviteServiceFormErrors.invalidInvite)
-    })
 
-    it('throws if no such user can be found', async () => {
-      mockUserManager.byId.mockImplementation(async () => false)
-
-      const id = 'testId'
-      const inviteId = InviteService.generateInviteString(id)
-
-      const r = await expect(InviteService.getUserIdFromInvite(inviteId))
-        .rejects
+      // it has `null` encoded as b64 object
+      const fakeInvite =
+        'bnVsbA==___C9eHo6lj6S3Fup9anWVpdyY5ThqfrLb0ldH70P3KM+MDemPifkNMc+maPlXzjHVXbC52pLaWimpdrZcyomTvc/3IdD5YS5ZGM+5W41+JlW31+MxNGOPwdvkBLmkA0AscZozrJD1fb8f1pui+AzhfLI5w92w1ai1F+EOw12yi8aVzAHp1VJqxTyp4lSQuwTR3RBjzjZX4c0zYKN32+dx8Y5BxZ7/MG6zBedNmPjYZiTU5X9it12T1FvVFJQeHmM0P0FkD930nPc4uhvfuQnSNYYnU3JCiwZXh/qoBy9R8b+/V1S5HpU8nyEYgEKERrnXmKeJYEG7ZVixkpzB/3uoTJg=='
+      r = await expect(InviteService.parseAndValidateInvite(fakeInvite)).rejects
       await r.toThrow(FormValidationError)
       await r.toThrow(InviteServiceFormErrors.invalidInvite)
     })
   })
 
   describe('wallet invites', () => {
-    beforeEach(() => {
-      clearMocks(mockWalletManager)
-      clearMocks(mockInvitePubSubService)
-      clearMocks(mockWalletPubSubService)
-
-      mockWalletManager.byId.mockImplementation(async () => ({
-        id: walletId,
-        users: [
-          {
-            ...walletOwner,
-            WalletAccess: { accessLevel: AccessLevels.owner },
-          },
-        ],
-      }))
-      mockInvitePubSubService.requestToOwner.mockImplementation(async () => 1)
-    })
-
-    const walletId = '098765',
-      ownerId = 'ownerId',
-      joiningUserId = 'joiningId',
-      b64InvitePublicKey =
-        'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAthWUoWqCbohAOoMO4SVu62m2lztNCRiTxlzFzbf5M+Kwg/m/YcOYxM5cYR8bB0hgtTZIGcHzHsynsha5yFG9Hs34J99fE2FmABavXymEIQ761B3+J86OVS9p53aoTFngaqRtJum8jh0XCS7TNw4Mm/rrs4y4B1VzW4sMbSqqY2JpXrQiGVm2H/UFYiFmFi3EVtu4p8mr5O2MPCfCr0qYXbbRHl6oD1mDMkTvgK7LByW+AkSvGA8fd6O3UBTVImZvR/+x+Cr5zU4MeZ+Uz3BEfQiYL1nWbsVXnPUkbPQV4zpGCqmxB7eMo191IsqZ6/OJMggE4ndQXueopBgHhXVY3wIDAQAB',
-      // For generating other signatures, just in case
-      b64InvitePrivateKey =
-        'u2jPm81j0T5Mc1T61lgVb/o6GjMoz9v43+VimwFAWuD8Of1FNw6mojF2+hOUIRxw5uq+G6AGjqyLypoo7Bau6x4KVWZv7bDwrMJ5kH7JPAJLG8vxHK4uLT0a/r4ilcdjUdseu4h7TeuYydFznAQEFSg6GH+AMfb+jmnYcDrsa/Z5SPg4ac9+SZ99udUexK5OsnI8v00tE4kzTai4Lh3whB86l8cF/7+tcW3wA9GqmA/99ufjb8XNSTqHuzGPrOUWuDGfC09XdSI71a1l2wfEfPT01lL+tEDkXgQ9Pl+vbF8/PvEOwZ6GYwdVR9h1QrLKCDTC/okxko1PWQV0Q0QiSbgpdlYNzd/jgP2pX6TqlwA85TkU1SkjYa64Cft/cvMdFSG+zLb/qL7FEpYRTg4lCfLGuNQcNLy+m34UflQ/OnCmhI/89xq0NUFoi7VQ03Hn9R0DjI831ZspcuG+XqTLk3116tR4ubo0Cx8Jrp6D740riBvu/pgd1AYsU1yltzVenI8Q8g0MVfuwbCeup6Z8Jfy6Xeo+sOJFnpm7V64eY2LE611NP3ZZOqYzWttxLUN6UhZtjREbzz/C8MZ5LwNLiTBDRcDLzzxKF1EeLAMaPjJLvnjBcHtcFKvUUDfLQDGbnpquKSydDmUG2mWi66fpTa6qczYOWaEIvNpti24XstXpxVcMls/MUjra7pR2V31R9SBcDU4qJoQbpCo355ym6qmbsBNwkZFlbzpQcddZYProJ8Il3EpxhdidapAGnPnZitIlxeiOAFq3nU7/s6Qx6z/Wzs0nFAQzLGLkg5OtfAA4cU1L2AcCz1tmM26PB3SCnShHpvPa9ur/Yy19qogZAulfQ8vqMx36UyrUtiUuEIBnasNR1pbJnkjE46q+J7kSm8hA34DcNZbDtznx1Wxsh3Us6qWexbxp1CBlKT+55cIo5rMrGFWd7u8s6ljjeAkAc3FTFAYzjMEisXBZYShiKmf5E1BTElSlVl8dPl4XxQN9vv/oS+TB/P77tvg0yljmJRr5B/SK2hZIW5XiMlzwGrKkDxcuuZJ2uWYe3/cyZy/PkELHk4x84swmRXfGcnMfk17mBM+HvQrhMDkocgxIq2vCB9DoCwwAK1kCuUIRQ4U0k50HNJn+3Zxkqkg3kJR/7yDgvvoEQzvTiBzA3lOJk0WGykLkuYrwam3p8Td60sm3xRWJY7ESBikVhMptwOJWOTEJYapjy5hOelr1OBOqyhBwPNAekP+DRO0mYhYS9m5S8y85jZG7r2TtWjiks73a3MJSZu3nTVguHpX/9GWD7psghrsUzNqp6HyQl39lYJv1u81WakaGQRBo1BKu/OY5NWhjv3lBftXH40zO/mXI70morFHT64yq+rrgGiZlky4cFIYHnktpLPsBqi/fHU8Q+3/uA47ttrB7OAS/tBTFdARySSkEZizPQS/yv0ZY+Z5NMCXwt1J5VjsH6ETgIT/vfrmc7/IBnWBRYCBGs1hnvJ07jzXzQX/XUyiWLEIc3dH0C0MZIpehR4Gw0IXzzifh4nKNeABMjh5Nrzf6G8PMRY+LDhPYrNzcvKVDAqkqtdKcXK4CltbMOfCnk+ECzUmpPaHN1dwDI6VjswjBYc50Jsb7E5F6Kuz3aUvUj2Dube1cnQ==',
-      b64PublicECDHKey = 'nonce',
-      encryptedSecretKey = 'nonce',
-      inviteId = '123456',
-      b64InviteString =
-        'eyJpbnZpdGVJZCI6IjEyMzQ1NiIsIndhbGxldElkIjoiMDk4NzY1In0=___TDPz1jgGngJ29bPBExEJV8qKoEQtTZR+Rr9r7M1oJpz4FJo/LNP9wBX/x8SFeZo7ZiwuFf8sW58NYtYCvlVAx8gm5ZOBFK2Q0PA4Hoy1EH+mWh839GO/4BZtnSKAlySxvI+7VMFOESjqpm4BvKLtHtVLUw2N+E4kbxZqHUImdngVRoMgyQmhw5oSAOFww7myGV8ajPXsYuIsGoufJQjy6U772FzTGl+yI8gITnWZ1mSXQOlpapZRAiyT1wktyOVjza52rwYcA8nVTfJbnudIME+Ht+gE+fTjJPBDDlushuZcS28TRjCCLx2lowMFZ2XkhR6CypFrdJqk1wIYhYX9Mg==',
-      b64InviteSignatureByJoiningUser =
-        'Im3K3AA3ayF8M8/v8xZWQ9quCmWqaNAuDyh8rjBlqWC8VxUHE9R1p0j353QmzX8Zauun3JlZqbVDBP4N1huTtLem5sxuIZmT3ahgS2azYzN0yNyc1wdDVnq8VOYbGis15APB/s83xKiY+LvpcPffMBt/HuYplIBwZE9J/FIUU8fHIbjGuI7RybP2uScTf4FGJqBLVUtrQH3NOAKSvR2z3QK8VZ1iuMt9Q6F5DNktll+o/J5d9Rn91C0nAhwod5MGirQ+1K9wvi56GiRVRQbT71OwfKAkRTUmvUAMsndZWZZCTB4uubHy2cJwZw7DH4KmthLbIJM61s1JcN91jrMQTQ==',
-      walletOwner = {
-        id: ownerId,
-        username: 'owner',
-        b64InvitePublicKey,
-      } as any,
-      joiningUser = {
-        id: joiningUserId,
-        username: 'joiningUser',
-        // Using the same key for simplicity
-        b64InvitePublicKey,
-      } as any
-
-    describe('validate invite', () => {
+    describe('validate wallet invite', () => {
       it('works ok', async () => {
-        await InviteService.validateInvite({
+        await InviteService.launchWalletJoin({
           joiningUser,
           b64InviteString,
           b64InviteSignatureByJoiningUser,
@@ -140,50 +153,10 @@ describe('Invite service', () => {
         ).toBe(walletOwner.id)
       })
 
-      it('throws if invalid data', async () => {
-        await expect(
-          InviteService.validateInvite({
-            joiningUser,
-            b64InviteString: null as any,
-            b64InviteSignatureByJoiningUser: null as any,
-            b64PublicECDHKey: null as any,
-          }),
-        ).rejects.toThrowError(Error)
-      })
-
-      it('throws if invalid invite string (not JSON, no signature)', async () => {
-        let r: any
-
-        r = await expect(
-          InviteService.validateInvite({
-            joiningUser,
-            b64InviteString: b64InviteString.split('___').join('_'),
-            b64InviteSignatureByJoiningUser,
-            b64PublicECDHKey,
-          }),
-        ).rejects
-        await r.toThrow(FormValidationError)
-        await r.toThrow(InviteServiceFormErrors.invalidInvite)
-
-        // it has `null` encoded as b64 object
-        const fakeInvite =
-          'bnVsbA==___C9eHo6lj6S3Fup9anWVpdyY5ThqfrLb0ldH70P3KM+MDemPifkNMc+maPlXzjHVXbC52pLaWimpdrZcyomTvc/3IdD5YS5ZGM+5W41+JlW31+MxNGOPwdvkBLmkA0AscZozrJD1fb8f1pui+AzhfLI5w92w1ai1F+EOw12yi8aVzAHp1VJqxTyp4lSQuwTR3RBjzjZX4c0zYKN32+dx8Y5BxZ7/MG6zBedNmPjYZiTU5X9it12T1FvVFJQeHmM0P0FkD930nPc4uhvfuQnSNYYnU3JCiwZXh/qoBy9R8b+/V1S5HpU8nyEYgEKERrnXmKeJYEG7ZVixkpzB/3uoTJg=='
-        r = await expect(
-          InviteService.validateInvite({
-            joiningUser,
-            b64InviteString: fakeInvite,
-            b64InviteSignatureByJoiningUser,
-            b64PublicECDHKey,
-          }),
-        ).rejects
-        await r.toThrow(FormValidationError)
-        await r.toThrow(InviteServiceFormErrors.invalidInvite)
-      })
-
       it('throws if no such wallet', async () => {
         mockWalletManager.byId.mockImplementationOnce(async () => null)
         const r = await expect(
-          InviteService.validateInvite({
+          InviteService.launchWalletJoin({
             joiningUser,
             b64InviteString,
             b64InviteSignatureByJoiningUser,
@@ -205,7 +178,7 @@ describe('Invite service', () => {
         })
 
         const r = await expect(
-          InviteService.validateInvite({
+          InviteService.launchWalletJoin({
             joiningUser,
             b64InviteString,
             b64InviteSignatureByJoiningUser,
@@ -223,7 +196,7 @@ describe('Invite service', () => {
         mockWalletManager.byId.mockImplementationOnce(async () => res)
 
         const r = await expect(
-          InviteService.validateInvite({
+          InviteService.launchWalletJoin({
             joiningUser,
             b64InviteString,
             b64InviteSignatureByJoiningUser,
@@ -235,47 +208,13 @@ describe('Invite service', () => {
         await r.toThrow(InviteServiceFormErrors.inviteAlreadyUsed)
       })
 
-      it('throws if wallet has no owner or he has no publicKey', async () => {
-        let res = await mockWalletManager.byId(walletId)
-        res.users[0].WalletAccess.accessLevel = 'none'
-        mockWalletManager.byId.mockImplementationOnce(async () => res)
-
-        let r = await expect(
-          InviteService.validateInvite({
-            joiningUser,
-            b64InviteString,
-            b64InviteSignatureByJoiningUser,
-            b64PublicECDHKey,
-          }),
-        ).rejects
-
-        await r.toThrow(FormValidationError)
-        await r.toThrow(InviteServiceFormErrors.unknownError)
-
-        res = await mockWalletManager.byId(walletId)
-        res.users[0].b64InvitePublicKey = undefined
-        mockWalletManager.byId.mockImplementationOnce(async () => res)
-
-        r = await expect(
-          InviteService.validateInvite({
-            joiningUser,
-            b64InviteString,
-            b64InviteSignatureByJoiningUser,
-            b64PublicECDHKey,
-          }),
-        ).rejects
-
-        await r.toThrow(FormValidationError)
-        await r.toThrow(InviteServiceFormErrors.unknownError)
-      })
-
       it('throws if signature is not verified', async () => {
         // Correct invite string, but signed with some other key
         const newInviteString =
           'eyJpbnZpdGVJZCI6IjEyMzQ1NiIsIndhbGxldElkIjoiMDk4NzY1In0=___F5kPw+3Qg2VNYNtws+3MX3k8uCi7c9LDKOucE6OIMbkXsiEqXeGxMPzZl/qZekQ69BqEH4LeaDsh78XZzG3WJqSIRerPd+QT722vru7ZMBhfwgbaLfleGfu4CIw4xMMwqH+mLZ6qMUuY9e7rmXEaLQwNh4nnm1BWBzJTPisnM6EJob+8jEMLLKhPMIogbRainyVDO4qsE4zlcRlB65eiQRmE4eiDkfC0JeF1aJnL7FXyMq62pb2yvRMS62R831Vh5lAlTjgOPax0R+mid4HfqGpjgUNRO6heLphovebY2zy5pSiLRCIsN/hhei2wR98iJ6cArs+QG6XB+iwEBoBgtw=='
 
         const r = await expect(
-          InviteService.validateInvite({
+          InviteService.launchWalletJoin({
             joiningUser,
             b64InviteString: newInviteString,
             b64InviteSignatureByJoiningUser,
@@ -293,7 +232,7 @@ describe('Invite service', () => {
         )
 
         const r = await expect(
-          InviteService.validateInvite({
+          InviteService.launchWalletJoin({
             joiningUser,
             b64InviteString,
             b64InviteSignatureByJoiningUser,

@@ -29,6 +29,10 @@ module.exports = {
       b64salt: { type: Sequelize.BLOB, allowNull: true },
       encr: { type: Sequelize.BLOB, allowNull: true },
       password: requiredString,
+      inviteMonthlyLimit: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+      },
       inviterId: {
         type: Sequelize.STRING,
         references: {

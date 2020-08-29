@@ -7,7 +7,7 @@ export class CryptoService {
   static signatureAlgorithm = 'RSA-PSS'
   static hashAlgorithm = 'SHA-512'
 
-  static async verifyInvite({
+  static async verify({
     b64PublicKey,
     dataBuffer,
     signatureBuffer,

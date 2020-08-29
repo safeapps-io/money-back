@@ -52,7 +52,7 @@ export class InviteWsMiddleware implements M {
     if (!wsWrapped.state.user) return
 
     try {
-      await InviteService.validateInvite({
+      await InviteService.launchWalletJoin({
         joiningUser: wsWrapped.state.user,
         ...message,
       })

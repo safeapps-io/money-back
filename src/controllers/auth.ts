@@ -16,13 +16,22 @@ authRouter.get('/user', isRestAuth, (req, res) => {
 })
 
 authRouter.post(
-  '/isInviteValid',
+  '/invite/isValid',
   ash(async (req, res) => {
-    const body = req.body as {
+    const { invite } = req.body as {
       invite: string
     }
-    await InviteService.getUserIdFromInvite(body.invite)
+    await InviteService.parseAndValidateInvite(invite)
     res.json({})
+  }),
+)
+
+authRouter.get(
+  '/invite/usage',
+  ash(async (req, res) => {
+    res.json({
+      usage: await InviteService.getCurrentMonthlyInviteUsage(req.user.id),
+    })
   }),
 )
 
@@ -32,7 +41,7 @@ authRouter.post(
     const body = req.body as {
       username: string
       email?: string
-      invite?: string
+      invite: string
       password: string
     }
 

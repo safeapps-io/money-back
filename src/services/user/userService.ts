@@ -110,6 +110,7 @@ export class UserService {
       username: usernameScheme,
       email: emailScheme,
       password: passwordScheme,
+      invite: requiredString,
     })
     .noUnknown()
   static async signup({
@@ -123,15 +124,16 @@ export class UserService {
     email?: string
     password: string
     description: string
-    invite?: string
+    invite: string
   }) {
-    runSchemaWithFormError(this.signupSchema, { username, email, password })
+    runSchemaWithFormError(this.signupSchema, {
+      username,
+      email,
+      password,
+      invite,
+    })
 
-    // TODO: убрать, когда будет интерфейс с инвайт-ссылками
-    let inviterId: string | undefined
-    if (process.env.NODE_ENV === 'development' && invite === 'qwerty')
-      inviterId = undefined
-    else inviterId = await InviteService.getUserIdFromInvite(invite)
+    const { inviterUser } = await InviteService.parseAndValidateInvite(invite)
 
     await this.checkCredentialsAvailability({ username, email })
 
@@ -139,7 +141,7 @@ export class UserService {
     const user = await UserManager.create({
       username,
       password: passwordHashed,
-      inviterId,
+      inviterId: inviterUser.id,
     })
 
     await ValidateEmailService.triggerEmailValidation(user, email)

@@ -26,7 +26,7 @@ const mockRefreshTokenManager = {
       })),
   },
   mockInviteService = {
-    getUserIdFromInvite: jest.fn(),
+    parseAndValidateInvite: jest.fn(),
   },
   mockUserUpdatesPubSubService = {
     publishUserUpdates: jest.fn(),
@@ -83,17 +83,25 @@ import { FormValidationError } from '@/services/errors'
 import { PasswordServiceFormErrors } from '../passwordService'
 
 describe('User Service', () => {
-  const dummyUser = {
+  const invite = 'invite',
+    dummyUser = {
       username: 'username',
       password: 'password',
       email: 'test@test.com',
       description: 'test',
+      invite,
     },
     validatedUser = {
       id: nanoid(),
       username: 'username',
       email: 'test@test.com',
     }
+
+  beforeEach(() =>
+    mockInviteService.parseAndValidateInvite.mockImplementation(() => ({
+      inviterUser: { id: 'hey' },
+    })),
+  )
 
   describe('signup', () => {
     it('works fine', async () => {
@@ -147,6 +155,7 @@ describe('User Service', () => {
           username: 'smol',
           password: 'smol',
           description: '',
+          invite,
         })
         throw new Error()
       } catch (err) {
@@ -169,6 +178,7 @@ describe('User Service', () => {
           username,
           password,
           description,
+          invite,
         })
 
       mockUserManager.findByEmailOrUsername.mockImplementationOnce(
@@ -216,6 +226,7 @@ describe('User Service', () => {
           username,
           password,
           description,
+          invite,
         })
 
       mockUserManager.findByEmailOrUsername.mockImplementationOnce(

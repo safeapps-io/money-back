@@ -3,20 +3,11 @@ import { nanoid } from 'nanoid'
 
 import appPromise from '@/app'
 import { UserServiceFormErrors } from '@/services/user/userService'
-import { UserManager } from '@/models/user.model'
-import { InviteService } from '@/services/invite/inviteService'
+import testData from '@/services/crypto/testData.json'
 
 describe('Error reporting', () => {
-  let _invite: string
-  async function getInvite(): Promise<string> {
-    if (_invite) return _invite
-    const u = await UserManager.create({
-      username: nanoid(),
-      password: nanoid(),
-    })
-    _invite = InviteService.generateInviteString(u.id)
-    return _invite
-  }
+  // It is hardcoded against user dkzlv and his ID
+  const invite = testData.users.dkzlv.signedInvite
 
   it('reports error for user endpoint', async (done) => {
     const app = request(await appPromise)
@@ -40,6 +31,7 @@ describe('Error reporting', () => {
         fieldErrors: {
           username: ['username is a required field'],
           password: ['password is a required field'],
+          invite: ['invite is a required field'],
         },
       })
       .end(function (err) {
@@ -50,13 +42,13 @@ describe('Error reporting', () => {
 
   it('lets you signup', async (done) => {
     const app = request(await appPromise),
-      username = nanoid(),
-      invite = await getInvite()
+      username = nanoid()
 
     app
       .post('/saviour/api/auth/signup')
       .send({ username, password: nanoid(), invite })
       .end(function (_, res) {
+        console.log(res.body)
         expect(res.status).toBe(200)
         expect(res.body.user.username).toBe(username)
         done()
@@ -67,8 +59,7 @@ describe('Error reporting', () => {
     const app = request(await appPromise),
       username = nanoid(),
       email = `${nanoid()}@test.com`,
-      password = nanoid(),
-      invite = await getInvite()
+      password = nanoid()
 
     app
       .post('/saviour/api/auth/signup')
@@ -91,8 +82,7 @@ describe('Error reporting', () => {
     const app = request(await appPromise),
       username = nanoid(),
       email = `${nanoid()}@test.com`,
-      password = nanoid(),
-      invite = await getInvite()
+      password = nanoid()
 
     app
       .post('/saviour/api/auth/signup')
