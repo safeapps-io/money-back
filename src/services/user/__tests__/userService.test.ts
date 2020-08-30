@@ -100,6 +100,7 @@ describe('User Service', () => {
   beforeEach(() =>
     mockInviteService.parseAndValidateInvite.mockImplementation(() => ({
       inviterUser: { id: 'hey' },
+      decodedInvite: {},
     })),
   )
 

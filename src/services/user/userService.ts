@@ -133,7 +133,10 @@ export class UserService {
       invite,
     })
 
-    const { inviterUser } = await InviteService.parseAndValidateInvite(invite)
+    const {
+      inviterUser,
+      decodedInvite,
+    } = await InviteService.parseAndValidateInvite(invite)
 
     await this.checkCredentialsAvailability({ username, email })
 
@@ -146,7 +149,11 @@ export class UserService {
 
     await ValidateEmailService.triggerEmailValidation(user, email)
 
-    return { ...(await this.newSignIn({ userId: user.id, description })), user }
+    return {
+      ...(await this.newSignIn({ userId: user.id, description })),
+      user,
+      isWalletInvite: 'walletId' in decodedInvite,
+    }
   }
 
   private static signinSchema = yup
