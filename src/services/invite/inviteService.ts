@@ -84,10 +84,8 @@ export class InviteService {
         this.getCurrentMonthlyInviteUsage(userId),
       ])
 
-    if (!inviterUser) {
-      console.log('!inviterUser')
+    if (!inviterUser)
       throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
-    }
 
     if (
       thisMonthInvitees >=
@@ -100,10 +98,8 @@ export class InviteService {
       dataBuffer,
       signatureBuffer,
     })
-    if (!res) {
-      console.log('!res')
+    if (!res)
       throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
-    }
 
     return { decodedInvite, inviterUser }
   }
