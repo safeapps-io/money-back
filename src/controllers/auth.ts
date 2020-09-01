@@ -28,6 +28,7 @@ authRouter.post(
 
 authRouter.get(
   '/invite/usage',
+  isRestAuth,
   ash(async (req, res) => {
     res.json({
       usage: await InviteService.getCurrentMonthlyInviteUsage(req.user.id),
