@@ -14,7 +14,7 @@ const mockRefreshTokenManager = {
   mockUserManager = {
     create: jest.fn().mockImplementation((data) => ({ ...data, id: nanoid() })),
     isUsernameTaken: jest.fn(),
-    isEmailTaken: jest.fn(),
+    isEmailTaken: jest.fn().mockImplementation(async () => false),
     findByEmailOrUsername: jest.fn(),
     byId: jest.fn(),
     changeUserPassword: jest.fn(),
@@ -81,6 +81,11 @@ import {
 } from '../userService'
 import { FormValidationError } from '@/services/errors'
 import { PasswordServiceFormErrors } from '../passwordService'
+import {
+  InviteStringTypes,
+  InviteServiceFormErrors,
+} from '@/services/invite/inviteTypes'
+import { clearMocks } from '@/utils/jestHelpers'
 
 describe('User Service', () => {
   const invite = 'invite',
@@ -97,12 +102,16 @@ describe('User Service', () => {
       email: 'test@test.com',
     }
 
-  beforeEach(() =>
-    mockInviteService.parseAndValidateInvite.mockImplementation(() => ({
+  beforeEach(() => {
+    clearMocks(mockUserManager)
+
+    // Using service invites as a most generic version
+    mockInviteService.parseAndValidateInvite.mockImplementation(async () => ({
+      type: InviteStringTypes.service,
       inviterUser: { id: 'hey' },
-      decodedInvite: {},
-    })),
-  )
+      payload: { userInviterId: 'hey', inviteId: invite },
+    }))
+  })
 
   describe('signup', () => {
     it('works fine', async () => {
@@ -111,6 +120,45 @@ describe('User Service', () => {
       expect(res.refreshToken).toBeDefined()
       expect(argon2.verify(res.user.password, dummyUser.password))
       expect(res.user.email).toBeUndefined()
+
+      // Saves invite id
+      expect(res.user.inviteId).toBe(invite)
+      expect(res.isWalletInvite).toBe(false)
+    })
+
+    it('forbids signing up with prelaunch invite', async () => {
+      mockInviteService.parseAndValidateInvite.mockImplementationOnce(
+        async () => ({ type: InviteStringTypes.prelaunch }),
+      )
+
+      const r = expect(UserService.signup(dummyUser)).rejects
+
+      await r.toThrow(FormValidationError)
+      await r.toThrow(InviteServiceFormErrors.cannotUsePrelaunchInvites)
+    })
+
+    it('forbids signing up without a valid invite', async () => {
+      mockInviteService.parseAndValidateInvite.mockImplementationOnce(
+        async () => {
+          throw new FormValidationError('')
+        },
+      )
+
+      let r
+      r = expect(
+        UserService.signup({
+          username: 'username',
+          password: 'password',
+          email: 'test@test.com',
+          description: 'test',
+        } as any),
+      ).rejects
+
+      await r.toThrow(FormValidationError)
+
+      r = expect(UserService.signup(dummyUser)).rejects
+
+      await r.toThrow(FormValidationError)
     })
 
     it('forbids the same username', async () => {
@@ -167,6 +215,37 @@ describe('User Service', () => {
           password: ['password must be at least 6 characters'],
         })
       }
+    })
+  })
+
+  describe.only('waitlist signup', () => {
+    it('works fine without invite id (does not save email, has flag)', async () => {
+      const email = 'hey@hey.com'
+      await UserService.waitlistSignup({ email })
+
+      expect(mockUserManager.isEmailTaken.mock.calls.length).toBeGreaterThan(0)
+
+      const res = mockUserManager.create.mock.calls[0][0]
+      expect(res.email).toBeUndefined()
+      expect(res.isWaitlist).toBe(true)
+      expect(res.password).toBe('')
+      expect(res.inviterId).toBeUndefined()
+    })
+
+    it('works fine with invite id (set invite id)', async () => {
+      const userInviterId = 'hey'
+
+      mockInviteService.parseAndValidateInvite.mockImplementationOnce(
+        async () => ({
+          type: InviteStringTypes.prelaunch,
+          payload: { userInviterId },
+        }),
+      )
+      const email = 'hey@hey.com'
+      await UserService.waitlistSignup({ email, invite: 'qwerty' })
+
+      const res = mockUserManager.create.mock.calls[0][0]
+      expect(res.inviterId).toBe(userInviterId)
     })
   })
 

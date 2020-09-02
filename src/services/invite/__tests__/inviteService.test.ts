@@ -1,8 +1,15 @@
 import { clearMocks } from '@/utils/jestHelpers'
 
-const mockUserManager = {
+const mockInviteStringService = {
+    parseAndVerifySignature: jest.fn(),
+  },
+  mockCryptoService = {
+    verify: jest.fn(),
+  },
+  mockUserManager = {
     byId: jest.fn(),
     countInvitedBetweenDates: jest.fn(),
+    isInviteDisposed: jest.fn(),
   },
   mockWalletManager = {
     byId: jest.fn(),
@@ -22,6 +29,14 @@ const mockUserManager = {
     publishWalletUpdates: jest.fn(),
   }
 
+jest.mock('@/services/invite/inviteStringService', () => ({
+  __esModule: true,
+  InviteStringService: mockInviteStringService,
+}))
+jest.mock('@/services/crypto/cryptoService', () => ({
+  __esModule: true,
+  CryptoService: mockCryptoService,
+}))
 jest.mock('@/models/user.model', () => ({
   __esModule: true,
   UserManager: mockUserManager,
@@ -39,13 +54,34 @@ jest.mock('@/services/wallet/walletPubSubService', () => ({
   WalletPubSubService: mockWalletPubSubService,
 }))
 
-import { InviteService, InviteServiceFormErrors } from '../inviteService'
+import { InviteService } from '../inviteService'
 import { FormValidationError } from '@/services/errors'
 import { AccessLevels } from '@/models/walletAccess.model'
-import testData from '@/services/crypto/testData.json'
+import { InviteServiceFormErrors, InviteStringTypes } from '../inviteTypes'
 
 describe('Invite service', () => {
+  const walletId = '098765',
+    ownerId = 'ownerId',
+    joiningUserId = 'joiningId',
+    b64InvitePublicKey = '1',
+    b64PublicECDHKey = '1',
+    encryptedSecretKey = '1',
+    b64InviteSignatureByJoiningUser = '1',
+    walletOwner = {
+      id: ownerId,
+      username: 'owner',
+      b64InvitePublicKey,
+    } as any,
+    joiningUser = {
+      id: joiningUserId,
+      username: 'joiningUser',
+      b64InvitePublicKey,
+    } as any,
+    b64InviteString = '1',
+    inviteId = 'qwerty'
+
   beforeEach(() => {
+    clearMocks(mockInviteStringService)
     clearMocks(mockUserManager)
     clearMocks(mockWalletManager)
     clearMocks(mockInvitePubSubService)
@@ -68,77 +104,77 @@ describe('Invite service', () => {
     mockInvitePubSubService.requestToOwner.mockImplementation(async () => 1)
   })
 
-  const walletId = '098765',
-    ownerId = 'ownerId',
-    joiningUserId = 'joiningId',
-    // For generating other signatures I saved private key there
-    b64InvitePublicKey = testData.users.dkzlv.b64InvitePublicKey,
-    b64PublicECDHKey = 'nonce',
-    encryptedSecretKey = 'nonce',
-    inviteId = '123456',
-    b64GenericInvite = testData.users.dkzlv.signedInvite,
-    b64InviteString =
-      'eyJpbnZpdGVJZCI6IjEyMzQ1NiIsIndhbGxldElkIjoiMDk4NzY1IiwidXNlckludml0ZXJJZCI6Im93bmVySWQifQ==___d/6RXZRQLqpuAeZLfDqlh274dVm+PfLK4WEZv9MVQleUCmhNsKLJnHcm0UF0XMIFVrFHaBzEETQsZyebPfGDeGS1oZ2usVp7OMaE665wV0R+BxXiDKrkALNfadWumS6h8UanHGbxRa6i8ZnihY6ucY32UXKiuRkwRMKtQVZ7wvT8LH4ap5oURcNDSreULvLrBElnf5DbYMFgv17SHoLBHnO9VaUBrz028AKSs/ABfQMRLG78SNcy+kOW5teRiI4boGyCId6vCFjQbq7z0lWVgAky0+RtVfptCyJVAUxdNT5m7l2tvtHb6vsOLCfHUlWl8Nzw1mPB1zEhxJtT2QHCiw==',
-    b64InviteSignatureByJoiningUser =
-      'AGXuLUwapcFc/idZrNeppIHKFMDq9cTixZLSU6dsLGXqPsSUg2mPwh2qQdMmQgDl2+lh58QzQyyTYLbkqguCLfBGtTIdBfnEzy9gQ3Qx/qA6bL0a6mkZK07gwB5R6WyGVM820T9wpnLOMpbXWzwWg4OH8tQwooHpeMOoRnLot+8ed4lVCPThB2Pb/bPgdboGmPN3TSZyndzPtm6Yfy0lhxcrK4bGfwXxIisjM8MUL9r+H2xd65JHqEaGruK/GqE7LIg6eAv6sXyFslR9Lx78I37hL92/o+ENV2ZXqf6cclu25os7MErFFPJRh06lSZlc0rDnzGec8nasPKoCeOGBYQ==',
-    walletOwner = {
-      id: ownerId,
-      username: 'owner',
-      b64InvitePublicKey,
-    } as any,
-    joiningUser = {
-      id: joiningUserId,
-      username: 'joiningUser',
-      // Using the same key for simplicity
-      b64InvitePublicKey,
-    } as any
-
-  describe('generic invites', () => {
-    it('works', async () => {
-      const res = await InviteService.parseAndValidateInvite(b64GenericInvite)
-      expect(res.decodedInvite.userInviterId).toBe(ownerId)
+  describe('prelaunch invite', () => {
+    const parseResult = {
+      type: InviteStringTypes.prelaunch,
+      payload: { userInviterId: ownerId },
+    }
+    beforeEach(() => {
+      mockInviteStringService.parseAndVerifySignature.mockImplementation(
+        async () => parseResult,
+      )
     })
 
-    it('fails if user has invited enough users', async () => {
-      mockUserManager.countInvitedBetweenDates.mockImplementationOnce(
-        async () => 10,
+    it('works ok', async () => {
+      const res = await InviteService.parseAndValidateInvite(b64InviteString)
+      expect(res).toEqual(parseResult)
+    })
+  })
+
+  describe('service invite', () => {
+    const parseResult = {
+      type: InviteStringTypes.service,
+      userInviter: { id: ownerId, b64InvitePublicKey },
+      payload: { userInviterId: ownerId, inviteId },
+    }
+
+    beforeEach(() => {
+      mockInviteStringService.parseAndVerifySignature.mockImplementation(
+        async () => parseResult,
       )
-      const r = await expect(
-        InviteService.parseAndValidateInvite(b64GenericInvite),
-      ).rejects
+      mockUserManager.isInviteDisposed.mockImplementation(async () => 0)
+    })
+
+    it('works ok', async () => {
+      const res = await InviteService.parseAndValidateInvite(b64InviteString)
+      expect(res).toEqual(parseResult)
+    })
+
+    it('throws error if invite has already been disposed', async () => {
+      mockUserManager.isInviteDisposed.mockImplementationOnce(async () => 1)
+
+      const r = expect(InviteService.parseAndValidateInvite(b64InviteString))
+        .rejects
+
+      await r.toThrow(FormValidationError)
+      await r.toThrow(InviteServiceFormErrors.inviteAlreadyUsed)
+    })
+
+    it('throws if limit is reached', async () => {
+      mockUserManager.countInvitedBetweenDates.mockImplementationOnce(
+        async () => 25,
+      )
+
+      const r = expect(InviteService.parseAndValidateInvite(b64InviteString))
+        .rejects
 
       await r.toThrow(FormValidationError)
       await r.toThrow(InviteServiceFormErrors.limitReached)
     })
-
-    it('throws if invalid data', async () => {
-      await expect(
-        InviteService.parseAndValidateInvite(null as any),
-      ).rejects.toThrowError(Error)
-    })
-
-    it('throws if invalid invite string (not JSON, no signature)', async () => {
-      let r: any
-
-      r = await expect(
-        InviteService.parseAndValidateInvite(
-          b64InviteString.split('___').join('_'),
-        ),
-      ).rejects
-      await r.toThrow(FormValidationError)
-      await r.toThrow(InviteServiceFormErrors.invalidInvite)
-
-      // it has `null` encoded as b64 object
-      const fakeInvite =
-        'bnVsbA==___C9eHo6lj6S3Fup9anWVpdyY5ThqfrLb0ldH70P3KM+MDemPifkNMc+maPlXzjHVXbC52pLaWimpdrZcyomTvc/3IdD5YS5ZGM+5W41+JlW31+MxNGOPwdvkBLmkA0AscZozrJD1fb8f1pui+AzhfLI5w92w1ai1F+EOw12yi8aVzAHp1VJqxTyp4lSQuwTR3RBjzjZX4c0zYKN32+dx8Y5BxZ7/MG6zBedNmPjYZiTU5X9it12T1FvVFJQeHmM0P0FkD930nPc4uhvfuQnSNYYnU3JCiwZXh/qoBy9R8b+/V1S5HpU8nyEYgEKERrnXmKeJYEG7ZVixkpzB/3uoTJg=='
-      r = await expect(InviteService.parseAndValidateInvite(fakeInvite)).rejects
-      await r.toThrow(FormValidationError)
-      await r.toThrow(InviteServiceFormErrors.invalidInvite)
-    })
   })
 
-  describe('wallet invites', () => {
-    describe('validate wallet invite', () => {
+  describe('wallet invite', () => {
+    beforeEach(() => {
+      mockInviteStringService.parseAndVerifySignature.mockImplementation(
+        async () => ({
+          type: InviteStringTypes.wallet,
+          userInviter: { id: ownerId, b64InvitePublicKey },
+          payload: { inviteId, userInviterId: ownerId, walletId },
+        }),
+      )
+    })
+
+    describe('wallet join', () => {
       it('works ok', async () => {
         await InviteService.launchWalletJoin({
           joiningUser,
@@ -155,7 +191,7 @@ describe('Invite service', () => {
 
       it('throws if no such wallet', async () => {
         mockWalletManager.byId.mockImplementationOnce(async () => null)
-        const r = await expect(
+        const r = expect(
           InviteService.launchWalletJoin({
             joiningUser,
             b64InviteString,
@@ -177,7 +213,7 @@ describe('Invite service', () => {
           }
         })
 
-        const r = await expect(
+        const r = expect(
           InviteService.launchWalletJoin({
             joiningUser,
             b64InviteString,
@@ -195,7 +231,7 @@ describe('Invite service', () => {
         res.users[0].WalletAccess.inviteId = inviteId
         mockWalletManager.byId.mockImplementationOnce(async () => res)
 
-        const r = await expect(
+        const r = expect(
           InviteService.launchWalletJoin({
             joiningUser,
             b64InviteString,
@@ -208,30 +244,12 @@ describe('Invite service', () => {
         await r.toThrow(InviteServiceFormErrors.inviteAlreadyUsed)
       })
 
-      it('throws if signature is not verified', async () => {
-        // Correct invite string, but signed with some other key
-        const newInviteString =
-          'eyJpbnZpdGVJZCI6IjEyMzQ1NiIsIndhbGxldElkIjoiMDk4NzY1In0=___F5kPw+3Qg2VNYNtws+3MX3k8uCi7c9LDKOucE6OIMbkXsiEqXeGxMPzZl/qZekQ69BqEH4LeaDsh78XZzG3WJqSIRerPd+QT722vru7ZMBhfwgbaLfleGfu4CIw4xMMwqH+mLZ6qMUuY9e7rmXEaLQwNh4nnm1BWBzJTPisnM6EJob+8jEMLLKhPMIogbRainyVDO4qsE4zlcRlB65eiQRmE4eiDkfC0JeF1aJnL7FXyMq62pb2yvRMS62R831Vh5lAlTjgOPax0R+mid4HfqGpjgUNRO6heLphovebY2zy5pSiLRCIsN/hhei2wR98iJ6cArs+QG6XB+iwEBoBgtw=='
-
-        const r = await expect(
-          InviteService.launchWalletJoin({
-            joiningUser,
-            b64InviteString: newInviteString,
-            b64InviteSignatureByJoiningUser,
-            b64PublicECDHKey,
-          }),
-        ).rejects
-
-        await r.toThrow(FormValidationError)
-        await r.toThrow(InviteServiceFormErrors.invalidInvite)
-      })
-
       it('throws if owner is offline', async () => {
         mockInvitePubSubService.requestToOwner.mockImplementationOnce(
           async () => 0,
         )
 
-        const r = await expect(
+        const r = expect(
           InviteService.launchWalletJoin({
             joiningUser,
             b64InviteString,
@@ -249,6 +267,7 @@ describe('Invite service', () => {
       // Here we check owner invitation message once and for all
       beforeEach(() => {
         mockUserManager.byId.mockImplementation(async () => joiningUser)
+        mockCryptoService.verify.mockImplementation(async () => true)
       })
 
       it('works ok', async () => {
@@ -279,7 +298,7 @@ describe('Invite service', () => {
         mockWalletManager.byId.mockImplementationOnce(async () => null)
         let r: any
 
-        r = await expect(
+        r = expect(
           InviteService.invitationError({
             walletOwner,
             joiningUserId,
@@ -292,7 +311,7 @@ describe('Invite service', () => {
 
         mockUserManager.byId.mockImplementationOnce(async () => null)
 
-        r = await expect(
+        r = expect(
           InviteService.invitationError({
             walletOwner,
             joiningUserId,
@@ -309,7 +328,7 @@ describe('Invite service', () => {
         res.users[0].WalletAccess.accessLevel = 'no'
         mockWalletManager.byId.mockImplementationOnce(async () => res)
 
-        const r = await expect(
+        const r = expect(
           InviteService.invitationError({
             walletOwner,
             joiningUserId,
@@ -322,16 +341,13 @@ describe('Invite service', () => {
       })
 
       it('throws if joining user signature is invalid', async () => {
-        // Signed with some other key
-        const invalidJoiningSignature =
-          'XvbQacRt+FBt1GZvOy90nFQ/vgeYAucIYlOOd5kjIJxGErZwAMGH5YTRUXpgG6DOKUHl2KrCPsV4nCq0/GV/EvClC2h4bAkySu5sVAOKP5B+GngJUgKcm0CvCW2XqdqjS8zBRfA06wYI1oM51+XDtGpVFGfCGucPRUdDVQRsbK1UA4mlG/7aYNfsiqeDEViAPdJLt5GbRbQtNzRn9sGDSnpT1tlxO9iW/NbGS/z3oDokn9MR6AOhVuCN3Ni3FtWgyAr4ScRPEtmblIpOsvW5x3UZZUF5Sj2xjb4HeALFD7v4scLcrn/INgtPTTz9abEL4gAgqWhAKugGGKqlawjqAQ=='
-        let r: any
+        mockCryptoService.verify.mockImplementationOnce(async () => false)
 
-        r = await expect(
+        const r = expect(
           InviteService.invitationError({
             walletOwner,
             joiningUserId,
-            b64InviteSignatureByJoiningUser: invalidJoiningSignature,
+            b64InviteSignatureByJoiningUser,
             b64InviteString,
           }),
         ).rejects

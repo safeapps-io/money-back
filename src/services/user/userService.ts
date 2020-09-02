@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid'
 import * as yup from 'yup'
 import { isBefore } from 'date-fns'
 
@@ -5,7 +6,11 @@ import { getTransaction } from '@/models/setup'
 import User, { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
 
-import { runSchemaWithFormError, requiredString } from '@/utils/yupHelpers'
+import {
+  runSchemaWithFormError,
+  requiredString,
+  optionalString,
+} from '@/utils/yupHelpers'
 import { signJwt, verifyJwt } from '@/utils/crypto'
 
 import { FormValidationError } from '@/services/errors'
@@ -15,6 +20,10 @@ import { WalletService } from '@/services/wallet/walletService'
 import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from './passwordService'
 import { UserUpdatesPubSubService } from './userUpdatesPubSubService'
+import {
+  InviteStringTypes,
+  InviteServiceFormErrors,
+} from '../invite/inviteTypes'
 
 export const jwtSubject = 'sess' // session
 
@@ -105,6 +114,42 @@ export class UserService {
       })
   }
 
+  private static waitlistSignupSchema = yup
+    .object({
+      email: emailScheme,
+      invite: optionalString,
+    })
+    .noUnknown()
+  static async waitlistSignup({
+    email,
+    invite,
+  }: {
+    email: string
+    invite?: string
+  }) {
+    runSchemaWithFormError(this.waitlistSignupSchema, {
+      email,
+      invite,
+    })
+
+    const username = nanoid(),
+      password = '',
+      inviterId = invite
+        ? (await InviteService.parseAndValidateInvite(invite)).payload
+            .userInviterId
+        : undefined
+
+    await this.checkCredentialsAvailability({ username, email })
+    const user = await UserManager.create({
+      username,
+      password,
+      inviterId,
+      isWaitlist: true,
+    })
+
+    await ValidateEmailService.triggerEmailValidation(user, email)
+  }
+
   private static signupSchema = yup
     .object({
       username: usernameScheme,
@@ -133,26 +178,30 @@ export class UserService {
       invite,
     })
 
-    const {
-      inviterUser,
-      decodedInvite,
-    } = await InviteService.parseAndValidateInvite(invite)
+    const parsed = await InviteService.parseAndValidateInvite(invite)
+    if (parsed.type == InviteStringTypes.prelaunch)
+      throw new FormValidationError(
+        InviteServiceFormErrors.cannotUsePrelaunchInvites,
+      )
+
+    const { payload, type } = parsed
 
     await this.checkCredentialsAvailability({ username, email })
 
-    const passwordHashed = await PasswordService.hashPassword(password)
-    const user = await UserManager.create({
-      username,
-      password: passwordHashed,
-      inviterId: inviterUser.id,
-    })
+    const passwordHashed = await PasswordService.hashPassword(password),
+      user = await UserManager.create({
+        username,
+        password: passwordHashed,
+        inviterId: payload.userInviterId,
+        inviteId: payload.inviteId,
+      })
 
     await ValidateEmailService.triggerEmailValidation(user, email)
 
     return {
       ...(await this.newSignIn({ userId: user.id, description })),
       user,
-      isWalletInvite: 'walletId' in decodedInvite,
+      isWalletInvite: type == InviteStringTypes.wallet,
     }
   }
 
