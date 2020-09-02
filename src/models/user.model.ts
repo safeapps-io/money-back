@@ -85,6 +85,13 @@ export default class User extends BaseModel<User> {
   })
   encr!: Buffer | string | null
 
+  @Column({ type: DataType.BOOLEAN, defaultValue: false })
+  isWaitlist!: boolean
+
+  @AllowNull
+  @Column(DataType.STRING)
+  inviteId!: string | null
+
   @AllowNull
   @Column(DataType.INTEGER)
   inviteMonthlyLimit!: number | null
@@ -130,6 +137,8 @@ export class UserManager {
     username: string
     password: string
     inviterId?: string
+    inviteId?: string
+    isWaitlist?: boolean
   }) {
     return User.create(data)
   }
@@ -198,5 +207,9 @@ export class UserManager {
         created: { [Op.gt]: startDate, [Op.lt]: endDate },
       },
     })
+  }
+
+  static isInviteDisposed(inviteId: string) {
+    return User.count({ where: { inviteId } })
   }
 }
