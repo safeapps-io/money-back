@@ -21,9 +21,13 @@ type UserData = {
 }
 
 export class ValidateEmailService {
-  private static generateToken({ email, userId }: UserData): Promise<string> {
+  private static generateToken({
+    email,
+    userId,
+    expiresIn = '2d',
+  }: UserData & { expiresIn?: string }): Promise<string> {
     return signJwt({ em: email, id: userId } as JWTMessage, {
-      expiresIn: '2d',
+      expiresIn,
       subject: jwtSubject,
     })
   }
@@ -46,6 +50,18 @@ export class ValidateEmailService {
     } catch (error) {
       throw new FormValidationError(ValidateEmailServiceErrors.invalidToken)
     }
+  }
+
+  public static async triggerWaitlistEmailValidation(
+    user: User,
+    email: string,
+  ) {
+    const token = await this.generateToken({
+      email,
+      userId: user.id,
+      expiresIn: '30d',
+    })
+    return MessageService.sendWaitlistValidationEmail({ email, token })
   }
 
   public static async triggerEmailValidation(

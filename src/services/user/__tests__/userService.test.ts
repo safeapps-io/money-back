@@ -218,7 +218,7 @@ describe('User Service', () => {
     })
   })
 
-  describe.only('waitlist signup', () => {
+  describe('waitlist signup', () => {
     it('works fine without invite id (does not save email, has flag)', async () => {
       const email = 'hey@hey.com'
       await UserService.waitlistSignup({ email })

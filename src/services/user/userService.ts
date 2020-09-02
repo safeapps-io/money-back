@@ -147,7 +147,7 @@ export class UserService {
       isWaitlist: true,
     })
 
-    await ValidateEmailService.triggerEmailValidation(user, email)
+    await ValidateEmailService.triggerWaitlistEmailValidation(user, email)
   }
 
   private static signupSchema = yup
