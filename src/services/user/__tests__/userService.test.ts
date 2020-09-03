@@ -114,7 +114,7 @@ describe('User Service', () => {
   })
 
   describe('signup', () => {
-    it('works fine', async () => {
+    it('works fine with service invite', async () => {
       const res = await UserService.signup(dummyUser)
 
       expect(res.refreshToken).toBeDefined()
@@ -126,6 +126,28 @@ describe('User Service', () => {
       expect(res.isWalletInvite).toBe(false)
     })
 
+    it('works fine with launch invite', async () => {
+      const id = 'qwerty',
+        email = 'qwerty@qwerty.com'
+      mockInviteService.parseAndValidateInvite.mockImplementationOnce(
+        async () => ({
+          type: InviteStringTypes.launch,
+          payload: { userId: 'qwerty', email },
+        }),
+      )
+      mockUserManager.byId.mockImplementationOnce(async () => ({
+        id,
+        isWaitlist: true,
+      }))
+
+      const { user } = await UserService.signup(dummyUser)
+      expect(user.id).toBe(id)
+
+      // Overrides the one in dummy user!
+      expect(user.email).toBe(email)
+      expect(user.isWaitlist).toBeFalsy()
+    })
+
     it('forbids signing up with prelaunch invite', async () => {
       mockInviteService.parseAndValidateInvite.mockImplementationOnce(
         async () => ({ type: InviteStringTypes.prelaunch }),
@@ -135,6 +157,26 @@ describe('User Service', () => {
 
       await r.toThrow(FormValidationError)
       await r.toThrow(InviteServiceFormErrors.cannotUsePrelaunchInvites)
+    })
+
+    it('forbids multiple sign ups for the same launch invite', async () => {
+      const id = 'qwerty',
+        email = 'qwerty@qwerty.com'
+      mockInviteService.parseAndValidateInvite.mockImplementationOnce(
+        async () => ({
+          type: InviteStringTypes.launch,
+          payload: { userId: 'qwerty', email },
+        }),
+      )
+      mockUserManager.byId.mockImplementationOnce(async () => ({
+        id,
+        isWaitlist: false,
+      }))
+
+      const r = expect(UserService.signup(dummyUser)).rejects
+
+      await r.toThrow(FormValidationError)
+      await r.toThrow(InviteServiceFormErrors.inviteAlreadyUsed)
     })
 
     it('forbids signing up without a valid invite', async () => {

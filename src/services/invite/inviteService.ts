@@ -34,7 +34,12 @@ export class InviteService {
     const res = await InviteStringService.parseAndVerifySignature(
       b64InviteString,
     )
-    if (res.type == InviteStringTypes.prelaunch) return res
+
+    if (
+      res.type == InviteStringTypes.prelaunch ||
+      res.type == InviteStringTypes.launch
+    )
+      return res
 
     const user = res.userInviter,
       promises = [this.getCurrentMonthlyInviteUsage(user.id)]

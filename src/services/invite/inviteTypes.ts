@@ -11,6 +11,7 @@ export enum InviteServiceFormErrors {
 
 export enum InviteStringTypes {
   prelaunch,
+  launch,
   service,
   wallet,
 }

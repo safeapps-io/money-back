@@ -134,10 +134,13 @@ export class UserService {
 
     const username = nanoid(),
       password = '',
-      inviterId = invite
-        ? (await InviteService.parseAndValidateInvite(invite)).payload
-            .userInviterId
-        : undefined
+      parsedInvite = invite
+        ? await InviteService.parseAndValidateInvite(invite)
+        : undefined,
+      inviterId =
+        parsedInvite?.type == InviteStringTypes.prelaunch
+          ? parsedInvite.payload.userInviterId
+          : undefined
 
     await this.checkCredentialsAvailability({ username, email })
     const user = await UserManager.create({
@@ -178,30 +181,58 @@ export class UserService {
       invite,
     })
 
-    const parsed = await InviteService.parseAndValidateInvite(invite)
-    if (parsed.type == InviteStringTypes.prelaunch)
-      throw new FormValidationError(
-        InviteServiceFormErrors.cannotUsePrelaunchInvites,
-      )
+    const [parsed, passwordHashed] = await Promise.all([
+      InviteService.parseAndValidateInvite(invite),
+      PasswordService.hashPassword(password),
+    ])
 
-    const { payload, type } = parsed
+    let user: User
+    switch (parsed.type) {
+      case InviteStringTypes.prelaunch:
+        throw new FormValidationError(
+          InviteServiceFormErrors.cannotUsePrelaunchInvites,
+        )
 
-    await this.checkCredentialsAvailability({ username, email })
+      case InviteStringTypes.launch: {
+        await this.checkCredentialsAvailability({
+          username,
+          email: parsed.payload.email,
+        })
 
-    const passwordHashed = await PasswordService.hashPassword(password),
-      user = await UserManager.create({
-        username,
-        password: passwordHashed,
-        inviterId: payload.userInviterId,
-        inviteId: payload.inviteId,
-      })
+        const waitlistUser = await UserManager.byId(parsed.payload.userId)
+        if (!waitlistUser?.isWaitlist)
+          throw new FormValidationError(
+            InviteServiceFormErrors.inviteAlreadyUsed,
+          )
 
-    await ValidateEmailService.triggerEmailValidation(user, email)
+        user = await UserManager.update(waitlistUser.id, {
+          username,
+          password,
+          email: parsed.payload.email,
+          isWaitlist: false,
+        })
+
+        break
+      }
+
+      default: {
+        await this.checkCredentialsAvailability({ username, email })
+        const { payload } = parsed
+
+        user = await UserManager.create({
+          username,
+          password: passwordHashed,
+          inviterId: payload.userInviterId,
+          inviteId: payload.inviteId,
+        })
+        await ValidateEmailService.triggerEmailValidation(user, email)
+      }
+    }
 
     return {
       ...(await this.newSignIn({ userId: user.id, description })),
       user,
-      isWalletInvite: type == InviteStringTypes.wallet,
+      isWalletInvite: parsed.type == InviteStringTypes.wallet,
     }
   }
 
