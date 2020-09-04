@@ -2,6 +2,13 @@ import { decode } from 'base64-arraybuffer'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import * as yup from 'yup'
 
+import {
+  runSchemaWithFormError,
+  requiredString,
+  optionalString,
+} from '@/utils/yupHelpers'
+import { encryptAes, decryptAes } from '@/utils/crypto'
+
 import User, { UserManager } from '@/models/user.model'
 import { WalletManager } from '@/models/wallet.model'
 import { AccessLevels } from '@/models/walletAccess.model'
@@ -9,14 +16,18 @@ import { AccessLevels } from '@/models/walletAccess.model'
 import { FormValidationError } from '@/services/errors'
 import { CryptoService } from '@/services/crypto/cryptoService'
 import { InvitePubSubService } from './invitePubSubService'
-import {
-  runSchemaWithFormError,
-  requiredString,
-  optionalString,
-} from '@/utils/yupHelpers'
 import { WalletPubSubService } from '@/services/wallet/walletPubSubService'
 import { InviteServiceFormErrors, InviteStringTypes } from './inviteTypes'
 import { InviteStringService } from './inviteStringService'
+
+type EncryptedUserId = {
+  userId: string
+}
+export enum Prizes {
+  top10 = 'top10',
+  top20 = 'top20',
+  top50 = 'top50',
+}
 
 export class InviteService {
   public static getCurrentMonthlyInviteUsage(userId: string) {
@@ -27,6 +38,57 @@ export class InviteService {
       startDate: startOfMonth(now),
       endDate: endOfMonth(now),
     })
+  }
+
+  public static getUserIdEnctypted(userId: string) {
+    return encryptAes({ userId } as EncryptedUserId)
+  }
+
+  private static getDecryptedUserId(encryptedUserId: string) {
+    return decryptAes<EncryptedUserId>(encryptedUserId).userId
+  }
+
+  public static async getCurrentWaitlistStats(
+    encryptedUserId: string,
+  ): Promise<{
+    prize: null | Prizes
+    currentInviteCount: number | null
+    inviteLink: string
+  }> {
+    let userId: string
+    try {
+      userId = this.getDecryptedUserId(encryptedUserId)
+    } catch (error) {
+      throw new Error()
+    }
+
+    const { countMost, userCount } = await UserManager.countByMostInvites()
+    let currentIndex: number | null = null,
+      currentInviteCount: number | null = null
+    for (let i = 0; i < countMost.length; i++) {
+      const item = countMost[i]
+      if (item.inviterId == userId) {
+        currentIndex = i
+        currentInviteCount = item.invitedCount
+        break
+      }
+    }
+
+    /**
+     * It seems to be more transparent to compare the user to the whole
+     * user base rather then those who invited at least someone
+     */
+    let prize: null | Prizes = null
+    if (currentIndex != null)
+      if (currentIndex < 0.1 * userCount) prize = Prizes.top10
+      else if (currentIndex < 0.2 * userCount) prize = Prizes.top20
+      else if (currentIndex < 0.5 * userCount) prize = Prizes.top50
+
+    return {
+      prize,
+      currentInviteCount,
+      inviteLink: InviteStringService.generatePrelaunchInvite(userId),
+    }
   }
 
   private static baseInviteMonthlyLimit = 5

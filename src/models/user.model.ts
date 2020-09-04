@@ -9,7 +9,7 @@ import {
   BelongsTo,
   BelongsToMany,
 } from 'sequelize-typescript'
-import { Op } from 'sequelize'
+import sequelize, { Op } from 'sequelize'
 
 import { getValue, setValue } from '@/utils/blobAsBase64'
 
@@ -211,5 +211,50 @@ export class UserManager {
 
   static isInviteDisposed(inviteId: string) {
     return User.count({ where: { inviteId } })
+  }
+
+  /**
+   * Returns:
+   * 1. whole user count
+   * 2. an array of inviter id to its count in the descending order. Does not return info
+   *    on users that has not invited anyone!
+   */
+  static async countByMostInvites(): Promise<{
+    userCount: number
+    countMost: { inviterId: string; invitedCount: number }[]
+  }> {
+    const [userCount, countMost] = await Promise.all([
+      User.count(),
+      User.findAll<any>({
+        attributes: [
+          'inviterId',
+          'created',
+          [
+            sequelize.fn('COUNT', sequelize.col('User.inviterId')),
+            'invitedCount',
+          ],
+        ],
+        where: {
+          inviterId: { [Op.not]: null },
+        },
+        group: ['User.inviterId', 'User.created'],
+        order: [
+          [sequelize.literal('"invitedCount"'), 'DESC'],
+          ['created', 'ASC'],
+        ],
+        raw: true,
+      }),
+    ])
+
+    return {
+      userCount,
+      /**
+       * It also returns integer as a string for some strange reason.
+       */
+      countMost: countMost.map((item) => ({
+        ...item,
+        invitedCount: parseInt(item.invitedCount),
+      })),
+    }
   }
 }
