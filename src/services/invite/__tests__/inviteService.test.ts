@@ -2,6 +2,7 @@ import { clearMocks } from '@/utils/jestHelpers'
 
 const mockInviteStringService = {
     parseAndVerifySignature: jest.fn(),
+    generatePrelaunchInvite: jest.fn(),
   },
   mockCryptoService = {
     verify: jest.fn(),
@@ -10,6 +11,7 @@ const mockInviteStringService = {
     byId: jest.fn(),
     countInvitedBetweenDates: jest.fn(),
     isInviteDisposed: jest.fn(),
+    countByMostInvites: jest.fn(),
   },
   mockWalletManager = {
     byId: jest.fn(),
@@ -54,7 +56,7 @@ jest.mock('@/services/wallet/walletPubSubService', () => ({
   WalletPubSubService: mockWalletPubSubService,
 }))
 
-import { InviteService } from '../inviteService'
+import { InviteService, Prizes } from '../inviteService'
 import { FormValidationError } from '@/services/errors'
 import { AccessLevels } from '@/models/walletAccess.model'
 import { InviteServiceFormErrors, InviteStringTypes } from '../inviteTypes'
@@ -118,6 +120,50 @@ describe('Invite service', () => {
     it('works ok', async () => {
       const res = await InviteService.parseAndValidateInvite(b64InviteString)
       expect(res).toEqual(parseResult)
+    })
+
+    it('shows correct waitlist stats', async () => {
+      const fakeId = 'qwerty',
+        userId = InviteService.getUserIdEnctypted('qwerty'),
+        invitedCount = 12,
+        inviteLink = 'qwert'
+
+      mockUserManager.countByMostInvites.mockImplementationOnce(async () => ({
+        userCount: 123,
+        countMost: [
+          { inviterId: fakeId, invitedCount },
+          { inviterId: 'other', invitedCount: 2 },
+          { inviterId: 'otherone', invitedCount: 1 },
+        ],
+      }))
+      mockInviteStringService.generatePrelaunchInvite.mockImplementation(
+        () => inviteLink,
+      )
+
+      let r: any
+      r = await InviteService.getCurrentWaitlistStats(userId)
+      expect(r).toEqual({
+        prize: Prizes.top10,
+        currentInviteCount: invitedCount,
+        inviteLink,
+      })
+
+      mockUserManager.countByMostInvites.mockImplementationOnce(async () => ({
+        userCount: 123,
+        countMost: [
+          { inviterId: 'other', invitedCount: 2 },
+          { inviterId: 'otherone', invitedCount: 1 },
+        ],
+      }))
+
+      r = await InviteService.getCurrentWaitlistStats(userId)
+      expect(r).toEqual({ prize: null, currentInviteCount: null, inviteLink })
+    })
+
+    it('throws if bullshit is encoded', async () => {
+      const r = expect(InviteService.getCurrentWaitlistStats('qwerty')).rejects
+      await r.toThrowError(FormValidationError)
+      await r.toThrowError(InviteServiceFormErrors.unknownError)
     })
   })
 

@@ -59,7 +59,7 @@ export class InviteService {
     try {
       userId = this.getDecryptedUserId(encryptedUserId)
     } catch (error) {
-      throw new Error()
+      throw new FormValidationError(InviteServiceFormErrors.unknownError)
     }
 
     const { countMost, userCount } = await UserManager.countByMostInvites()
