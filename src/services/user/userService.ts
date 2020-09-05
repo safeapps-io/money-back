@@ -135,7 +135,9 @@ export class UserService {
     const username = nanoid(),
       password = '',
       parsedInvite = invite
-        ? await InviteService.parseAndValidateInvite(invite)
+        ? await InviteService.parseAndValidateInvite({
+            b64InviteString: invite,
+          })
         : undefined,
       inviterId =
         parsedInvite?.type == InviteStringTypes.prelaunch
@@ -182,7 +184,7 @@ export class UserService {
     })
 
     const [parsed, passwordHashed] = await Promise.all([
-      InviteService.parseAndValidateInvite(invite),
+      InviteService.parseAndValidateInvite({ b64InviteString: invite }),
       PasswordService.hashPassword(password),
     ])
 

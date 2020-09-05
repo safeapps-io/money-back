@@ -1,5 +1,5 @@
 import { decode } from 'base64-arraybuffer'
-import { startOfMonth, endOfMonth } from 'date-fns'
+import { startOfMonth, endOfMonth, isAfter } from 'date-fns'
 import * as yup from 'yup'
 
 import {
@@ -31,11 +31,20 @@ export enum Prizes {
 
 export class InviteService {
   public static getCurrentMonthlyInviteUsage(userId: string) {
-    const now = new Date()
+    /**
+     * We would only count those users that were invited after the first production launch,
+     * so users with high prelaunch invite count won't be punished for it.
+     */
+    const now = new Date(),
+      monthStart = startOfMonth(now),
+      productionDate = new Date(parseInt(process.env.PRODUCTION_TS!)),
+      startDate = isAfter(monthStart, productionDate)
+        ? monthStart
+        : productionDate
 
     return UserManager.countInvitedBetweenDates({
       userId,
-      startDate: startOfMonth(now),
+      startDate,
       endDate: endOfMonth(now),
     })
   }
@@ -92,10 +101,21 @@ export class InviteService {
   }
 
   private static baseInviteMonthlyLimit = 5
-  static async parseAndValidateInvite(b64InviteString: string) {
+  static async parseAndValidateInvite({
+    b64InviteString,
+    shouldAllowRealSignup = true,
+  }: {
+    b64InviteString: string
+    shouldAllowRealSignup?: boolean
+  }) {
     const res = await InviteStringService.parseAndVerifySignature(
       b64InviteString,
     )
+
+    if (shouldAllowRealSignup && res.type == InviteStringTypes.prelaunch)
+      throw new FormValidationError(
+        InviteServiceFormErrors.cannotUsePrelaunchInvites,
+      )
 
     if (
       res.type == InviteStringTypes.prelaunch ||
@@ -150,7 +170,7 @@ export class InviteService {
       b64PublicECDHKey,
     })
 
-    const parsed = await this.parseAndValidateInvite(b64InviteString)
+    const parsed = await this.parseAndValidateInvite({ b64InviteString })
     if (parsed.type != InviteStringTypes.wallet)
       throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
 

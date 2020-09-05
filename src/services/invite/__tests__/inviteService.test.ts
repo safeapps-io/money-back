@@ -118,8 +118,21 @@ describe('Invite service', () => {
     })
 
     it('works ok', async () => {
-      const res = await InviteService.parseAndValidateInvite(b64InviteString)
+      const res = await InviteService.parseAndValidateInvite({
+        b64InviteString,
+        shouldAllowRealSignup: false,
+      })
       expect(res).toEqual(parseResult)
+    })
+
+    it('throws if we pretend we want to use it for real signup', async () => {
+      const r = expect(
+        InviteService.parseAndValidateInvite({
+          b64InviteString,
+        }),
+      ).rejects
+      await r.toThrow(FormValidationError)
+      await r.toThrow(InviteServiceFormErrors.cannotUsePrelaunchInvites)
     })
 
     it('shows correct waitlist stats', async () => {
@@ -182,15 +195,20 @@ describe('Invite service', () => {
     })
 
     it('works ok', async () => {
-      const res = await InviteService.parseAndValidateInvite(b64InviteString)
+      const res = await InviteService.parseAndValidateInvite({
+        b64InviteString,
+      })
       expect(res).toEqual(parseResult)
     })
 
     it('throws error if invite has already been disposed', async () => {
       mockUserManager.isInviteDisposed.mockImplementationOnce(async () => 1)
 
-      const r = expect(InviteService.parseAndValidateInvite(b64InviteString))
-        .rejects
+      const r = expect(
+        InviteService.parseAndValidateInvite({
+          b64InviteString,
+        }),
+      ).rejects
 
       await r.toThrow(FormValidationError)
       await r.toThrow(InviteServiceFormErrors.inviteAlreadyUsed)
@@ -201,8 +219,11 @@ describe('Invite service', () => {
         async () => 25,
       )
 
-      const r = expect(InviteService.parseAndValidateInvite(b64InviteString))
-        .rejects
+      const r = expect(
+        InviteService.parseAndValidateInvite({
+          b64InviteString,
+        }),
+      ).rejects
 
       await r.toThrow(FormValidationError)
       await r.toThrow(InviteServiceFormErrors.limitReached)

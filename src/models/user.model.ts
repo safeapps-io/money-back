@@ -163,7 +163,10 @@ export class UserManager {
 
   static findByEmailOrUsername(usernameOrEmail: string) {
     return User.findOne({
-      where: { [Op.or]: { username: usernameOrEmail, email: usernameOrEmail } },
+      where: {
+        [Op.or]: { username: usernameOrEmail, email: usernameOrEmail },
+        isWaitlist: false,
+      },
     })
   }
 
@@ -205,6 +208,7 @@ export class UserManager {
       where: {
         inviterId: userId,
         created: { [Op.gt]: startDate, [Op.lt]: endDate },
+        isWaitlist: false,
       },
     })
   }
