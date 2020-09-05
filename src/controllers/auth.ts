@@ -16,20 +16,6 @@ authRouter.get('/user', isRestAuth, (req, res) => {
 })
 
 authRouter.post(
-  '/invite/whitelist/isValid',
-  ash(async (req, res) => {
-    const { invite } = req.body as {
-      invite: string
-    }
-    await InviteService.parseAndValidateInvite({
-      b64InviteString: invite,
-      shouldAllowRealSignup: false,
-    })
-    res.json({})
-  }),
-)
-
-authRouter.post(
   '/invite/isValid',
   ash(async (req, res) => {
     const { invite } = req.body as {
