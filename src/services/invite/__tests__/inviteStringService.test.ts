@@ -38,34 +38,13 @@ describe('Invite String Service', () => {
   describe('prelaunch', () => {
     it('works ok', async () => {
       const userId = 'qwerty',
-        validInvite = encryptAes({ userInviterId: userId })
+        validInvite = InviteStringService.generatePrelaunchInvite(userId)
 
       const result = await InviteStringService.parseAndVerifySignature(
         validInvite,
       )
       expect(result.type).toBe(InviteStringTypes.prelaunch)
-      expect(result.payload.userInviterId).toBe(userId)
-    })
-
-    it('throws if other key was used', async () => {
-      const invalidInvite =
-        'c4004c73a333cff6c9351c1221d506cbe4249cbd70ed6dad0f71766c86c62982'
-
-      const r = expect(
-        InviteStringService.parseAndVerifySignature(invalidInvite),
-      ).rejects
-      await r.toThrow(FormValidationError)
-      await r.toThrow(InviteServiceFormErrors.invalidInvite)
-    })
-
-    it('throws if encoded data is not of the same shape', async () => {
-      const invalidInvite = encryptAes({ hey: 'babah' })
-
-      const r = expect(
-        InviteStringService.parseAndVerifySignature(invalidInvite),
-      ).rejects
-      await r.toThrow(FormValidationError)
-      await r.toThrow(InviteServiceFormErrors.invalidInvite)
+      expect((result.payload as any).userInviterId).toBe(userId)
     })
   })
 

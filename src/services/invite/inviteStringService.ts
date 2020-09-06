@@ -48,23 +48,23 @@ export class InviteStringService {
       throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
     }
 
-    if (this.isAesInvite(inviteString)) {
-      try {
-        const decrypted = decryptAes<
-          PrelaunchInvitePayload | LaunchInvitePayload
-        >(inviteString)
+    const prelaunchParsed = this.isPrelaunchInvite(inviteString)
+    if (prelaunchParsed) {
+      runSchemaWithFormError(requiredString, prelaunchParsed)
+      return {
+        type: InviteStringTypes.prelaunch,
+        payload: { userInviterId: prelaunchParsed },
+      }
+    }
 
-        if ('email' in decrypted) {
-          runSchemaWithFormError(this.launchInviteScheme, decrypted)
-          return { type: InviteStringTypes.launch, payload: decrypted }
-        } else {
-          runSchemaWithFormError(requiredString, decrypted.userInviterId)
-          return { type: InviteStringTypes.prelaunch, payload: decrypted }
-        }
+    if (this.isAesInvite(inviteString))
+      try {
+        const decrypted = decryptAes<LaunchInvitePayload>(inviteString)
+        runSchemaWithFormError(this.launchInviteScheme, decrypted)
+        return { type: InviteStringTypes.launch, payload: decrypted }
       } catch (e) {
         throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
       }
-    }
 
     // Then we try to work it out as a production invite.
     let parsed: Await<ReturnType<
@@ -91,9 +91,15 @@ export class InviteStringService {
         }
   }
 
+  private static prelaunchStart = '--09'
   public static generatePrelaunchInvite(userInviterId: string): string {
-    const payload: PrelaunchInvitePayload = { userInviterId }
-    return encryptAes(payload)
+    return `${this.prelaunchStart}${userInviterId}`
+  }
+
+  public static isPrelaunchInvite(inviteString: string): string | false {
+    return inviteString.startsWith(this.prelaunchStart)
+      ? inviteString.replace(this.prelaunchStart, '')
+      : false
   }
 
   public static generateLaunchInvite(data: LaunchInvitePayload) {
@@ -102,7 +108,7 @@ export class InviteStringService {
 
   private static inviteDelimiter = '___'
   private static isAesInvite(inviteString: string) {
-    return inviteString.includes(this.inviteDelimiter) ? false : true
+    return !inviteString.includes(this.inviteDelimiter)
   }
 
   private static inviteSchema = yup
