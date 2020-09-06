@@ -137,6 +137,7 @@ export class UserService {
       parsedInvite = invite
         ? await InviteService.parseAndValidateInvite({
             b64InviteString: invite,
+            shouldAllowRealSignup: false,
           })
         : undefined,
       inviterId =
