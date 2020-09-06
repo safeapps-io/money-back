@@ -30,13 +30,14 @@ const constructApp = async () => {
     .set('views', pathJoin('views'))
     .set('view engine', 'pug')
 
-  app.use(
-    cors({
-      origin: process.env.ALLOWED_ORIGIN,
-      maxAge: 86400,
-      allowedHeaders: ['authorization', 'content-type'],
-    }),
-  )
+  if (process.env.NODE_ENV == 'development')
+    app.use(
+      cors({
+        origin: process.env.ALLOWED_ORIGIN,
+        maxAge: 86400,
+        allowedHeaders: ['authorization', 'accept-language', 'content-type'],
+      }),
+    )
 
   app
     .use(logger)

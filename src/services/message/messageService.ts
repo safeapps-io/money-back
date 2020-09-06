@@ -4,7 +4,7 @@ import { emailQueue } from './queues'
 export class MessageService {
   private static async sendEmail(data: BaseEmail) {
     if (process.env.NODE_ENV == 'development')
-      console.log(data.templateId, data)
+      console.log(data.templateId, JSON.stringify(data.recepients, null, 2))
     else
       await emailQueue.add(data, { attempts: 3, timeout: 5000, backoff: 5000 })
   }

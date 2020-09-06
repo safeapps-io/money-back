@@ -164,14 +164,10 @@ authRouter.post(
   }),
 )
 
-authRouter.post(
-  '/validateEmail',
+authRouter.post<{ emailToken: string }>(
+  '/validateEmail/:emailToken',
   ash(async (req, res) => {
-    const body = req.body as {
-      emailToken: string
-    }
-
-    await ValidateEmailService.updateEmail(body.emailToken)
+    await ValidateEmailService.updateEmail(req.params.emailToken)
     res.json({})
   }),
 )
