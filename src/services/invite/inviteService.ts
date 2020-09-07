@@ -24,9 +24,9 @@ type EncryptedUserId = {
   userId: string
 }
 export enum Prizes {
-  top10 = 'top10',
-  top20 = 'top20',
-  top50 = 'top50',
+  disc30 = 30,
+  disc50 = 50,
+  disc90 = 90,
 }
 
 export class InviteService {
@@ -60,8 +60,8 @@ export class InviteService {
   public static async getCurrentWaitlistStats(
     encryptedUserId: string,
   ): Promise<{
-    prize: null | Prizes
-    currentInviteCount: number | null
+    prizes: Prizes[]
+    currentInviteCount: number
     inviteLink: string
   }> {
     let userId: string
@@ -71,9 +71,9 @@ export class InviteService {
       throw new FormValidationError(InviteServiceFormErrors.unknownError)
     }
 
-    const { countMost, userCount } = await UserManager.countByMostInvites()
+    const { countMost } = await UserManager.countByMostInvites()
     let currentIndex: number | null = null,
-      currentInviteCount: number | null = null
+      currentInviteCount = 0
     for (let i = 0; i < countMost.length; i++) {
       const item = countMost[i]
       if (item.inviterId == userId) {
@@ -83,18 +83,15 @@ export class InviteService {
       }
     }
 
-    /**
-     * It seems to be more transparent to compare the user to the whole
-     * user base rather then those who invited at least someone
-     */
-    let prize: null | Prizes = null
-    if (currentIndex != null)
-      if (currentIndex < 0.1 * userCount) prize = Prizes.top10
-      else if (currentIndex < 0.2 * userCount) prize = Prizes.top20
-      else if (currentIndex < 0.5 * userCount) prize = Prizes.top50
+    const prizes: Prizes[] = []
+    if (currentIndex != null && currentInviteCount != null) {
+      if (currentInviteCount > 0) prizes.push(Prizes.disc30)
+      if (currentIndex < 0.5 * countMost.length) prizes.push(Prizes.disc50)
+      if (currentIndex < 0.1 * countMost.length) prizes.push(Prizes.disc90)
+    }
 
     return {
-      prize,
+      prizes,
       currentInviteCount,
       inviteLink: InviteStringService.generatePrelaunchInvite(userId),
     }

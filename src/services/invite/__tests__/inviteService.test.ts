@@ -1,3 +1,5 @@
+import { nanoid } from 'nanoid'
+
 import { clearMocks } from '@/utils/jestHelpers'
 
 const mockInviteStringService = {
@@ -136,17 +138,24 @@ describe('Invite service', () => {
     })
 
     it('shows correct waitlist stats', async () => {
-      const fakeId = 'qwerty',
-        userId = InviteService.getUserIdEnctypted('qwerty'),
+      const userId = 'qwerty',
+        encryptedUserId = InviteService.getUserIdEnctypted(userId),
         invitedCount = 12,
         inviteLink = 'qwert'
 
+      /**
+       * Users with invites: 100
+       * This current user is #1.
+       *
+       * He gets every prize.
+       */
       mockUserManager.countByMostInvites.mockImplementationOnce(async () => ({
-        userCount: 123,
         countMost: [
-          { inviterId: fakeId, invitedCount },
-          { inviterId: 'other', invitedCount: 2 },
-          { inviterId: 'otherone', invitedCount: 1 },
+          { inviterId: userId, invitedCount },
+          ...[...Array(99).keys()].map(() => ({
+            inviterId: nanoid(),
+            invitedCount: 6,
+          })),
         ],
       }))
       mockInviteStringService.generatePrelaunchInvite.mockImplementation(
@@ -154,23 +163,72 @@ describe('Invite service', () => {
       )
 
       let r: any
-      r = await InviteService.getCurrentWaitlistStats(userId)
+      r = await InviteService.getCurrentWaitlistStats(encryptedUserId)
       expect(r).toEqual({
-        prize: Prizes.top10,
+        prizes: [Prizes.disc30, Prizes.disc50, Prizes.disc90],
         currentInviteCount: invitedCount,
         inviteLink,
       })
 
+      /**
+       * Users with invites: 100
+       * This current user is #49 with a single invite.
+       *
+       * He gets 30% discount and 50% discount.
+       */
       mockUserManager.countByMostInvites.mockImplementationOnce(async () => ({
-        userCount: 123,
         countMost: [
-          { inviterId: 'other', invitedCount: 2 },
-          { inviterId: 'otherone', invitedCount: 1 },
+          ...[...Array(48).keys()].map(() => ({
+            inviterId: nanoid(),
+            invitedCount: 6,
+          })),
+          { inviterId: userId, invitedCount: 1 },
+          ...[...Array(51).keys()].map(() => ({
+            inviterId: nanoid(),
+            invitedCount: 1,
+          })),
         ],
       }))
+      r = await InviteService.getCurrentWaitlistStats(encryptedUserId)
+      expect(r).toEqual({
+        prizes: [Prizes.disc30, Prizes.disc50],
+        currentInviteCount: 1,
+        inviteLink,
+      })
 
-      r = await InviteService.getCurrentWaitlistStats(userId)
-      expect(r).toEqual({ prize: null, currentInviteCount: null, inviteLink })
+      /**
+       * Users with invites: 1000
+       * This current user is #1000 with a single invite.
+       *
+       * He gets 30% discount.
+       */
+      mockUserManager.countByMostInvites.mockImplementationOnce(async () => ({
+        countMost: [
+          ...[...Array(999).keys()].map(() => ({
+            inviterId: nanoid(),
+            invitedCount: 6,
+          })),
+          { inviterId: userId, invitedCount: 1 },
+        ],
+      }))
+      r = await InviteService.getCurrentWaitlistStats(encryptedUserId)
+      expect(r).toEqual({
+        prizes: [Prizes.disc30],
+        currentInviteCount: 1,
+        inviteLink,
+      })
+
+      /**
+       * Current user hasn't invited anyone yet. Nothing!
+       */
+      mockUserManager.countByMostInvites.mockImplementationOnce(async () => ({
+        countMost: [...Array(999).keys()].map(() => ({
+          inviterId: nanoid(),
+          invitedCount: 6,
+        })),
+      }))
+      r = await InviteService.getCurrentWaitlistStats(encryptedUserId)
+      expect(r).toEqual({ prizes: [], currentInviteCount: 0, inviteLink })
     })
 
     it('throws if bullshit is encoded', async () => {
