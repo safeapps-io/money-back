@@ -1,3 +1,5 @@
+import { getFullPath } from '@/services/getPath'
+
 import { BaseEmail } from './types'
 import { emailQueue } from './queues'
 
@@ -9,6 +11,16 @@ export class MessageService {
       await emailQueue.add(data, { attempts: 3, timeout: 5000, backoff: 5000 })
   }
 
+  private static getGotoUrl({
+    token,
+    purpose,
+  }: {
+    token: string
+    purpose: string
+  }) {
+    return getFullPath({ path: `/goto/${token}/${purpose}`, includeHost: true })
+  }
+
   public static async sendWaitlistValidationEmail({
     email,
     token,
@@ -18,7 +30,14 @@ export class MessageService {
   }) {
     return this.sendEmail({
       templateId: 'waitlist-validate-email',
-      recepients: [{ address: { email }, context: { token } }],
+      recepients: [
+        {
+          address: { email },
+          context: {
+            url: this.getGotoUrl({ token, purpose: 'waitlist-verify-email' }),
+          },
+        },
+      ],
     })
   }
 
@@ -31,7 +50,14 @@ export class MessageService {
   }) {
     return this.sendEmail({
       templateId: 'validate-email',
-      recepients: [{ address: { email }, context: { token } }],
+      recepients: [
+        {
+          address: { email },
+          context: {
+            url: this.getGotoUrl({ token, purpose: 'verify-email' }),
+          },
+        },
+      ],
     })
   }
 
@@ -44,7 +70,14 @@ export class MessageService {
   }) {
     return this.sendEmail({
       templateId: 'reset-password',
-      recepients: [{ address: { email }, context: { token } }],
+      recepients: [
+        {
+          address: { email },
+          context: {
+            url: this.getGotoUrl({ token, purpose: 'reset' }),
+          },
+        },
+      ],
     })
   }
 }

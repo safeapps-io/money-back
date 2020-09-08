@@ -86,8 +86,8 @@ export class InviteService {
     const prizes: Prizes[] = []
     if (currentIndex != null && currentInviteCount != null) {
       if (currentInviteCount > 0) prizes.push(Prizes.disc30)
-      if (currentIndex < 0.5 * countMost.length) prizes.push(Prizes.disc50)
-      if (currentIndex < 0.1 * countMost.length) prizes.push(Prizes.disc90)
+      if (currentIndex <= 0.5 * countMost.length) prizes.push(Prizes.disc50)
+      if (currentIndex <= 0.1 * countMost.length) prizes.push(Prizes.disc90)
     }
 
     return {
