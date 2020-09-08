@@ -232,7 +232,6 @@ export class UserManager {
       User.findAll<any>({
         attributes: [
           'inviterId',
-          'created',
           [
             sequelize.fn('COUNT', sequelize.col('User.inviterId')),
             'invitedCount',
@@ -241,11 +240,8 @@ export class UserManager {
         where: {
           inviterId: { [Op.not]: null },
         },
-        group: ['User.inviterId', 'User.created'],
-        order: [
-          [sequelize.literal('"invitedCount"'), 'DESC'],
-          ['created', 'ASC'],
-        ],
+        group: ['User.inviterId'],
+        order: [[sequelize.literal('"invitedCount"'), 'DESC']],
         raw: true,
       }),
     ])
