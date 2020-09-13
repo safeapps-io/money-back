@@ -493,6 +493,8 @@ describe('Invite service', () => {
           joiningUserId,
           b64InviteSignatureByJoiningUser,
           b64InviteString,
+          b64PublicECDHKey: undefined,
+          encryptedSecretKey: undefined,
         })
 
         let c = mockWalletManager.addRejectedInvite.mock.calls
@@ -534,13 +536,9 @@ describe('Invite service', () => {
         c = mockInvitePubSubService.invitationAccept.mock.calls
         expect(c.length).toBe(1)
         expect(c[0][0].joiningUser.id).toBe(joiningUserId)
-        expect(c[0][0].walletId).toBe(walletId)
+        expect(c[0][0].wallet.id).toBe(walletId)
         expect(c[0][0].encryptedSecretKey).toBe(encryptedSecretKey)
         expect(c[0][0].b64PublicECDHKey).toBe(b64PublicECDHKey)
-
-        c = mockWalletPubSubService.publishWalletUpdates.mock.calls
-        expect(c.length).toBe(1)
-        expect(c[0][0].wallet.id).toBe(walletId)
       })
 
       it('throws if invalid public ecdh key or encrypted secret key', async () => {
@@ -626,7 +624,7 @@ describe('Invite service', () => {
           async () => 0,
         )
 
-        const r = await expect(
+        const r = expect(
           InviteService.joiningError({
             joiningUser,
             b64InviteString,
@@ -640,7 +638,7 @@ describe('Invite service', () => {
       it('throws if no wallet or wallet owner was found', async () => {
         mockWalletManager.byId.mockImplementationOnce(async () => null)
 
-        const r = await expect(
+        const r = expect(
           InviteService.joiningError({
             joiningUser,
             b64InviteString,

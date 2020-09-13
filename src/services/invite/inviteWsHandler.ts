@@ -1,14 +1,19 @@
-import { WSMiddleware } from '@/utils/wsMiddleware'
+import { WSMiddleware, WSWrapper } from '@/utils/wsMiddleware'
 import { DefaultWsState } from '@/services/types'
+import {
+  UserPubSubMessageTypes,
+  UserPubSubService,
+} from '@/services/user/userPubSubService'
 import { InviteService } from './inviteService'
 
 enum ClientTypes {
+  // Messages from joining user
   validateInvite = 'validateInvite',
+  joiningError = 'joiningError',
 
+  // Messages from wallet owner
   invitationError = 'invitationError',
   invitationResolution = 'invitationResolution',
-
-  joiningError = 'joiningError',
 }
 
 export type InviteIncomingMessages = {
@@ -23,25 +28,44 @@ export type InviteIncomingMessages = {
     b64InviteString: string
   }
   [ClientTypes.invitationResolution]: {
-    allowJoin: boolean
     joiningUserId: string
     b64InviteString: string
     b64InviteSignatureByJoiningUser: string
-
-    b64PublicECDHKey?: string
-    encryptedSecretKey?: string
-  }
+  } & (
+    | {
+        allowJoin: true
+        b64PublicECDHKey: string
+        encryptedSecretKey: string
+      }
+    | {
+        allowJoin: false
+        b64PublicECDHKey: undefined
+        encryptedSecretKey: undefined
+      }
+  )
   [ClientTypes.joiningError]: {
     b64InviteString: string
   }
 }
 
+/**
+ * Some of these repeat `UserPubSubMessageTypes`
+ */
 enum BackTypes {
-  validateTriggerSuccess = 'validateTriggerSuccess',
-  validateTriggerError = 'validateTriggerError',
+  // Messages to wallet owner
+  validateInvite = 'invite/validate',
 
-  error = 'error',
+  // Messages to joining user
+  validateTriggerSuccess = 'invite/validateTriggerSuccess',
+  validateTriggerError = 'invite/validateTriggerError',
+
+  invitationError = 'invite/invititationError',
+  invitationAccept = 'invite/accept',
+  invitationReject = 'invite/reject',
+  unknownError = 'invite/unknownError',
 }
+
+const pubSubPurpose = 'invite'
 
 type M = WSMiddleware<InviteIncomingMessages, DefaultWsState>
 export class InviteWsMiddleware implements M {
@@ -50,6 +74,28 @@ export class InviteWsMiddleware implements M {
     message,
   }) => {
     if (!wsWrapped.state.user) return
+
+    // Subscribe joining user to the joining user resolution messages
+    await UserPubSubService.subscribeSocketForUser({
+      socketId: wsWrapped.id,
+      userId: wsWrapped.state.user.id,
+      purpose: pubSubPurpose,
+      callback: ({ type, data }) => {
+        switch (type) {
+          case UserPubSubMessageTypes.inviteError:
+            wsWrapped.send({ type: BackTypes.invitationError, data })
+            break
+
+          case UserPubSubMessageTypes.inviteReject:
+            wsWrapped.send({ type: BackTypes.invitationReject, data })
+            break
+
+          case UserPubSubMessageTypes.inviteAccept:
+            wsWrapped.send({ type: BackTypes.invitationAccept, data })
+            break
+        }
+      },
+    })
 
     try {
       await InviteService.launchWalletJoin({
@@ -78,7 +124,8 @@ export class InviteWsMiddleware implements M {
       })
     } catch (error) {
       // Seems to be a malware alike case
-      wsWrapped.send({ type: BackTypes.error })
+      console.error(error)
+      wsWrapped.send({ type: BackTypes.unknownError })
     }
   }
 
@@ -94,7 +141,11 @@ export class InviteWsMiddleware implements M {
         ...message,
       })
     } catch (error) {
-      wsWrapped.send({ type: BackTypes.error, data: { error: error.message } })
+      console.error(error)
+      wsWrapped.send({
+        type: BackTypes.unknownError,
+        data: { error: error.message },
+      })
     }
   }
 
@@ -110,7 +161,36 @@ export class InviteWsMiddleware implements M {
         ...message,
       })
     } catch (error) {
-      wsWrapped.send({ type: BackTypes.error, data: { error: error.message } })
+      wsWrapped.send({
+        type: BackTypes.unknownError,
+        data: { error: error.message },
+      })
     }
   }
+
+  static close: M['close'] = async (wsWrapped) => {
+    if (!wsWrapped.state.user) return void 0
+
+    return UserPubSubService.unsubscribeSocketForUser({
+      socketId: wsWrapped.id,
+      userId: wsWrapped.state.user.id,
+    })
+  }
 }
+
+const ownerPubSubPurpose = pubSubPurpose + 'Owner'
+export const subscribeOwnerForInviteValidation = (
+  wsWrapped: WSWrapper<DefaultWsState>,
+) =>
+  UserPubSubService.subscribeSocketForUser({
+    socketId: wsWrapped.id,
+    userId: wsWrapped.state.user!.id,
+    purpose: ownerPubSubPurpose,
+    callback: ({ type, data }) => {
+      switch (type) {
+        case UserPubSubMessageTypes.inviteValidate:
+          wsWrapped.send({ type: BackTypes.validateInvite, data })
+          break
+      }
+    },
+  })
