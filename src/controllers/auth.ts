@@ -19,10 +19,16 @@ authRouter.post(
   '/invite/isValid',
   ash(async (req, res) => {
     const { invite } = req.body as {
-      invite: string
-    }
-    await InviteService.parseAndValidateInvite({ b64InviteString: invite })
-    res.json({})
+        invite: string
+      },
+      parsedInvite = await InviteService.parseAndValidateInvite({
+        b64InviteString: invite,
+      })
+
+    // @ts-ignore
+    if ('userInviter' in parsedInvite) delete parsedInvite.userInviter
+
+    res.json(parsedInvite)
   }),
 )
 
@@ -45,7 +51,6 @@ authRouter.post(
       invite: string
       password: string
     }
-
     const result = await UserService.signup({
       ...body,
       description: getDeviceDescription(req.get('User-Agent') || ''),

@@ -1,5 +1,5 @@
 import { decode } from 'base64-arraybuffer'
-import { Crypto } from '@peculiar/webcrypto'
+import { Crypto } from 'node-webcrypto-ossl'
 
 const crypto = new Crypto()
 

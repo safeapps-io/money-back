@@ -2,7 +2,6 @@ import { clearMocks } from '@/utils/jestHelpers'
 import testData from '@/services/crypto/testData.json'
 import { FormValidationError } from '@/services/errors'
 import { InviteServiceFormErrors, InviteStringTypes } from '../inviteTypes'
-import { encryptAes } from '@/utils/crypto'
 
 const mockUserManager = {
   byId: jest.fn(),
@@ -16,15 +15,12 @@ jest.mock('@/models/user.model', () => ({
 import { InviteStringService } from '../inviteStringService'
 
 describe('Invite String Service', () => {
-  const walletId = '098765',
-    inviteId = '123456',
-    // The corresponding private key is in the same file
-    b64InvitePublicKey = testData.users.dkzlv.b64InvitePublicKey,
+  // The corresponding private key is in the same file
+  const b64InvitePublicKey = testData.users.dkzlv.b64InvitePublicKey,
     userInviterId = 'ownerId',
     b64ServiceInvite = testData.users.dkzlv.signedInvite,
-    walletUserInviterId = 'qwerty123456',
     b64WalletInvite =
-      'eyJpbnZpdGVJZCI6IjEyMzQ1NiIsIndhbGxldElkIjoiMDk4NzY1IiwidXNlckludml0ZXJJZCI6InF3ZXJ0eTEyMzQ1NiJ9___hhIfPtaBvkAAnLB0MLut3L0k+BMWUiS3LxFDOmsJrxP9jUmUIoe0viaM5J1RfJTZZk6i28EyEIXh2fePK/siWmujSgxGQNUpAkd2W8NQd7B068xUmUfYO9d2nu9hVKR5U1UhVhVWZYayl2IAOi2rdxEUs92vXd1MWhoibqoxrpaXkEbdGT9NyIbvD+E8pCEFII2Q0hHaxFOU3Zl5T9LH6PvyamghjCjP+oCQOIqPIRc61COX0efE3IdA2wYKKucjNMSOux8jaE1JEQlfQ5uIX5d1HqtLL2R1snwkMyhwtUzluIXTIk5QjshyhhZL8vEVThi0Qzvhv+dF/1Z0Gm40LQ=='
+      'eyJpbnZpdGVJZCI6InN2eUl5THNYalhfcG1wSEhrX1lYWiIsIndhbGxldElkIjoiVW1PTjlROUpfMkJhWTRKUU1kTngwIiwidXNlckludml0ZXJJZCI6Im93bmVySWQifQ==___mItbTCiAuq2KHDLGpbeQTFk1OGU7Ubc1NuVVlYk2u7hLH9+O46ackUmExnqULbFEqiO/IohLU2+Fr3ez3Gm9REjJWcjxFmU+6vmGBKPFWCKfd4uMYvuBxrWpYTqXMNHLUKNhWkWnkP1fcZs3ZZUlS7gUVJID+aQNCyCflaEzZwdSb3LQvxE6wXpt8JofLjQW2iPAMVMZiHuchDiVatFr8FmsmtaQrxljuN1PjJXwyfab0coMmHyltjS8M4FnxPo9UTQdjJrJ0WHQfod3ui8l4wVPhfjStPcs0Ug3t2GSlUNO/Rez9j+zMim+gRrPwrKxRpW2368sZgb3cZpA1ssZ2Q=='
 
   beforeEach(() => {
     clearMocks(mockUserManager)
@@ -55,8 +51,8 @@ describe('Invite String Service', () => {
       )
       expect(result.type).toBe(InviteStringTypes.service)
       expect(result.payload).toEqual({
+        inviteId: 'NRhATmZbAYZ2O1jMlE0pB',
         userInviterId,
-        inviteId,
       })
     })
 
@@ -66,9 +62,9 @@ describe('Invite String Service', () => {
       )
       expect(result.type).toBe(InviteStringTypes.wallet)
       expect(result.payload).toEqual({
-        userInviterId: walletUserInviterId,
-        inviteId,
-        walletId,
+        userInviterId,
+        inviteId: 'svyIyLsXjX_pmpHHk_YXZ',
+        walletId: 'UmON9Q9J_2BaY4JQMdNx0',
       })
     })
 

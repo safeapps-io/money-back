@@ -251,11 +251,13 @@ export class InviteService {
     if (!dbWalletOwner || dbWalletOwner.id !== walletOwner.id)
       throw new FormValidationError(InviteServiceFormErrors.unknownError)
 
-    const hasJoiningUserAskedToJoin = await CryptoService.verify({
-      b64PublicKey: joiningUser.b64InvitePublicKey as string,
-      dataBuffer: Buffer.from(b64InviteString),
-      signatureBuffer: decode(b64InviteSignatureByJoiningUser),
-    })
+    const hasJoiningUserAskedToJoin = await InviteStringService.verifyJoiningUserInviteSignature(
+      {
+        inviteString: b64InviteString,
+        joiningUserInvitePublicKey: joiningUser.b64InvitePublicKey as string,
+        joiningUserSignature: b64InviteSignatureByJoiningUser,
+      },
+    )
     if (!hasJoiningUserAskedToJoin)
       throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
 
@@ -320,14 +322,22 @@ export class InviteService {
     encryptedSecretKey,
   }: {
     walletOwner: User
-    allowJoin: boolean
+
     joiningUserId: string
     b64InviteString: string
     b64InviteSignatureByJoiningUser: string
-
-    b64PublicECDHKey?: string
-    encryptedSecretKey?: string
-  }) {
+  } & (
+    | {
+        allowJoin: true
+        b64PublicECDHKey: string
+        encryptedSecretKey: string
+      }
+    | {
+        allowJoin: false
+        b64PublicECDHKey: undefined
+        encryptedSecretKey: undefined
+      }
+  )) {
     runSchemaWithFormError(this.invitationResolutionSchema, {
       allowJoin,
       b64PublicECDHKey,
@@ -349,7 +359,7 @@ export class InviteService {
       /**
        * 1. save rejected invite
        * 2. tell joining user about the reject
-       * 3. push update about the rejection to all the wallet users
+       * 3. push updated wallet to all the wallet users
        */
       return Promise.all([
         WalletManager.addRejectedInvite(payload),
@@ -357,7 +367,9 @@ export class InviteService {
           walletId: wallet.id,
           joiningUser,
         }),
-        WalletPubSubService.publishWalletUpdates({ wallet }),
+        WalletPubSubService.publishWalletUpdates({
+          wallet: (await WalletManager.byId(wallet.id))!,
+        }),
       ])
     }
 
@@ -382,8 +394,6 @@ export class InviteService {
     if (deviceCount === 0) {
       await WalletManager.removeUserByWaId(wa.id)
       throw new FormValidationError(InviteServiceFormErrors.joiningUserOffline)
-    } else {
-      await WalletPubSubService.publishWalletUpdates({ wallet })
     }
   }
 

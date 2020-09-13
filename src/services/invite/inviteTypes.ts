@@ -10,8 +10,8 @@ export enum InviteServiceFormErrors {
 }
 
 export enum InviteStringTypes {
-  prelaunch,
-  launch,
-  service,
-  wallet,
+  prelaunch = 'prelaunch',
+  launch = 'launch',
+  service = 'service',
+  wallet = 'wallet',
 }

@@ -9,7 +9,7 @@ import User from '@/models/user.model'
 describe('Error reporting', () => {
   // It is hardcoded against user dkzlv and his ID
   const invite = testData.users.dkzlv.signedInvite,
-    inviteId = '123456'
+    inviteId = 'NRhATmZbAYZ2O1jMlE0pB'
 
   beforeEach(() => User.destroy({ where: { inviteId } }))
 
@@ -44,7 +44,7 @@ describe('Error reporting', () => {
       })
   })
 
-  it('lets you signup', async (done) => {
+  it.only('lets you signup', async (done) => {
     const app = request(await appPromise),
       username = nanoid()
 

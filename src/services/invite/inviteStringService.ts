@@ -155,6 +155,26 @@ export class InviteStringService {
 
     return inviterUser
   }
+
+  public static verifyJoiningUserInviteSignature({
+    inviteString,
+    joiningUserSignature,
+    joiningUserInvitePublicKey,
+  }: {
+    inviteString: string
+    joiningUserSignature: string
+    joiningUserInvitePublicKey: string
+  }) {
+    const signatureBuffer = decode(
+      joiningUserSignature.split(this.inviteDelimiter)[1],
+    )
+
+    return CryptoService.verify({
+      b64PublicKey: joiningUserInvitePublicKey,
+      dataBuffer: Buffer.from(inviteString),
+      signatureBuffer,
+    })
+  }
 }
 
 type PrelaunchInvitePayload = { userInviterId: string }
