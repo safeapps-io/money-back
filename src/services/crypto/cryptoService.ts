@@ -30,7 +30,7 @@ export class CryptoService {
     return crypto.subtle.verify(
       {
         name: this.signatureAlgorithm,
-        saltLength: 128,
+        saltLength: 64,
       },
       publicKey,
       signatureBuffer,
