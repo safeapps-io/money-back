@@ -124,7 +124,6 @@ export class InviteWsMiddleware implements M {
       })
     } catch (error) {
       // Seems to be a malware alike case
-      console.error(error)
       wsWrapped.send({ type: BackTypes.unknownError })
     }
   }
@@ -141,7 +140,6 @@ export class InviteWsMiddleware implements M {
         ...message,
       })
     } catch (error) {
-      console.error(error)
       wsWrapped.send({
         type: BackTypes.unknownError,
         data: { error: error.message },

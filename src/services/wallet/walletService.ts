@@ -117,9 +117,15 @@ export class WalletService {
     })
 
     const updatedWallet = await WalletManager.byId(wallet.id)
-    await WalletPubSubService.publishWalletUpdates({
-      wallet: updatedWallet!,
-    })
+    await Promise.all([
+      WalletPubSubService.publishWalletUpdates({
+        wallet: updatedWallet!,
+      }),
+      WalletPubSubService.publishWalletDestroy({
+        walletId: wallet.id,
+        connectedUserIds: [userToRemoveId],
+      }),
+    ])
 
     return updatedWallet
   }
