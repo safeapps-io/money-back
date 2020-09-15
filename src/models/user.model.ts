@@ -9,7 +9,7 @@ import {
   BelongsTo,
   BelongsToMany,
 } from 'sequelize-typescript'
-import { Op } from 'sequelize'
+import sequelize, { Op } from 'sequelize'
 
 import { getValue, setValue } from '@/utils/blobAsBase64'
 
@@ -85,6 +85,13 @@ export default class User extends BaseModel<User> {
   })
   encr!: Buffer | string | null
 
+  @Column({ type: DataType.BOOLEAN, defaultValue: false })
+  isWaitlist!: boolean
+
+  @AllowNull
+  @Column(DataType.STRING)
+  inviteId!: string | null
+
   @AllowNull
   @Column(DataType.INTEGER)
   inviteMonthlyLimit!: number | null
@@ -130,6 +137,8 @@ export class UserManager {
     username: string
     password: string
     inviterId?: string
+    inviteId?: string
+    isWaitlist?: boolean
   }) {
     return User.create(data)
   }
@@ -154,7 +163,10 @@ export class UserManager {
 
   static findByEmailOrUsername(usernameOrEmail: string) {
     return User.findOne({
-      where: { [Op.or]: { username: usernameOrEmail, email: usernameOrEmail } },
+      where: {
+        [Op.or]: { username: usernameOrEmail, email: usernameOrEmail },
+        isWaitlist: false,
+      },
     })
   }
 
@@ -196,7 +208,53 @@ export class UserManager {
       where: {
         inviterId: userId,
         created: { [Op.gt]: startDate, [Op.lt]: endDate },
+        isWaitlist: false,
       },
     })
+  }
+
+  static isInviteDisposed(inviteId: string) {
+    return User.count({ where: { inviteId } })
+  }
+
+  /**
+   * Returns:
+   * 1. whole user count
+   * 2. an array of inviter id to its count in the descending order. Does not return info
+   *    on users that has not invited anyone!
+   */
+  static async countByMostInvites(): Promise<{
+    userCount: number
+    countMost: { inviterId: string; invitedCount: number }[]
+  }> {
+    const [userCount, countMost] = await Promise.all([
+      User.count(),
+      User.findAll<any>({
+        attributes: [
+          'inviterId',
+          [
+            sequelize.fn('COUNT', sequelize.col('User.inviterId')),
+            'invitedCount',
+          ],
+        ],
+        where: {
+          inviterId: { [Op.not]: null },
+        },
+        group: ['User.inviterId'],
+        order: [[sequelize.literal('"invitedCount"'), 'DESC']],
+        raw: true,
+      }),
+    ])
+
+    return {
+      userCount,
+      /**
+       * It also returns integer as a string for some strange reason.
+       */
+      countMost: countMost.map((item) => ({
+        ...item,
+        invitedCount: parseInt(item.invitedCount),
+      })),
+    }
   }
 }

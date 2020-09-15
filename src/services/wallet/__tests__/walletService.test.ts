@@ -1,5 +1,7 @@
 import { nanoid } from 'nanoid'
 
+import { clearMocks } from '@/utils/jestHelpers'
+
 const mockWalletManager = {
     byId: jest.fn().mockImplementation(async (id: string) => ({
       id,
@@ -17,6 +19,7 @@ const mockWalletManager = {
     addUser: jest.fn(),
     removeUser: jest.fn(),
     bulkUpdate: jest.fn(),
+    update: jest.fn(),
   },
   mockWalletPubSubService = {
     publishWalletDestroy: jest.fn(),
@@ -36,9 +39,7 @@ import { WalletService } from '../walletService'
 import { FormValidationError, RequestError } from '@/services/errors'
 import { AccessLevels } from '@/models/walletAccess.model'
 
-const mockClear = (mock: Object) =>
-    Object.values(mock).forEach((i) => i.mockClear()),
-  userId = '1',
+const userId = '1',
   userToAddId = '2',
   userToRemoveId = '3',
   walletId = '1',
@@ -66,8 +67,8 @@ mockWalletManager.byIdAndUserId.mockImplementation(
 
 describe('Wallet Service', () => {
   beforeEach(() => {
-    mockClear(mockWalletManager)
-    mockClear(mockWalletPubSubService)
+    clearMocks(mockWalletManager)
+    clearMocks(mockWalletPubSubService)
   })
 
   describe('create', () => {
@@ -149,9 +150,9 @@ describe('Wallet Service', () => {
     const initiatorId = userId
 
     beforeEach(() => {
-      mockClear(mockWalletManager)
-      mockClear(mockWalletManager)
-      mockClear(mockWalletPubSubService)
+      clearMocks(mockWalletManager)
+      clearMocks(mockWalletManager)
+      clearMocks(mockWalletPubSubService)
     })
 
     it('works if owner removes someone', async () => {
@@ -300,6 +301,65 @@ describe('Wallet Service', () => {
           chests: [{ walletId: null as any, chest: null as any }],
         }),
       ).rejects.toThrow(FormValidationError)
+    })
+  })
+
+  describe('update single chest', () => {
+    const constructWallet = (
+      innerUserId: string,
+      innerWalletId: string,
+      waId: string = nanoid(),
+    ) => ({
+      id: innerWalletId,
+      users: [
+        { id: innerUserId, WalletAccess: { id: waId, userId: innerUserId } },
+        { id: nanoid(), WalletAccess: { id: nanoid() } },
+      ],
+    })
+    mockWalletManager.byUserId.mockImplementation(async () => [
+      constructWallet(userId, walletId, nanoid()),
+      constructWallet(userId, nanoid(), nanoid()),
+    ])
+
+    it('works fine', async () => {
+      const res = await WalletService.updateSingleChest({
+        userId,
+        walletId,
+        chest,
+      })
+
+      expect(mockWalletManager.update.mock.calls.length).toBe(1)
+      expect(mockWalletManager.update.mock.calls[0][1]).toEqual(res)
+
+      expect(
+        mockWalletPubSubService.publishWalletUpdates.mock.calls.length,
+      ).toBe(1)
+
+      const userWa = res.users.find((wa) => wa.id == userId)
+      expect(userWa?.WalletAccess.chest).toBe(chest)
+    })
+
+    it('throws if user has no access to this wallet', async () => {
+      const r = expect(
+        WalletService.updateSingleChest({
+          userId,
+          walletId: nanoid(),
+          chest,
+        }),
+      ).rejects
+
+      await r.toThrowError(RequestError)
+    })
+
+    it('throws if invalid data', async () => {
+      const r = expect(
+        WalletService.updateSingleChest({
+          userId: 1234,
+          chest: null,
+        } as any),
+      ).rejects
+
+      await r.toThrowError(FormValidationError)
     })
   })
 })

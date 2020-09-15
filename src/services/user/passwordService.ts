@@ -7,7 +7,7 @@ import { signJwt, verifyJwt } from '@/utils/crypto'
 import User, { UserManager } from '@/models/user.model'
 
 import { FormValidationError } from '@/services/errors'
-import { MessageService } from '../message'
+import { MessageService } from '@/services/message/messageService'
 
 export const passwordScheme = yup.string().required().min(6).max(100)
 

@@ -4,10 +4,14 @@ import { nanoid } from 'nanoid'
 import appPromise from '@/app'
 import { UserServiceFormErrors } from '@/services/user/userService'
 import testData from '@/services/crypto/testData.json'
+import User from '@/models/user.model'
 
 describe('Error reporting', () => {
   // It is hardcoded against user dkzlv and his ID
-  const invite = testData.users.dkzlv.signedInvite
+  const invite = testData.users.dkzlv.signedInvite,
+    inviteId = 'NRhATmZbAYZ2O1jMlE0pB'
+
+  beforeEach(() => User.destroy({ where: { inviteId } }))
 
   it('reports error for user endpoint', async (done) => {
     const app = request(await appPromise)
@@ -40,7 +44,7 @@ describe('Error reporting', () => {
       })
   })
 
-  it('lets you signup', async (done) => {
+  it.only('lets you signup', async (done) => {
     const app = request(await appPromise),
       username = nanoid()
 
@@ -56,24 +60,16 @@ describe('Error reporting', () => {
 
   it('throws if email or username is occupied', async (done) => {
     const app = request(await appPromise),
-      username = nanoid(),
       email = `${nanoid()}@test.com`,
       password = nanoid()
 
     app
       .post('/saviour/api/auth/signup')
-      .send({ username, password, email, invite })
+      .send({ username: 'dkzlv', password, email, invite })
       .end((_, res) => {
-        expect(res.status).toBe(200)
-        app
-          .post('/saviour/api/auth/signup')
-          .send({ username, password, invite, email: 'otherEmail@test.com' })
-          .end((_, res) => {
-            expect(res.status).toBe(400)
-            expect(res.body.message).toBe(UserServiceFormErrors.usernameTaken)
-
-            done()
-          })
+        expect(res.status).toBe(400)
+        expect(res.body.message).toBe(UserServiceFormErrors.usernameTaken)
+        done()
       })
   })
 
@@ -90,7 +86,7 @@ describe('Error reporting', () => {
         app
           .post('/saviour/api/auth/updateUser')
           .set('authorization', res.body.accessToken)
-          .send({ username, email: `${nanoid()}@test.com`, invite })
+          .send({ username, email: `${nanoid()}@test.com` })
           .end((_, res) => {
             expect(res.status).toBe(200)
             done()

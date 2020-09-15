@@ -10,7 +10,7 @@ jest.mock('@/models/user.model', () => ({
   __esModule: true,
   UserManager: mockUserManager,
 }))
-jest.mock('@/services/message', () => ({
+jest.mock('@/services/message/messageService', () => ({
   __esModule: true,
   MessageService: mockMessageService,
 }))

@@ -48,3 +48,16 @@ walletRouter.post(
     res.json(wallet)
   }),
 )
+
+walletRouter.post(
+  '/updateChest',
+  isRestAuth,
+  ash(async (req, res) => {
+    const wallet = await WalletService.updateSingleChest({
+      ...(req.body as { walletId: string; chest: string }),
+      userId: req.user.id,
+    })
+
+    res.json(wallet)
+  }),
+)

@@ -1,15 +1,10 @@
 import Redis from 'ioredis'
+import { redisCreds } from './redisCreds'
 
-const getClient = () =>
-  new Redis({
-    port: parseInt(process.env.REDIS_PORT as string),
-    host: process.env.REDIS_HOST,
-    password: process.env.REDIS_PASSWORD,
-    db: parseInt(process.env.REDIS_DB as string),
-  })
+export const getRedisClient = (): Redis.Redis => new Redis(redisCreds)
 
 export let subscriptionConnection: Redis.Redis, connection: Redis.Redis
 export const initRedisConnection = () => {
-  connection = getClient()
-  subscriptionConnection = getClient()
+  connection = getRedisClient()
+  subscriptionConnection = getRedisClient()
 }

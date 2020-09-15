@@ -1,5 +1,5 @@
 import { decode } from 'base64-arraybuffer'
-import { Crypto } from '@peculiar/webcrypto'
+import { Crypto } from 'node-webcrypto-ossl'
 
 const crypto = new Crypto()
 
@@ -30,7 +30,7 @@ export class CryptoService {
     return crypto.subtle.verify(
       {
         name: this.signatureAlgorithm,
-        saltLength: 128,
+        saltLength: 64,
       },
       publicKey,
       signatureBuffer,

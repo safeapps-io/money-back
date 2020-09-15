@@ -94,7 +94,7 @@ export async function handleWsConnection<IncomingMessages, State>(
   }
 }
 
-class WSWrapper<State> {
+export class WSWrapper<State> {
   constructor(
     public id: string,
     private ws: wsType,

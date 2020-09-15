@@ -5,6 +5,7 @@ import {
   UserPubSubService,
   UserPubSubMessageTypes,
 } from '@/services/user/userPubSubService'
+import { subscribeOwnerForInviteValidation } from '../invite/inviteWsHandler'
 
 enum ClientTypes {
   get = 'wallet/get',
@@ -30,22 +31,25 @@ export class WalletWsMiddleware implements M {
     const wallets = await WalletService.getUserWallets(wsWrapped.state.user.id)
     wsWrapped.send({ type: BackTypes.all, data: wallets })
 
-    return UserPubSubService.subscribeSocketForUser({
-      socketId: wsWrapped.id,
-      userId: wsWrapped.state.user.id,
-      purpose: pubSubPurpose,
-      callback: ({ type, data }) => {
-        switch (type) {
-          case UserPubSubMessageTypes.walletData:
-            wsWrapped.send({ type: BackTypes.single, data })
-            break
+    return Promise.all([
+      subscribeOwnerForInviteValidation(wsWrapped),
+      UserPubSubService.subscribeSocketForUser({
+        socketId: wsWrapped.id,
+        userId: wsWrapped.state.user.id,
+        purpose: pubSubPurpose,
+        callback: ({ type, data }) => {
+          switch (type) {
+            case UserPubSubMessageTypes.walletData:
+              wsWrapped.send({ type: BackTypes.single, data })
+              break
 
-          case UserPubSubMessageTypes.walletDelete:
-            wsWrapped.send({ type: BackTypes.delete, data })
-            break
-        }
-      },
-    })
+            case UserPubSubMessageTypes.walletDelete:
+              wsWrapped.send({ type: BackTypes.delete, data })
+              break
+          }
+        },
+      }),
+    ])
   }
 
   static close: M['close'] = async (wsWrapped) => {

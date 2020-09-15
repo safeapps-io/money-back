@@ -176,6 +176,10 @@ export class WalletManager {
     })
   }
 
+  static isWalletInviteDisposed(data: { walletId: string; inviteId: string }) {
+    return WalletAccess.count({ where: data })
+  }
+
   static addUser(data: { walletId: string; userId: string; inviteId: string }) {
     return WalletAccess.create({
       ...data,

@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid'
 import * as yup from 'yup'
 import { isBefore } from 'date-fns'
 
@@ -5,7 +6,11 @@ import { getTransaction } from '@/models/setup'
 import User, { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
 
-import { runSchemaWithFormError, requiredString } from '@/utils/yupHelpers'
+import {
+  runSchemaWithFormError,
+  requiredString,
+  optionalString,
+} from '@/utils/yupHelpers'
 import { signJwt, verifyJwt } from '@/utils/crypto'
 
 import { FormValidationError } from '@/services/errors'
@@ -15,6 +20,11 @@ import { WalletService } from '@/services/wallet/walletService'
 import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from './passwordService'
 import { UserUpdatesPubSubService } from './userUpdatesPubSubService'
+import {
+  InviteStringTypes,
+  InviteServiceFormErrors,
+  InvitePurpose,
+} from '@/services/invite/inviteTypes'
 
 export const jwtSubject = 'sess' // session
 
@@ -105,6 +115,48 @@ export class UserService {
       })
   }
 
+  private static waitlistSignupSchema = yup
+    .object({
+      email: emailScheme,
+      invite: optionalString,
+    })
+    .noUnknown()
+  static async waitlistSignup({
+    email,
+    invite,
+  }: {
+    email: string
+    invite?: string
+  }) {
+    runSchemaWithFormError(this.waitlistSignupSchema, {
+      email,
+      invite,
+    })
+
+    const username = nanoid(),
+      password = '',
+      parsedInvite = invite
+        ? await InviteService.parseAndValidateInvite({
+            b64InviteString: invite,
+            purpose: InvitePurpose.waitlist,
+          })
+        : undefined,
+      inviterId =
+        parsedInvite?.type == InviteStringTypes.prelaunch
+          ? parsedInvite.payload.userInviterId
+          : undefined
+
+    await this.checkCredentialsAvailability({ username, email })
+    const user = await UserManager.create({
+      username,
+      password,
+      inviterId,
+      isWaitlist: true,
+    })
+
+    await ValidateEmailService.triggerWaitlistEmailValidation(user, email)
+  }
+
   private static signupSchema = yup
     .object({
       username: usernameScheme,
@@ -133,26 +185,61 @@ export class UserService {
       invite,
     })
 
-    const {
-      inviterUser,
-      decodedInvite,
-    } = await InviteService.parseAndValidateInvite(invite)
+    const [parsed, passwordHashed] = await Promise.all([
+      InviteService.parseAndValidateInvite({
+        b64InviteString: invite,
+        purpose: InvitePurpose.signup,
+      }),
+      PasswordService.hashPassword(password),
+    ])
 
-    await this.checkCredentialsAvailability({ username, email })
+    let user: User
+    switch (parsed.type) {
+      case InviteStringTypes.prelaunch:
+        throw new FormValidationError(
+          InviteServiceFormErrors.cannotUsePrelaunchInvites,
+        )
 
-    const passwordHashed = await PasswordService.hashPassword(password)
-    const user = await UserManager.create({
-      username,
-      password: passwordHashed,
-      inviterId: inviterUser.id,
-    })
+      case InviteStringTypes.launch: {
+        await this.checkCredentialsAvailability({
+          username,
+          email: parsed.payload.email,
+        })
 
-    await ValidateEmailService.triggerEmailValidation(user, email)
+        const waitlistUser = await UserManager.byId(parsed.payload.userId)
+        if (!waitlistUser?.isWaitlist)
+          throw new FormValidationError(
+            InviteServiceFormErrors.inviteAlreadyUsed,
+          )
+
+        user = await UserManager.update(waitlistUser.id, {
+          username,
+          password,
+          email: parsed.payload.email,
+          isWaitlist: false,
+        })
+
+        break
+      }
+
+      default: {
+        await this.checkCredentialsAvailability({ username, email })
+        const { payload } = parsed
+
+        user = await UserManager.create({
+          username,
+          password: passwordHashed,
+          inviterId: payload.userInviterId,
+          inviteId: payload.inviteId,
+        })
+        await ValidateEmailService.triggerEmailValidation(user, email)
+      }
+    }
 
     return {
       ...(await this.newSignIn({ userId: user.id, description })),
       user,
-      isWalletInvite: 'walletId' in decodedInvite,
+      isWalletInvite: parsed.type == InviteStringTypes.wallet,
     }
   }
 

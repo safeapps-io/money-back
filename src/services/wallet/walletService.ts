@@ -117,9 +117,15 @@ export class WalletService {
     })
 
     const updatedWallet = await WalletManager.byId(wallet.id)
-    await WalletPubSubService.publishWalletUpdates({
-      wallet: updatedWallet!,
-    })
+    await Promise.all([
+      WalletPubSubService.publishWalletUpdates({
+        wallet: updatedWallet!,
+      }),
+      WalletPubSubService.publishWalletDestroy({
+        walletId: wallet.id,
+        connectedUserIds: [userToRemoveId],
+      }),
+    ])
 
     return updatedWallet
   }
@@ -162,10 +168,51 @@ export class WalletService {
     await WalletManager.bulkUpdate(walletAccessIdsAndChests)
 
     const refetchedWallets = await WalletManager.byIds(userWalletIds)
-    return Promise.all(
+    await Promise.all(
       refetchedWallets.map((wallet) =>
         WalletPubSubService.publishWalletUpdates({ wallet }),
       ),
     )
+    return refetchedWallets
+  }
+
+  private static updateSingleChestScheme = yup
+    .object({
+      userId: requiredString,
+      walletId: requiredString,
+      chest: requiredString,
+    })
+    .noUnknown()
+  static async updateSingleChest({
+    userId,
+    walletId,
+    chest,
+  }: {
+    userId: string
+    walletId: string
+    chest: string
+  }) {
+    runSchemaWithFormError(this.updateSingleChestScheme, {
+      userId,
+      walletId,
+      chest,
+    })
+
+    const userWallets = await this.getUserWallets(userId),
+      wallet = userWallets.find((w) => w.id == walletId)
+
+    if (!wallet) throw new RequestError('No access to this wallet')
+
+    for (const user of wallet.users) {
+      if (user.id == userId) {
+        user.WalletAccess.chest = chest
+        await user.WalletAccess.save()
+        break
+      }
+    }
+
+    await WalletPubSubService.publishWalletUpdates({ wallet })
+
+    return wallet
   }
 }

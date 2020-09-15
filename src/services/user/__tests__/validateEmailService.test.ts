@@ -9,7 +9,7 @@ const mockMessageService = {
     publishUserUpdates: jest.fn(),
   }
 
-jest.mock('@/services/message', () => ({
+jest.mock('@/services/message/messageService', () => ({
   __esModule: true,
   MessageService: mockMessageService,
 }))

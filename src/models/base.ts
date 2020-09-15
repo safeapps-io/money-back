@@ -27,8 +27,8 @@ export default class BaseModel<T> extends Model<T> {
     const prev = super.toJSON()
     return {
       ...prev,
-      created: this.created.getTime(),
-      updated: this.updated.getTime(),
+      created: this.created?.getTime(),
+      updated: this.updated?.getTime(),
     }
   }
 }
