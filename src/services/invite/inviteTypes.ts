@@ -15,3 +15,9 @@ export enum InviteStringTypes {
   service = 'service',
   wallet = 'wallet',
 }
+
+export enum InvitePurpose {
+  waitlist = 'waitlist',
+  signup = 'signup',
+  walletJoin = 'walletJoin',
+}

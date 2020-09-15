@@ -1,4 +1,3 @@
-import { decode } from 'base64-arraybuffer'
 import { startOfMonth, endOfMonth, isAfter } from 'date-fns'
 import * as yup from 'yup'
 
@@ -14,10 +13,13 @@ import { WalletManager } from '@/models/wallet.model'
 import { AccessLevels } from '@/models/walletAccess.model'
 
 import { FormValidationError } from '@/services/errors'
-import { CryptoService } from '@/services/crypto/cryptoService'
 import { InvitePubSubService } from './invitePubSubService'
 import { WalletPubSubService } from '@/services/wallet/walletPubSubService'
-import { InviteServiceFormErrors, InviteStringTypes } from './inviteTypes'
+import {
+  InvitePurpose,
+  InviteServiceFormErrors,
+  InviteStringTypes,
+} from './inviteTypes'
 import { InviteStringService } from './inviteStringService'
 
 type EncryptedUserId = {
@@ -100,16 +102,19 @@ export class InviteService {
   private static baseInviteMonthlyLimit = 5
   static async parseAndValidateInvite({
     b64InviteString,
-    shouldAllowRealSignup = true,
+    purpose,
   }: {
     b64InviteString: string
-    shouldAllowRealSignup?: boolean
+    purpose?: InvitePurpose
   }) {
     const res = await InviteStringService.parseAndVerifySignature(
       b64InviteString,
     )
 
-    if (shouldAllowRealSignup && res.type == InviteStringTypes.prelaunch)
+    if (
+      purpose == InvitePurpose.waitlist &&
+      res.type != InviteStringTypes.prelaunch
+    )
       throw new FormValidationError(
         InviteServiceFormErrors.cannotUsePrelaunchInvites,
       )
@@ -121,12 +126,30 @@ export class InviteService {
       return res
 
     const user = res.userInviter,
-      promises = [this.getCurrentMonthlyInviteUsage(user.id)]
-    if (res.type == InviteStringTypes.service)
-      promises.push(UserManager.isInviteDisposed(res.payload.inviteId))
+      promises = [
+        this.getCurrentMonthlyInviteUsage(user.id),
+        UserManager.isInviteDisposed(res.payload.inviteId),
+      ]
 
-    const [thisMonthInvitees, isInviteAlreadyUsed] = await Promise.all(promises)
-    if (isInviteAlreadyUsed)
+    if (res.type == InviteStringTypes.wallet)
+      promises.push(
+        WalletManager.isWalletInviteDisposed({
+          inviteId: res.payload.inviteId,
+          walletId: res.payload.walletId,
+        }),
+      )
+
+    const [
+      thisMonthInvitees,
+      isInviteAlreadyUsedToJoin,
+      isWalletInviteDisposed,
+    ] = await Promise.all(promises)
+
+    if (
+      (purpose == InvitePurpose.signup &&
+        (isInviteAlreadyUsedToJoin || isWalletInviteDisposed)) ||
+      (purpose == InvitePurpose.walletJoin && isWalletInviteDisposed)
+    )
       throw new FormValidationError(InviteServiceFormErrors.inviteAlreadyUsed)
 
     if (
@@ -167,7 +190,10 @@ export class InviteService {
       b64PublicECDHKey,
     })
 
-    const parsed = await this.parseAndValidateInvite({ b64InviteString })
+    const parsed = await this.parseAndValidateInvite({
+      b64InviteString,
+      purpose: InvitePurpose.walletJoin,
+    })
     if (parsed.type != InviteStringTypes.wallet)
       throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
 
@@ -181,9 +207,6 @@ export class InviteService {
     for (const user of wallet.users) {
       if (user.id === joiningUser.id)
         throw new FormValidationError(InviteServiceFormErrors.alreadyMember)
-
-      if (user.WalletAccess.inviteId === payload.inviteId)
-        throw new FormValidationError(InviteServiceFormErrors.inviteAlreadyUsed)
 
       if (
         user.WalletAccess.accessLevel === AccessLevels.owner &&
@@ -412,41 +435,36 @@ export class InviteService {
 
     // We don't do any checks, because one can only remove user using this method by
     // impersonating the user and if he has no chest attached to the WA.
-    try {
-      const parsed = await InviteStringService.parseAndVerifySignature(
-        b64InviteString,
-      )
-      if (parsed.type != InviteStringTypes.wallet)
-        throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
+    const parsed = await InviteStringService.parseAndVerifySignature(
+      b64InviteString,
+    )
+    if (parsed.type != InviteStringTypes.wallet)
+      throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
 
-      const { payload } = parsed,
-        [result, wallet] = await Promise.all([
-          WalletManager.removeWithJoiningError({
-            userId: joiningUser.id,
-            ...payload,
-          }),
-          WalletManager.byId(payload.walletId),
-        ]),
-        owner =
-          wallet &&
-          wallet.users.find(
-            (user) => user.WalletAccess.accessLevel === AccessLevels.owner,
-          )
+    const { payload } = parsed,
+      result = await WalletManager.removeWithJoiningError({
+        userId: joiningUser.id,
+        inviteId: payload.inviteId,
+        walletId: payload.walletId,
+      }),
+      wallet = await WalletManager.byId(payload.walletId),
+      owner =
+        wallet &&
+        wallet.users.find(
+          (user) => user.WalletAccess.accessLevel === AccessLevels.owner,
+        )
 
-      if (!owner || typeof result !== 'number' || result === 0 || !wallet)
-        throw new Error()
+    if (!owner || typeof result !== 'number' || result === 0 || !wallet)
+      throw new Error()
 
-      if (result > 0)
-        return Promise.all([
-          InvitePubSubService.joiningError({
-            ownerId: owner.id,
-            walletId: wallet.id,
-            username: joiningUser.username,
-          }),
-          WalletPubSubService.publishWalletUpdates({ wallet }),
-        ])
-    } catch (error) {
-      throw new FormValidationError(InviteServiceFormErrors.unknownError)
-    }
+    if (result > 0)
+      return Promise.all([
+        InvitePubSubService.joiningError({
+          ownerId: owner.id,
+          walletId: wallet.id,
+          username: joiningUser.username,
+        }),
+        WalletPubSubService.publishWalletUpdates({ wallet }),
+      ])
   }
 }

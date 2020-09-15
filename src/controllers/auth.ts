@@ -8,6 +8,7 @@ import { getDeviceDescription } from '@/services/deviceDescription'
 import { ValidateEmailService } from '@/services/user/validateEmailService'
 import { PasswordService } from '@/services/user/passwordService'
 import { InviteService } from '@/services/invite/inviteService'
+import { InvitePurpose } from '@/services/invite/inviteTypes'
 
 export const authRouter = Router()
 
@@ -18,11 +19,13 @@ authRouter.get('/user', isRestAuth, (req, res) => {
 authRouter.post(
   '/invite/isValid',
   ash(async (req, res) => {
-    const { invite } = req.body as {
+    const { invite, purpose } = req.body as {
         invite: string
+        purpose?: InvitePurpose
       },
       parsedInvite = await InviteService.parseAndValidateInvite({
         b64InviteString: invite,
+        purpose,
       })
 
     // @ts-ignore

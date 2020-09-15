@@ -23,7 +23,8 @@ import { UserUpdatesPubSubService } from './userUpdatesPubSubService'
 import {
   InviteStringTypes,
   InviteServiceFormErrors,
-} from '../invite/inviteTypes'
+  InvitePurpose,
+} from '@/services/invite/inviteTypes'
 
 export const jwtSubject = 'sess' // session
 
@@ -137,7 +138,7 @@ export class UserService {
       parsedInvite = invite
         ? await InviteService.parseAndValidateInvite({
             b64InviteString: invite,
-            shouldAllowRealSignup: false,
+            purpose: InvitePurpose.waitlist,
           })
         : undefined,
       inviterId =
@@ -185,7 +186,10 @@ export class UserService {
     })
 
     const [parsed, passwordHashed] = await Promise.all([
-      InviteService.parseAndValidateInvite({ b64InviteString: invite }),
+      InviteService.parseAndValidateInvite({
+        b64InviteString: invite,
+        purpose: InvitePurpose.signup,
+      }),
       PasswordService.hashPassword(password),
     ])
 
