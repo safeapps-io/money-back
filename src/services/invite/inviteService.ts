@@ -26,6 +26,7 @@ type EncryptedUserId = {
   userId: string
 }
 export enum Prizes {
+  disc15 = 15,
   disc30 = 30,
   disc50 = 50,
   disc90 = 90,
@@ -85,7 +86,7 @@ export class InviteService {
       }
     }
 
-    const prizes: Prizes[] = []
+    const prizes: Prizes[] = [Prizes.disc15]
     if (currentIndex != null && currentInviteCount != null) {
       if (currentInviteCount > 0) prizes.push(Prizes.disc30)
       if (currentIndex <= 0.5 * countMost.length) prizes.push(Prizes.disc50)
