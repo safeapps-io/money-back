@@ -3,22 +3,26 @@ dotenv.config()
 
 import express from 'express'
 import expressWs from 'express-ws'
-
-const { app } = expressWs(express())
-
 import cors from 'cors'
 import helmet from 'helmet'
-
-import pathJoin from '@/utils/pathJoin'
-import logger from '@/middlewares/logger'
-import { sync } from '@/models'
-import router from '@/router'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import multer from 'multer'
 
+const { app } = expressWs(express())
+
+import pathJoin from '@/utils/pathJoin'
+import logger from '@/middlewares/logger'
+import sequelize from '@/models/setup'
+import router from '@/router'
+import delayOnDevMiddleware from '@/middlewares/delayOnDev'
+import { initRedisConnection } from '@/services/redis/connection'
+import { redisPubSub } from './services/redis/pubSub'
+
 const constructApp = async () => {
-  await sync()
+  await sequelize.sync()
+  initRedisConnection()
+  redisPubSub.init()
 
   app
     .set('x-powered-by', false)
@@ -26,13 +30,14 @@ const constructApp = async () => {
     .set('views', pathJoin('views'))
     .set('view engine', 'pug')
 
-  app.use(
-    cors({
-      origin: process.env.ALLOWED_ORIGIN,
-      maxAge: 86400,
-      allowedHeaders: ['authorization', 'content-type'],
-    }),
-  )
+  if (process.env.NODE_ENV == 'development')
+    app.use(
+      cors({
+        origin: process.env.ALLOWED_ORIGIN,
+        maxAge: 86400,
+        allowedHeaders: ['authorization', 'accept-language', 'content-type'],
+      }),
+    )
 
   app
     .use(logger)
@@ -41,6 +46,7 @@ const constructApp = async () => {
     .use(bodyParser.json())
     .use(bodyParser.urlencoded({ extended: true }))
     .use(multer().none())
+    .use(delayOnDevMiddleware)
     .use('/saviour', router)
 
   return app

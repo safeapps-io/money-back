@@ -1,25 +1,22 @@
-import { Router, NextFunction, Request, Response } from 'express'
-import ash from 'express-async-handler'
+import { Router } from 'express'
 
-import { RequestError } from '@/core/errors'
-import authRouter from './auth'
+import { errorHandler } from '@/middlewares/errorHandler'
+
+import { authRouter } from '@/controllers/auth'
+import { waitlistRouter } from '@/controllers/waitlist'
+import { dataRouter } from '@/controllers/data'
+import { walletRouter } from '@/controllers/wallet'
+import { directoryRouter } from '@/controllers/directory'
 
 const apiRouter = Router()
 
 apiRouter
-  .use('/auth', ash(authRouter))
-  .use((_, res) =>
-    res
-      .status(404)
-      .json({ error: 'No such path' })
-      .end(),
-  )
-  .use(function(err: Error, req: Request, res: Response, next: NextFunction) {
-    if (err instanceof RequestError) {
-      res.status(400).json({ code: err.code, message: err.message })
-      return
-    }
-    next(err)
-  })
+  .use('/auth', authRouter)
+  .use('/waitlist', waitlistRouter)
+  .use('/wallet', walletRouter)
+  .use('/data', dataRouter)
+  .use('/directory', directoryRouter)
+  .use((_, res) => res.status(404).json({ error: 'No such path' }).end())
+  .use(errorHandler)
 
 export default apiRouter

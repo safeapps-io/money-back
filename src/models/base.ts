@@ -1,3 +1,4 @@
+import { inspect } from 'util'
 import {
   Model,
   CreatedAt,
@@ -5,11 +6,7 @@ import {
   PrimaryKey,
   Column,
 } from 'sequelize-typescript'
-import { Op } from 'sequelize'
-import { inspect } from 'util'
-import nanoid from 'nanoid'
-import * as yup from 'yup'
-import { dateAsTimestamp } from '@/utils/yupHelpers'
+import { nanoid } from 'nanoid'
 
 export default class BaseModel<T> extends Model<T> {
   @PrimaryKey
@@ -30,25 +27,8 @@ export default class BaseModel<T> extends Model<T> {
     const prev = super.toJSON()
     return {
       ...prev,
-      created: this.created.getTime(),
-      updated: this.updated.getTime(),
+      created: this.created?.getTime(),
+      updated: this.updated?.getTime(),
     }
   }
-}
-
-export const baseScheme = yup
-  .object()
-  .shape({
-    id: yup.string().required(),
-    updated: dateAsTimestamp.notRequired(),
-    clientUpdated: dateAsTimestamp.notRequired(),
-  })
-  .noUnknown()
-
-export function syncronizableGetUpdates(model: any) {
-  return (dt?: Date) =>
-    model.findAll({
-      where: dt && { updated: { [Op.gte]: dt } },
-      order: [['updated', 'ASC']],
-    })
 }

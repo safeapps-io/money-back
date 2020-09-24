@@ -1,10 +1,83 @@
-## Authorization mechanizm
+## WebSockets flow
 
-We have 3 mechanizms in place:
+Auth:
 
-1. **signed cookies**. This is the preffered way, and it should be used in production always
-2. **authorization header**. Only works for REST endpoints. You store the key somewhere on the client (LS, for example) and attach the header to the request
-3. **path-based**. Only works for WS endpoints. You store the key somewhere on the client and push it as a path of path of the request
+```mermaid
+sequenceDiagram
+  participant S as Server
+  participant C as Client
+  C-->S: Open wss://.../sync
+  S->>C: Ready
+  opt Old access token
+    C->>S: Give me new token by refresh
+    S->>C: Here you are: 18a42019e1…
+  end
+
+  Note over C: Set timer to get<br/>new access token<br/>before it expires
+  C->>S: [all messages go with AT]
+  Note over S: Validate Access <br/>Token
+  Note over S: Pass to middleware<br/>if token is valid
+  S->>C: [response]
+```
+
+Sync:
+
+```mermaid
+sequenceDiagram
+  participant C2 as Client2
+  participant S as Server
+  participant C as Client1
+  C-->C2: Authorized connection
+  opt Initial
+    C->>S: Timestamps of ents
+    loop Send chunks
+      S->>C: data
+    end
+    S->>C: End of initial
+    Note over S: Subscribe Client to<br/>updates
+  end
+  
+  loop Incremental
+    C2->>S: data
+    Note over S: Save to DB
+    Note over S: Find all conns<br/>who are subscribed
+    par Send
+      S->>C: data
+      S->>C2: data
+    end
+  end
+```
+
+Client states (I put it here to have it somehow in one place):
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant S as Server
+  note left of C: Default: <br/>CacheFetchedStore<br/>CFS = false<br/>---<br/>SyncStateStore<br/>SSS=INITIAL
+
+  C-->S: Authorized connection
+
+  note over C: Get ents cache
+  note left of C: CFS = true<br/>SSS = RUNS
+  C->>S: Send timestamps
+  loop initial sync
+    S->>C: Send all updates
+  end
+  S->>C: End
+  note left of C: SSS = FINISHED
+
+  loop Incremental
+    opt Upward
+      C->>S: Send data
+      S->>C:Recieve data
+    end
+    opt Downward
+      S->>C: Send data
+      C->>S:Recieve data
+    end
+  end
+```
 
 ## How to debug sockets
 
@@ -37,5 +110,3 @@ Update is ignored:
 ```json
 {"type": "clientChanges", "data": { "latestUpdated": "2020-01-01T14:20:52.147Z", "entities": [ { "type": "category", "ent": { "id": "EaIYQnjW5o-twjHhriSsF","title": "@@@@@@@ Test rename category @@@@@@@@@","color": "#123456","isIncome": false,"clientUpdated": "2010-01-01T14:20:52.147Z", "updated": "2019-01-01T14:20:52.147Z"}}]}}
 ```
-
-

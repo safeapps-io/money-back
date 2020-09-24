@@ -3,8 +3,8 @@
  * @param {Number} ms Number of milliseconds
  */
 const delay = (ms: number) =>
-  new Promise(resolve => {
-    setTimeout(function() {
+  new Promise((resolve) => {
+    setTimeout(function () {
       resolve()
     }, ms)
   })
