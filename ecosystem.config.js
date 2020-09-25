@@ -3,7 +3,8 @@ module.exports = {
     {
       name: 'app',
 
-      script: 'dist/server.js',
+      script: './node_modules/.bin/ts-node',
+      args: '-r tsconfig-paths/register -T ./src/server.ts',
 
       exec_mode: 'cluster',
       instances: 'max',
