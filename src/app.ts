@@ -30,7 +30,7 @@ const constructApp = async () => {
     .set('views', pathJoin('views'))
     .set('view engine', 'pug')
 
-  if (process.env.NODE_ENV == 'development')
+  if (process.env.ALLOWED_ORIGIN)
     app.use(
       cors({
         origin: process.env.ALLOWED_ORIGIN,
