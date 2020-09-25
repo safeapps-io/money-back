@@ -4,7 +4,6 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "noEmit": true,
     "strict": true,
     "baseUrl": "./",
     "paths": {
@@ -13,6 +12,10 @@
       ]
     },
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
-  }
+    "emitDecoratorMetadata": true,
+    "outDir": "./dist"
+  },
+  "exclude": [
+    "*/**/*.test.ts"
+  ]
 }
