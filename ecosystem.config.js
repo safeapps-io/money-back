@@ -13,5 +13,19 @@ module.exports = {
       watch: false,
       max_memory_restart: '1G',
     },
+
+    {
+      name: 'worker',
+
+      script: './node_modules/.bin/ts-node',
+      args: '-r tsconfig-paths/register -T ./src/worker.ts',
+
+      exec_mode: 'cluster',
+      instances: 'max',
+
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+    },
   ],
 }
