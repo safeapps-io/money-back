@@ -25,9 +25,9 @@ import {
   InviteWsMiddleware,
 } from '@/services/invite/inviteWsHandler'
 import {
-  SchemeWsMiddleware,
-  SchemeIncomingMessages,
-} from '@/services/scheme/schemeWsHandler'
+  SimpleSyncIncomingMessages,
+  SimpleSyncWsMiddleware,
+} from '@/services/simpleUpdatedSync/simpleSyncWsHandler'
 
 const syncRouter = Router() as WSRouter
 syncRouter.ws('/sync', (ws) => {
@@ -37,7 +37,7 @@ syncRouter.ws('/sync', (ws) => {
       SyncIncomingMessages &
       InviteIncomingMessages &
       MCCIncomingMessages &
-      SchemeIncomingMessages,
+      SimpleSyncIncomingMessages,
     { user?: User }
   >(
     ws,
@@ -46,7 +46,7 @@ syncRouter.ws('/sync', (ws) => {
     SyncWsMiddleware,
     InviteWsMiddleware,
     MCCWsMiddleware,
-    SchemeWsMiddleware,
+    SimpleSyncWsMiddleware,
   )
 })
 
