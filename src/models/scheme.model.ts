@@ -45,7 +45,23 @@ export class SchemeManager {
     })
   }
 
+  static getById(id: string) {
+    return Scheme.findByPk(id)
+  }
+
+  static list() {
+    return Scheme.findAll()
+  }
+
   static create(data: Scheme) {
     return Scheme.create(data)
+  }
+
+  static update(id: string, data: Scheme) {
+    return Scheme.update(data, { where: { id } })
+  }
+
+  static delete(id: string) {
+    return Scheme.destroy({ where: { id } })
   }
 }

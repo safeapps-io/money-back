@@ -33,6 +33,10 @@ export default class User extends BaseModel<User> {
   password!: string
 
   @AllowNull
+  @Column(DataType.BOOLEAN)
+  isAdmin!: boolean | null
+
+  @AllowNull
   @Column({
     type: DataType.BLOB,
     get(this: User) {
@@ -126,6 +130,9 @@ export default class User extends BaseModel<User> {
       delete curr.b64salt
       delete curr.encr
     }
+
+    // Making this field private
+    if (!curr.isAdmin) delete curr.isAdmin
 
     return curr
   }

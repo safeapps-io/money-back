@@ -28,7 +28,23 @@ export class MetaCategoryManager {
     })
   }
 
+  static getById(id: string) {
+    return MetaCategory.findByPk(id)
+  }
+
+  static list() {
+    return MetaCategory.findAll()
+  }
+
   static create(data: MetaCategory) {
     return MetaCategory.create(data)
+  }
+
+  static update(id: string, data: MetaCategory) {
+    return MetaCategory.update(data, { where: { id } })
+  }
+
+  static delete(id: string) {
+    return MetaCategory.destroy({ where: { id } })
   }
 }

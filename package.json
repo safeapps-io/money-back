@@ -9,8 +9,7 @@
     "recreateSeeds": "sequelize-cli db:drop --env development && sequelize-cli db:create && sequelize-cli db:migrate && sequelize-cli db:seed --seed 1-base",
     "pretest": "sequelize-cli db:drop --env test && sequelize-cli db:create --env test && sequelize-cli db:migrate --env test && sequelize-cli db:seed --seed 1-base --env test",
     "test": "jest --watch -i",
-    "dev": "nodemon -q --watch src --ignore 'src/**/*.spec.ts' --exec 'ts-node -r tsconfig-paths/register' src/server.ts | pino-pretty",
-    "createScheme": "ts-node -T -r tsconfig-paths/register -r ./scripts/createScheme.ts"
+    "dev": "nodemon -q --watch src --ignore 'src/**/*.spec.ts' --exec 'ts-node -r tsconfig-paths/register' src/server.ts | pino-pretty"
   },
   "dependencies": {
     "argon2": "^0.26.2",
