@@ -9,7 +9,6 @@
     "recreateSeeds": "sequelize-cli db:drop --env development && sequelize-cli db:create && sequelize-cli db:migrate && sequelize-cli db:seed --seed 1-base",
     "pretest": "sequelize-cli db:drop --env test && sequelize-cli db:create --env test && sequelize-cli db:migrate --env test && sequelize-cli db:seed --seed 1-base --env test",
     "test": "jest --watch -i",
-    "coverage": "jest --coverage",
     "dev": "nodemon -q --watch src --ignore 'src/**/*.spec.ts' --exec 'ts-node -r tsconfig-paths/register' src/server.ts | pino-pretty"
   },
   "dependencies": {

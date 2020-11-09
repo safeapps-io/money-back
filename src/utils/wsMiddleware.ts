@@ -131,7 +131,7 @@ export class WSWrapper<State> {
     const recursiveSend = (index = 0) =>
       this.send({
         type,
-        data: chunkedItems[index],
+        data: chunkedItems[index] || [],
         cb: () => {
           if (chunkedItems[index + 1]) recursiveSend(index + 1)
           else if (finishCallback) finishCallback()

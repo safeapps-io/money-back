@@ -34,3 +34,8 @@ export const isRestAuth = async (
     else next(error)
   }
 }
+
+export const isAdmin = (req: Request, _: Response, next: NextFunction) => {
+  if (req.user.isAdmin) next()
+  else next(new RequestError('Forbidden', 401))
+}
