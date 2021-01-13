@@ -307,36 +307,22 @@ export class UserService {
     return user
   }
 
-  static async updateUser(
+  static async updateUsername(
     user: User,
     {
       socketId,
       username,
-      email,
     }: {
       socketId?: string
-      username?: string
-      email?: string
+      username: string
     },
   ) {
-    if (user.email && !email)
-      throw new FormValidationError(UserServiceFormErrors.cantDeleteEmail)
+    runSchemaWithFormError(usernameScheme, username)
+    if (username === user.username) return user
 
-    const updateFields = {} as Partial<User>
-    if (typeof username !== 'undefined' && user.username !== username) {
-      runSchemaWithFormError(usernameScheme, username)
-      await this.checkCredentialsAvailability({ username, excludeId: user.id })
-      updateFields.username = username
-    }
+    await this.checkCredentialsAvailability({ username, excludeId: user.id })
 
-    if (typeof email !== 'undefined') {
-      runSchemaWithFormError(emailScheme, email)
-      await ValidateEmailService.triggerEmailValidation(user, email)
-    }
-
-    if (!updateFields.username) return user
-
-    const res = await UserManager.update(user.id, updateFields)
+    const res = await UserManager.update(user.id, { username })
 
     // We plan to use this method outside of websocket connection, so no socket id here is ok
     await UserUpdatesPubSubService.publishUserUpdates({
@@ -344,6 +330,16 @@ export class UserService {
       socketId,
     })
     return res
+  }
+
+  static async updateEmail(user: User, email: string) {
+    if (user.email && !email)
+      throw new FormValidationError(UserServiceFormErrors.cantDeleteEmail)
+
+    runSchemaWithFormError(emailScheme, email)
+    await ValidateEmailService.triggerEmailValidation(user, email)
+
+    return user
   }
 
   private static encrScheme = yup

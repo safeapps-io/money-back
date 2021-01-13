@@ -155,24 +155,51 @@ export class UserManager {
   }
 
   static async isUsernameTaken(username: string, excludeId?: string) {
-    const q = { username } as { [key: string]: any }
-    if (excludeId) q['id'] = { [Op.not]: excludeId }
-    const count = await User.count({ where: q })
+    const count = await User.count({
+      where: {
+        [Op.and]: [
+          sequelize.where(
+            sequelize.fn('lower', sequelize.col('username')),
+            sequelize.fn('lower', username),
+          ),
+          { id: { [Op.not]: excludeId || '' } },
+        ],
+      },
+    })
     return count !== 0
   }
 
   static async isEmailTaken(email: string, excludeId?: string) {
-    const q = { email } as { [key: string]: any }
-    if (excludeId) q['id'] = { [Op.not]: excludeId }
-    const count = await User.count({ where: q })
+    const count = await User.count({
+      where: {
+        [Op.and]: [
+          sequelize.where(
+            sequelize.fn('lower', sequelize.col('email')),
+            sequelize.fn('lower', email),
+          ),
+          { id: { [Op.not]: excludeId || '' } },
+        ],
+      },
+    })
     return count !== 0
   }
 
   static findByEmailOrUsername(usernameOrEmail: string) {
     return User.findOne({
       where: {
-        [Op.or]: { username: usernameOrEmail, email: usernameOrEmail },
-        isWaitlist: false,
+        [Op.and]: {
+          isWaitlist: false,
+          [Op.or]: [
+            sequelize.where(
+              sequelize.fn('lower', sequelize.col('email')),
+              sequelize.fn('lower', usernameOrEmail),
+            ),
+            sequelize.where(
+              sequelize.fn('lower', sequelize.col('username')),
+              sequelize.fn('lower', usernameOrEmail),
+            ),
+          ],
+        },
       },
     })
   }
