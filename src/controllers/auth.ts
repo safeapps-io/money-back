@@ -132,14 +132,26 @@ authRouter.post(
 )
 
 authRouter.post(
-  '/updateUser',
+  '/updateUsername',
   isRestAuth,
   ash(async (req, res) => {
     const body = req.body as {
       username: string
-      email?: string
     }
-    const user = await UserService.updateUser(req.user, body)
+    const user = await UserService.updateUsername(req.user, body)
+
+    res.json(user)
+  }),
+)
+
+authRouter.post(
+  '/updateEmail',
+  isRestAuth,
+  ash(async (req, res) => {
+    const body = req.body as {
+      email: string
+    }
+    const user = await UserService.updateEmail(req.user, body.email)
 
     res.json(user)
   }),
