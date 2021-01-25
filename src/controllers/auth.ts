@@ -8,40 +8,23 @@ import { getDeviceDescription } from '@/services/deviceDescription'
 import { ValidateEmailService } from '@/services/user/validateEmailService'
 import { PasswordService } from '@/services/user/passwordService'
 import { InviteService } from '@/services/invite/inviteService'
-import { InvitePurpose } from '@/services/invite/inviteTypes'
 
 export const authRouter = Router()
 
-authRouter.get('/user', isRestAuth, (req, res) => {
-  res.json(req.user)
-})
+authRouter.get('/user', isRestAuth, (req, res) => res.json(req.user))
 
 authRouter.post(
   '/invite/isValid',
   ash(async (req, res) => {
-    const { invite, purpose } = req.body as {
+    const { invite } = req.body as {
         invite: string
-        purpose?: InvitePurpose
       },
-      parsedInvite = await InviteService.parseAndValidateInvite({
-        b64InviteString: invite,
-        purpose,
-      })
+      parsedInvite = await InviteService.parseAndValidateInvite(invite)
 
     // @ts-ignore
     if ('userInviter' in parsedInvite) delete parsedInvite.userInviter
 
     res.json(parsedInvite)
-  }),
-)
-
-authRouter.get(
-  '/invite/usage',
-  isRestAuth,
-  ash(async (req, res) => {
-    res.json({
-      usage: await InviteService.getCurrentMonthlyInviteUsage(req.user.id),
-    })
   }),
 )
 
@@ -51,7 +34,7 @@ authRouter.post(
     const body = req.body as {
       username: string
       email?: string
-      invite: string
+      invite?: string
       password: string
     }
     const result = await UserService.signup({

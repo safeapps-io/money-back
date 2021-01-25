@@ -1,4 +1,3 @@
-import { startOfMonth, endOfMonth, isAfter } from 'date-fns'
 import * as yup from 'yup'
 
 import {
@@ -6,7 +5,7 @@ import {
   requiredString,
   optionalString,
 } from '@/utils/yupHelpers'
-import { encryptAes, decryptAes } from '@/utils/crypto'
+import { encryptAes } from '@/utils/crypto'
 
 import User, { UserManager } from '@/models/user.model'
 import { WalletManager } from '@/models/wallet.model'
@@ -15,149 +14,31 @@ import { AccessLevels } from '@/models/walletAccess.model'
 import { FormValidationError } from '@/services/errors'
 import { InvitePubSubService } from './invitePubSubService'
 import { WalletPubSubService } from '@/services/wallet/walletPubSubService'
-import {
-  InvitePurpose,
-  InviteServiceFormErrors,
-  InviteStringTypes,
-} from './inviteTypes'
+import { InviteServiceFormErrors, InviteStringTypes } from './inviteTypes'
 import { InviteStringService } from './inviteStringService'
 
 type EncryptedUserId = {
   userId: string
 }
-export enum Prizes {
-  disc15 = 15,
-  disc30 = 30,
-  disc50 = 50,
-  disc90 = 90,
-}
 
 export class InviteService {
-  public static getCurrentMonthlyInviteUsage(userId: string) {
-    /**
-     * We would only count those users that were invited after the first production launch,
-     * so users with high prelaunch invite count won't be punished for it.
-     */
-    const now = new Date(),
-      monthStart = startOfMonth(now),
-      productionDate = new Date(parseInt(process.env.PRODUCTION_TS!)),
-      startDate = isAfter(monthStart, productionDate)
-        ? monthStart
-        : productionDate
-
-    return UserManager.countInvitedBetweenDates({
-      userId,
-      startDate,
-      endDate: endOfMonth(now),
-    })
-  }
-
   public static getUserIdEnctypted(userId: string) {
     return encryptAes({ userId } as EncryptedUserId)
   }
 
-  private static getDecryptedUserId(encryptedUserId: string) {
-    return decryptAes<EncryptedUserId>(encryptedUserId).userId
-  }
-
-  public static async getCurrentWaitlistStats(
-    encryptedUserId: string,
-  ): Promise<{
-    prizes: Prizes[]
-    currentInviteCount: number
-    inviteLink: string
-  }> {
-    let userId: string
-    try {
-      userId = this.getDecryptedUserId(encryptedUserId)
-    } catch (error) {
-      throw new FormValidationError(InviteServiceFormErrors.unknownError)
-    }
-
-    const { countMost } = await UserManager.countByMostInvites()
-    let currentIndex: number | null = null,
-      currentInviteCount = 0
-    for (let i = 0; i < countMost.length; i++) {
-      const item = countMost[i]
-      if (item.inviterId == userId) {
-        currentIndex = i
-        currentInviteCount = item.invitedCount
-        break
-      }
-    }
-
-    const prizes: Prizes[] = [Prizes.disc15]
-    if (currentIndex != null && currentInviteCount != null) {
-      if (currentInviteCount > 0) prizes.push(Prizes.disc30)
-      if (currentIndex <= 0.5 * countMost.length) prizes.push(Prizes.disc50)
-      if (currentIndex <= 0.1 * countMost.length) prizes.push(Prizes.disc90)
-    }
-
-    return {
-      prizes,
-      currentInviteCount,
-      inviteLink: InviteStringService.generatePrelaunchInvite(userId),
-    }
-  }
-
-  private static baseInviteMonthlyLimit = 5
-  static async parseAndValidateInvite({
-    b64InviteString,
-    purpose,
-  }: {
-    b64InviteString: string
-    purpose?: InvitePurpose
-  }) {
+  static async parseAndValidateInvite(b64InviteString: string) {
     const res = await InviteStringService.parseAndVerifySignature(
       b64InviteString,
     )
 
-    if (
-      purpose == InvitePurpose.waitlist &&
-      res.type != InviteStringTypes.prelaunch
-    )
-      throw new FormValidationError(
-        InviteServiceFormErrors.cannotUsePrelaunchInvites,
-      )
-
-    if (
-      res.type == InviteStringTypes.prelaunch ||
-      res.type == InviteStringTypes.launch
-    )
-      return res
-
-    const user = res.userInviter,
-      promises = [
-        this.getCurrentMonthlyInviteUsage(user.id),
-        UserManager.isInviteDisposed(res.payload.inviteId),
-      ]
-
-    if (res.type == InviteStringTypes.wallet)
-      promises.push(
-        WalletManager.isWalletInviteDisposed({
-          inviteId: res.payload.inviteId,
-          walletId: res.payload.walletId,
-        }),
-      )
-
-    const [
-      thisMonthInvitees,
-      isInviteAlreadyUsedToJoin,
-      isWalletInviteDisposed,
-    ] = await Promise.all(promises)
-
-    if (
-      (purpose == InvitePurpose.signup &&
-        (isInviteAlreadyUsedToJoin || isWalletInviteDisposed)) ||
-      (purpose == InvitePurpose.walletJoin && isWalletInviteDisposed)
-    )
-      throw new FormValidationError(InviteServiceFormErrors.inviteAlreadyUsed)
-
-    if (
-      thisMonthInvitees >=
-      (user.inviteMonthlyLimit ?? this.baseInviteMonthlyLimit)
-    )
-      throw new FormValidationError(InviteServiceFormErrors.limitReached)
+    if (res.type == InviteStringTypes.wallet) {
+      const wasDisposed = await WalletManager.isWalletInviteDisposed({
+        inviteId: res.payload.inviteId,
+        walletId: res.payload.walletId,
+      })
+      if (wasDisposed)
+        throw new FormValidationError(InviteServiceFormErrors.inviteAlreadyUsed)
+    }
 
     return res
   }
@@ -191,10 +72,7 @@ export class InviteService {
       b64PublicECDHKey,
     })
 
-    const parsed = await this.parseAndValidateInvite({
-      b64InviteString,
-      purpose: InvitePurpose.walletJoin,
-    })
+    const parsed = await this.parseAndValidateInvite(b64InviteString)
     if (parsed.type != InviteStringTypes.wallet)
       throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
 
