@@ -152,8 +152,6 @@ export class UserService {
     })
     await ValidateEmailService.triggerEmailValidation(user, email)
 
-    console.log(parsedInvite)
-
     return {
       ...(await this.newSignIn({ userId: user.id, description })),
       user,
