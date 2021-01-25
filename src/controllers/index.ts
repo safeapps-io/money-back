@@ -3,7 +3,6 @@ import { Router } from 'express'
 import { errorHandler } from '@/middlewares/errorHandler'
 
 import { authRouter } from '@/controllers/auth'
-import { waitlistRouter } from '@/controllers/waitlist'
 import { dataRouter } from '@/controllers/data'
 import { walletRouter } from '@/controllers/wallet'
 import { directoryRouter } from '@/controllers/directory'
@@ -12,7 +11,6 @@ const apiRouter = Router()
 
 apiRouter
   .use('/auth', authRouter)
-  .use('/waitlist', waitlistRouter)
   .use('/wallet', walletRouter)
   .use('/data', dataRouter)
   .use('/directory', directoryRouter)
