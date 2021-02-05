@@ -35,6 +35,7 @@ authRouter.post(
       username: string
       email?: string
       invite?: string
+      isSubscribed: boolean
       password: string
     }
     const result = await UserService.signup({
@@ -141,6 +142,22 @@ authRouter.post(
 )
 
 authRouter.post(
+  '/updateIsSubscribed',
+  isRestAuth,
+  ash(async (req, res) => {
+    const body = req.body as {
+      isSubscribed: boolean
+    }
+    const user = await UserService.updateIsSubscribedStatus({
+      userId: req.user.id,
+      newStatus: body.isSubscribed,
+    })
+
+    res.json(user)
+  }),
+)
+
+authRouter.post(
   '/updateMasterPassword',
   isRestAuth,
   ash(async (req, res) => {
@@ -171,6 +188,14 @@ authRouter.post<{ emailToken: string }>(
   '/validateEmail/:emailToken',
   ash(async (req, res) => {
     await ValidateEmailService.updateEmail(req.params.emailToken)
+    res.json({})
+  }),
+)
+
+authRouter.post<{ unsubscribeToken: string }>(
+  '/unsubscribe/:unsubscribeToken',
+  ash(async (req, res) => {
+    await UserService.useUnsubscribeLink(req.params.unsubscribeToken)
     res.json({})
   }),
 )

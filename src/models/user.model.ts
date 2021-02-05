@@ -37,6 +37,10 @@ export default class User extends BaseModel<User> {
   isAdmin!: boolean | null
 
   @AllowNull
+  @Column(DataType.BOOLEAN)
+  isSubscribed!: boolean | null
+
+  @AllowNull
   @Column({
     type: DataType.BLOB,
     get(this: User) {
@@ -143,6 +147,7 @@ export class UserManager {
     email?: string
     username: string
     password: string
+    isSubscribed: boolean
     inviterId?: string
     inviteId?: string
     isWaitlist?: boolean
