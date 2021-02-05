@@ -94,7 +94,7 @@ export class PasswordService {
 }
 
 export enum PasswordServiceFormErrors {
-  incorrectPassword = 'incorrectPassword',
-  resetNoEmail = 'resetNoEmail',
+  incorrectPassword = 'password.incorrectPassword',
+  resetNoEmail = 'password.resetNoEmail',
   resetInvalidToken = 'resetInvalidToken',
 }

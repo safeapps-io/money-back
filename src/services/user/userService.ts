@@ -371,9 +371,9 @@ export class UserService {
 }
 
 export enum UserServiceFormErrors {
-  emailTaken = 'emailTaken',
-  usernameTaken = 'usernameTaken',
-  unknownUser = 'unknownUser',
+  emailTaken = 'user.emailTaken',
+  usernameTaken = 'user.usernameTaken',
+  unknownUser = 'user.unknownUser',
   cantDeleteEmail = 'cantDeleteEmail',
   invalidUnsubscribeToken = 'invalidUnsubscribeToken',
 }
