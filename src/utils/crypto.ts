@@ -2,9 +2,9 @@ import jwt, { SignOptions, VerifyOptions } from 'jsonwebtoken'
 import { createCipheriv, createDecipheriv } from 'crypto'
 
 export const signJwt = (data: object, options?: SignOptions): Promise<string> =>
-  new Promise((resolve) => {
+  new Promise<string>((resolve) => {
     jwt.sign(data, process.env.SECRET as string, options || {}, (_, encoded) =>
-      resolve(encoded),
+      resolve(encoded as string),
     )
   })
 

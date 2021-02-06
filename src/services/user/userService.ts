@@ -10,7 +10,7 @@ import {
   requiredString,
   optionalString,
 } from '@/utils/yupHelpers'
-import { signJwt, verifyJwt } from '@/utils/crypto'
+import { decryptAes, encryptAes, signJwt, verifyJwt } from '@/utils/crypto'
 
 import { FormValidationError } from '@/services/errors'
 import { InviteService } from '@/services/invite/inviteService'
@@ -20,6 +20,7 @@ import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from './passwordService'
 import { UserUpdatesPubSubService } from './userUpdatesPubSubService'
 import { InviteStringTypes } from '@/services/invite/inviteTypes'
+import { getFullPath } from '../getPath'
 
 export const jwtSubject = 'sess' // session
 
@@ -115,6 +116,7 @@ export class UserService {
       username: usernameScheme,
       email: emailScheme,
       password: passwordScheme,
+      isSubscribed: yup.bool(),
       invite: optionalString,
     })
     .noUnknown()
@@ -123,17 +125,20 @@ export class UserService {
     email,
     password,
     description,
+    isSubscribed,
     invite,
   }: {
     username: string
     email?: string
     password: string
+    isSubscribed: boolean
     description: string
     invite?: string
   }) {
     runSchemaWithFormError(this.signupSchema, {
       username,
       email,
+      isSubscribed,
       password,
       invite,
     })
@@ -148,6 +153,7 @@ export class UserService {
     const user = await UserManager.create({
       username,
       password: passwordHashed,
+      isSubscribed,
       ...parsedInvite?.payload,
     })
     await ValidateEmailService.triggerEmailValidation(user, email)
@@ -320,6 +326,43 @@ export class UserService {
     })
   }
 
+  private static generateUnsubscribeToken(userId: string) {
+    return encryptAes({ userId })
+  }
+
+  private static parseUnsubscribeToken(token: string) {
+    const { userId } = decryptAes<{ userId: string }>(token)
+    return userId
+  }
+
+  static getUnsubscribeLink(userId: string) {
+    return getFullPath({
+      path: `/goto/${this.generateUnsubscribeToken(userId)}/unsubscribe`,
+      includeHost: true,
+    })
+  }
+
+  static async useUnsubscribeLink(token: string) {
+    try {
+      const userId = this.parseUnsubscribeToken(token)
+      return this.updateIsSubscribedStatus({ userId, newStatus: false })
+    } catch (error) {
+      throw new FormValidationError(
+        UserServiceFormErrors.invalidUnsubscribeToken,
+      )
+    }
+  }
+
+  static updateIsSubscribedStatus({
+    userId,
+    newStatus,
+  }: {
+    userId: string
+    newStatus: boolean
+  }) {
+    return UserManager.update(userId, { isSubscribed: newStatus })
+  }
+
   static logout({ user, refreshToken }: { user: User; refreshToken: string }) {
     runSchemaWithFormError(requiredString, refreshToken)
 
@@ -328,10 +371,11 @@ export class UserService {
 }
 
 export enum UserServiceFormErrors {
-  emailTaken = 'emailTaken',
-  usernameTaken = 'usernameTaken',
-  unknownUser = 'unknownUser',
+  emailTaken = 'user.emailTaken',
+  usernameTaken = 'user.usernameTaken',
+  unknownUser = 'user.unknownUser',
   cantDeleteEmail = 'cantDeleteEmail',
+  invalidUnsubscribeToken = 'invalidUnsubscribeToken',
 }
 
 export class AuthError extends Error {}
