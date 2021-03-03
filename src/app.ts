@@ -47,7 +47,7 @@ const constructApp = async () => {
     .use(bodyParser.urlencoded({ extended: true }))
     .use(multer().none())
     .use(delayOnDevMiddleware)
-    .use('/saviour', router)
+    .use('/money', router)
 
   return app
 }
