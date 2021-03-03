@@ -25,7 +25,6 @@ const constructApp = async () => {
   redisPubSub.init()
 
   app
-    .set('x-powered-by', false)
     .set('trust proxy', true)
     .set('views', pathJoin('views'))
     .set('view engine', 'pug')
