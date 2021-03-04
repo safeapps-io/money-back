@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import ash from 'express-async-handler'
 
-import { isRestAuth } from '@/middlewares/isAuth'
+import { isRestAuth, resetCookies, sendAuthCookies } from '@/middlewares/isAuth'
 
 import { UserService } from '@/services/user/userService'
 import { getDeviceDescription } from '@/services/deviceDescription'
@@ -18,6 +18,16 @@ import {
 export const authRouter = Router()
 
 authRouter.get('/user', isRestAuth, (req, res) => res.json(req.user))
+
+authRouter.post(
+  '/user/wsTicket',
+  isRestAuth,
+  ash(async (req, res) => {
+    const ticket = await UserService.generateNewWsTicket(req.user.id)
+
+    res.json({ ticket })
+  }),
+)
 
 authRouter.use(
   '/invite/isValid',
@@ -61,12 +71,19 @@ authRouter.use(
         isSubscribed: boolean
         password: string
       }
-      const result = await UserService.signup({
+      const {
+        accessToken,
+        refreshToken,
+        user,
+        isWalletInvite,
+      } = await UserService.signup({
         ...body,
         description: getDeviceDescription(req.get('User-Agent') || ''),
       })
 
-      res.json(result)
+      sendAuthCookies(res, accessToken, refreshToken)
+
+      res.json({ user, isWalletInvite })
     },
   }),
 )
@@ -122,12 +139,14 @@ authRouter.use(
       if (!allChecks.every(Boolean)) return res.status(400).json({})
 
       try {
-        const result = await UserService.signin({
+        const { accessToken, refreshToken, user } = await UserService.signin({
           ...body,
           description: getDeviceDescription(req.get('User-Agent') || ''),
         })
 
-        res.json(result)
+        sendAuthCookies(res, accessToken, refreshToken)
+
+        res.json({ user })
       } catch (error) {
         await Promise.all(
           checksAndKeysMap.map(([key, limiter]) => limiter.consume(key)),
@@ -303,12 +322,12 @@ authRouter.post(
   '/logout',
   isRestAuth,
   ash(async (req, res) => {
-    const body = req.body as { refreshToken: string }
-
     await UserService.logout({
       user: req.user,
-      refreshToken: body.refreshToken,
+      refreshToken: req.tokens.refresh,
     })
+    resetCookies(res)
+
     res.json({})
   }),
 )
