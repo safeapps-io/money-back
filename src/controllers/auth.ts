@@ -17,7 +17,24 @@ import {
 
 export const authRouter = Router()
 
-authRouter.get('/user', isRestAuth, (req, res) => res.json(req.user))
+authRouter.get(
+  '/user',
+  isRestAuth,
+  ash((req, res) => res.json(req.user)),
+)
+
+authRouter.delete(
+  '/user',
+  isRestAuth,
+  ash(async (req, res) => {
+    const { password } = req.body as { password: string }
+    await UserService.dropUser({ password, user: req.user })
+
+    resetCookies(res)
+
+    res.json({})
+  }),
+)
 
 authRouter.post(
   '/user/wsTicket',

@@ -42,13 +42,7 @@ export class WalletService {
     return WalletManager.create({ userId, chest })
   }
 
-  private static isUserOwner({
-    wallet,
-    userId,
-  }: {
-    wallet: Wallet
-    userId: string
-  }) {
+  static isUserOwner({ wallet, userId }: { wallet: Wallet; userId: string }) {
     return wallet.users.some(
       (user) =>
         user.id === userId &&
@@ -77,6 +71,26 @@ export class WalletService {
       walletId: wallet.id,
       connectedUserIds: connectedUserIds!,
     })
+  }
+
+  static async removeUserWalletAccess(userId: string, walletId: string) {
+    await WalletManager.removeUser({
+      walletId,
+      userId,
+    })
+
+    const updatedWallet = await WalletManager.byId(walletId)
+    await Promise.all([
+      WalletPubSubService.publishWalletUpdates({
+        wallet: updatedWallet!,
+      }),
+      WalletPubSubService.publishWalletDestroy({
+        walletId,
+        connectedUserIds: [userId],
+      }),
+    ])
+
+    return updatedWallet
   }
 
   private static removeUserScheme = yup
@@ -111,23 +125,7 @@ export class WalletService {
         (isOwner && !isRemovingSelf) || (!isOwner && isRemovingSelf)
 
     if (!allowOperation) throw new RequestError('Operation not allowed')
-    await WalletManager.removeUser({
-      walletId: wallet.id,
-      userId: userToRemoveId,
-    })
-
-    const updatedWallet = await WalletManager.byId(wallet.id)
-    await Promise.all([
-      WalletPubSubService.publishWalletUpdates({
-        wallet: updatedWallet!,
-      }),
-      WalletPubSubService.publishWalletDestroy({
-        walletId: wallet.id,
-        connectedUserIds: [userToRemoveId],
-      }),
-    ])
-
-    return updatedWallet
+    return this.removeUserWalletAccess(userToRemoveId, wallet.id)
   }
 
   private static updateChestsScheme = yup.array(

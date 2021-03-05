@@ -402,6 +402,25 @@ export class UserService {
     return UserManager.update(userId, { isSubscribed: newStatus })
   }
 
+  static async dropUser({ user, password }: { user: User; password: string }) {
+    runSchemaWithFormError(requiredString, password)
+
+    await PasswordService.verifyPassword(user.password, password)
+
+    const userId = user.id,
+      wallets = await WalletService.getUserWallets(userId)
+
+    // Deleting wallets that user owns and their presence in other wallets
+    const promises: Promise<any>[] = wallets.map((wallet) =>
+      WalletService.isUserOwner({ userId, wallet })
+        ? WalletService.destroy(userId, wallet.id)
+        : WalletService.removeUserWalletAccess(userId, wallet.id),
+    )
+
+    await Promise.all(promises)
+    await UserManager.deleteUserById(userId)
+  }
+
   static logout({ user, refreshToken }: { user: User; refreshToken: string }) {
     runSchemaWithFormError(requiredString, refreshToken)
 

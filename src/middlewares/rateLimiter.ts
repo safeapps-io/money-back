@@ -75,7 +75,6 @@ export const constructSimplePostRouter = ({
       ash(async (req) => {
         if (consumeMode == 'always') {
           const key = keyGetter(req)
-          console.log('consume always', key)
           await limiter.consume(key)
         }
       }),
@@ -83,7 +82,6 @@ export const constructSimplePostRouter = ({
     .use((err: Error, req: Request, _: Response, next: NextFunction) => {
       if (consumeMode == 'onError') {
         const key = keyGetter(req)
-        console.log('consume error', key)
-        limiter.consume(keyGetter(req)).then(() => next(err))
+        limiter.consume(key).then(() => next(err))
       } else next(err)
     })
