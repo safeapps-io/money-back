@@ -237,4 +237,8 @@ export class UserManager {
   static isInviteDisposed(inviteId: string) {
     return User.count({ where: { inviteId } })
   }
+
+  static deleteUserById(userId: string) {
+    return User.destroy({ where: { id: userId } })
+  }
 }

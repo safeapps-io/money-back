@@ -73,12 +73,10 @@ export class InviteWsMiddleware implements M {
     wsWrapped,
     message,
   }) => {
-    if (!wsWrapped.state.user) return
-
     // Subscribe joining user to the joining user resolution messages
     await UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
-      userId: wsWrapped.state.user.id,
+      userId: wsWrapped.user.id,
       purpose: pubSubPurpose,
       callback: ({ type, data }) => {
         switch (type) {
@@ -99,7 +97,7 @@ export class InviteWsMiddleware implements M {
 
     try {
       await InviteService.launchWalletJoin({
-        joiningUser: wsWrapped.state.user,
+        joiningUser: wsWrapped.user,
         ...message,
       })
       wsWrapped.send({ type: BackTypes.validateTriggerSuccess })
@@ -115,11 +113,9 @@ export class InviteWsMiddleware implements M {
     wsWrapped,
     message,
   }) => {
-    if (!wsWrapped.state.user) return
-
     try {
       await InviteService.invitationError({
-        walletOwner: wsWrapped.state.user,
+        walletOwner: wsWrapped.user,
         ...message,
       })
     } catch (error) {
@@ -132,11 +128,9 @@ export class InviteWsMiddleware implements M {
     wsWrapped,
     message,
   }) => {
-    if (!wsWrapped.state.user) return
-
     try {
       await InviteService.invitationResolution({
-        walletOwner: wsWrapped.state.user,
+        walletOwner: wsWrapped.user,
         ...message,
       })
     } catch (error) {
@@ -151,11 +145,9 @@ export class InviteWsMiddleware implements M {
     wsWrapped,
     message,
   }) => {
-    if (!wsWrapped.state.user) return
-
     try {
       await InviteService.joiningError({
-        joiningUser: wsWrapped.state.user,
+        joiningUser: wsWrapped.user,
         ...message,
       })
     } catch (error) {
@@ -167,11 +159,9 @@ export class InviteWsMiddleware implements M {
   }
 
   static close: M['close'] = async (wsWrapped) => {
-    if (!wsWrapped.state.user) return void 0
-
     return UserPubSubService.unsubscribeSocketForUser({
       socketId: wsWrapped.id,
-      userId: wsWrapped.state.user.id,
+      userId: wsWrapped.user.id,
     })
   }
 }
@@ -182,7 +172,7 @@ export const subscribeOwnerForInviteValidation = (
 ) =>
   UserPubSubService.subscribeSocketForUser({
     socketId: wsWrapped.id,
-    userId: wsWrapped.state.user!.id,
+    userId: wsWrapped.user.id,
     purpose: ownerPubSubPurpose,
     callback: ({ type, data }) => {
       switch (type) {

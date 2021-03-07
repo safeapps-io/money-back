@@ -2,6 +2,8 @@ import * as wsType from 'ws'
 import { nanoid } from 'nanoid'
 
 import chunk from '@/utils/chunk'
+import { UserService } from '@/services/user/userService'
+import User from '@/models/user.model'
 
 // TODO: Mama, I failed. Make this all type strict… but not like this. Too much `any`
 export type WSMiddleware<MessageMap, State = {}> = {
@@ -30,14 +32,21 @@ type Message<MessageMap> = {
 
 export async function handleWsConnection<IncomingMessages, State>(
   ws: wsType,
+  ticket: string,
   ...middlewares: WSMiddleware<IncomingMessages, State>[]
 ) {
   const id = nanoid(),
-    wsWrapped = new WSWrapper<State>(id, ws)
+    user = await UserService.getUserFromWsTicket(ticket),
+    wsWrapped = new WSWrapper<State>(id, ws, ticket, user)
 
   ws.on('message', async (raw) => {
     let type, data, parsed
     try {
+      wsWrapped.user = await UserService.getUserFromWsTicket(
+        ticket,
+        wsWrapped.user,
+      )
+
       parsed = JSON.parse(raw as string) as Message<IncomingMessages>
       type = parsed.type
       data = parsed.data
@@ -98,10 +107,22 @@ export class WSWrapper<State> {
   constructor(
     public id: string,
     private ws: wsType,
+    public ticket: string,
+    public user: User,
     public state = {} as State,
   ) {}
 
-  send({
+  private async isValidTicket() {
+    try {
+      this.user = await UserService.getUserFromWsTicket(this.ticket, this.user)
+      return true
+    } catch (error) {
+      this.closeWs()
+      return false
+    }
+  }
+
+  async send({
     type,
     data,
     cb,
@@ -110,12 +131,13 @@ export class WSWrapper<State> {
     data?: any
     cb?: (err?: Error) => void
   }) {
-    if (this.ws.readyState !== wsType.OPEN) return
+    if (this.ws.readyState !== wsType.OPEN || !(await this.isValidTicket()))
+      return
 
     this.ws.send(JSON.stringify({ data, type }), cb)
   }
 
-  sequentialSend({
+  async sequentialSend({
     type,
     items,
     finishCallback,
@@ -126,6 +148,9 @@ export class WSWrapper<State> {
     finishCallback?: () => void
     threshold?: number
   }) {
+    if (this.ws.readyState !== wsType.OPEN || !(await this.isValidTicket()))
+      return
+
     const chunkedItems = chunk(items, threshold)
 
     const recursiveSend = (index = 0) =>

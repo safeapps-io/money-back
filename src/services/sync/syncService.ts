@@ -56,6 +56,7 @@ export class SyncService {
 
         // We don't want it to be updated from client side, but we need it to decide if the entity is to
         // be created or updated
+        // @ts-ignore
         delete entityToUpdate.updated
 
         promises.push(EntityManager.update(fetchedEntity.id, entityToUpdate))

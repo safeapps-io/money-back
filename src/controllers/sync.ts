@@ -30,24 +30,29 @@ import {
 } from '@/services/simpleUpdatedSync/simpleSyncWsHandler'
 
 const syncRouter = Router() as WSRouter
-syncRouter.ws('/sync', (ws) => {
-  handleWsConnection<
-    UserIncomingMessages &
-      WalletIncomingMessages &
-      SyncIncomingMessages &
-      InviteIncomingMessages &
-      MCCIncomingMessages &
-      SimpleSyncIncomingMessages,
-    { user?: User }
-  >(
-    ws,
-    UserWsMiddleware,
-    WalletWsMiddleware,
-    SyncWsMiddleware,
-    InviteWsMiddleware,
-    MCCWsMiddleware,
-    SimpleSyncWsMiddleware,
-  )
+syncRouter.ws('/sync/:ticket', (ws, req) => {
+  try {
+    handleWsConnection<
+      UserIncomingMessages &
+        WalletIncomingMessages &
+        SyncIncomingMessages &
+        InviteIncomingMessages &
+        MCCIncomingMessages &
+        SimpleSyncIncomingMessages,
+      { user?: User }
+    >(
+      ws,
+      req.params.ticket,
+      UserWsMiddleware,
+      WalletWsMiddleware,
+      SyncWsMiddleware,
+      InviteWsMiddleware,
+      MCCWsMiddleware,
+      SimpleSyncWsMiddleware,
+    )
+  } catch (error) {
+    ws.terminate()
+  }
 })
 
 export default syncRouter

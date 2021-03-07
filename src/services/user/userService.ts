@@ -22,7 +22,10 @@ import { UserUpdatesPubSubService } from './userUpdatesPubSubService'
 import { InviteStringTypes } from '@/services/invite/inviteTypes'
 import { getFullPath } from '../getPath'
 
-export const jwtSubject = 'sess' // session
+export enum JWTSubjects {
+  session = 'sess',
+  wsTicket = 'tick',
+}
 
 type JWTMessage = {
   id: string
@@ -44,24 +47,28 @@ export class UserService {
     refreshToken,
     userId,
     withCheck = true,
+    expiresIn = '1m',
+    subject = JWTSubjects.session,
   }: {
     refreshToken: string
     userId: string
     withCheck?: boolean
+    expiresIn?: string
+    subject?: JWTSubjects
   }) {
     if (withCheck) {
       const tokenValid = await RefreshTokenManager.exists({
         token: refreshToken,
         userId,
       })
-      if (!tokenValid) throw new InvalidRefreshToken()
+      if (!tokenValid) throw new InvalidToken()
     }
 
     const data: JWTMessage = { id: userId }
 
     return signJwt(data, {
-      expiresIn: '15m',
-      subject: jwtSubject,
+      subject,
+      expiresIn,
       noTimestamp: true,
     })
   }
@@ -199,7 +206,7 @@ export class UserService {
     try {
       decoded = await verifyJwt<JWTMessage>(accessToken, {
         ignoreExpiration: true,
-        subject: jwtSubject,
+        subject: JWTSubjects.session,
       })
     } catch (err) {
       throw new InvalidToken()
@@ -207,26 +214,83 @@ export class UserService {
     return this.generateToken({ refreshToken, userId: decoded.id })
   }
 
-  static async getUserFromToken(token: string) {
-    let decoded: JWTMessage
+  static async generateNewWsTicket(userId: string) {
     try {
-      decoded = await verifyJwt<JWTMessage>(token, {
-        ignoreExpiration: true,
-        subject: jwtSubject,
+      return this.generateToken({
+        withCheck: false,
+        refreshToken: '',
+        userId,
+        expiresIn: process.env.NODE_ENV == 'production' ? '5m' : '1m',
+        subject: JWTSubjects.wsTicket,
       })
     } catch (err) {
       throw new InvalidToken()
     }
+  }
 
-    if (!decoded.exp) throw new InvalidToken()
+  static async getUserFromWsTicket(ticket: string, prevUser?: User | null) {
+    try {
+      const { id } = await verifyJwt<JWTMessage>(ticket, {
+        subject: JWTSubjects.wsTicket,
+      })
+      // Avioiding extra query
+      if (prevUser?.id == id) return prevUser
 
+      const user = await UserManager.byId(id)
+      if (!user) throw new InvalidToken()
+
+      return user
+    } catch (err) {
+      throw new InvalidToken()
+    }
+  }
+
+  static async getUserFromTokens(accessToken: string, refreshToken: string) {
+    let decoded: JWTMessage
+    try {
+      decoded = await verifyJwt<JWTMessage>(accessToken, {
+        ignoreExpiration: true,
+        subject: JWTSubjects.session,
+      })
+      if (!decoded.exp) throw new InvalidToken()
+    } catch (err) {
+      throw new InvalidToken()
+    }
+
+    let newToken: string | null = null
     // Date constructor expects ms, but we get seconds here
-    if (isBefore(decoded.exp * 1000, new Date())) throw new ExpiredToken()
+    if (isBefore(decoded.exp * 1000, new Date()))
+      newToken = await this.getNewAccessToken(accessToken, refreshToken)
     const user = await UserManager.byId(decoded.id)
 
     if (!user) throw new InvalidToken()
 
-    return user
+    return { user, newToken }
+  }
+
+  static async getAllSessions(userId: string, currentKey: string) {
+    const sessions = await RefreshTokenManager.byUserId(userId),
+      result = sessions.map((session) => {
+        const json = session.toJSON()
+        json.current = session.key == currentKey
+        return json as {
+          id: string
+          description: string
+          created: number
+          current: boolean
+        }
+      })
+    return result
+  }
+
+  static async dropSessions({
+    userId,
+    toDeleteIds,
+  }: {
+    userId: string
+    toDeleteIds: string[]
+  }) {
+    return RefreshTokenManager.destroyByIds({ userId, ids: toDeleteIds })
   }
 
   static async updateUsername(
@@ -363,6 +427,25 @@ export class UserService {
     return UserManager.update(userId, { isSubscribed: newStatus })
   }
 
+  static async dropUser({ user, password }: { user: User; password: string }) {
+    runSchemaWithFormError(requiredString, password)
+
+    await PasswordService.verifyPassword(user.password, password)
+
+    const userId = user.id,
+      wallets = await WalletService.getUserWallets(userId)
+
+    // Deleting wallets that user owns and their presence in other wallets
+    const promises: Promise<any>[] = wallets.map((wallet) =>
+      WalletService.isUserOwner({ userId, wallet })
+        ? WalletService.destroy(userId, wallet.id)
+        : WalletService.removeUserWalletAccess(userId, wallet.id),
+    )
+
+    await Promise.all(promises)
+    await UserManager.deleteUserById(userId)
+  }
+
   static logout({ user, refreshToken }: { user: User; refreshToken: string }) {
     runSchemaWithFormError(requiredString, refreshToken)
 
@@ -379,6 +462,4 @@ export enum UserServiceFormErrors {
 }
 
 export class AuthError extends Error {}
-export class InvalidRefreshToken extends AuthError {}
 export class InvalidToken extends AuthError {}
-export class ExpiredToken extends AuthError {}
