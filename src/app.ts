@@ -25,7 +25,6 @@ const constructApp = async () => {
   redisPubSub.init()
 
   app
-    .set('x-powered-by', false)
     .set('trust proxy', true)
     .set('views', pathJoin('views'))
     .set('view engine', 'pug')
@@ -34,6 +33,7 @@ const constructApp = async () => {
     app.use(
       cors({
         origin: process.env.ALLOWED_ORIGIN,
+        credentials: true,
         maxAge: 86400,
         allowedHeaders: ['authorization', 'accept-language', 'content-type'],
       }),

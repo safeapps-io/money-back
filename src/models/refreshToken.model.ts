@@ -1,4 +1,5 @@
 import { Table, Column, ForeignKey, BelongsTo } from 'sequelize-typescript'
+import { Op } from 'sequelize'
 import { nanoid } from 'nanoid'
 
 import BaseModel from '@/models/base'
@@ -18,6 +19,11 @@ export default class RefreshToken extends BaseModel<RefreshToken> {
 
   @Column
   description!: string
+
+  public toJSON() {
+    const { id, description, created } = super.toJSON() as any
+    return { id, description, created, current: false } as any
+  }
 }
 
 export class RefreshTokenManager {
@@ -44,5 +50,19 @@ export class RefreshTokenManager {
     })
 
     return count !== 0
+  }
+
+  static async byUserId(userId: string) {
+    return RefreshToken.findAll({ where: { userId } })
+  }
+
+  static async destroyByIds({
+    ids,
+    userId,
+  }: {
+    ids: string[]
+    userId: string
+  }) {
+    return RefreshToken.destroy({ where: { id: { [Op.in]: ids }, userId } })
   }
 }

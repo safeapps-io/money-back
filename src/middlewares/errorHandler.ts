@@ -8,7 +8,7 @@ export const errorHandler = (
   __: NextFunction,
 ) => {
   if (err instanceof RequestError) {
-    res.status(400).json({ code: err.code, message: err.message })
+    res.status(err.code).json({ message: err.message })
   } else if (err instanceof FormValidationError) {
     res.status(400).json({
       code: err.code,

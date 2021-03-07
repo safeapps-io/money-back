@@ -29,9 +29,7 @@ export class SyncWsMiddleware implements M {
     wsWrapped,
     message,
   }) => {
-    if (!wsWrapped.state.user) return
-
-    const userId = wsWrapped.state.user.id
+    const userId = wsWrapped.user.id
 
     const items = await SyncService.handleClientUpdates({
         userId,
@@ -63,11 +61,9 @@ export class SyncWsMiddleware implements M {
   }
 
   static close: M['close'] = async (wsWrapped) => {
-    if (!wsWrapped.state.user) return void 0
-
     return UserPubSubService.unsubscribeSocketForUser({
       socketId: wsWrapped.id,
-      userId: wsWrapped.state.user.id,
+      userId: wsWrapped.user.id,
     })
   }
 }
