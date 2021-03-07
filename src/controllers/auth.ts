@@ -23,6 +23,25 @@ authRouter.get(
   ash((req, res) => res.json(req.user)),
 )
 
+authRouter.get(
+  '/user/sessions',
+  isRestAuth,
+  ash(async (req, res) => {
+    res.json(await UserService.getAllSessions(req.user.id, req.tokens.refresh))
+  }),
+)
+
+authRouter.delete(
+  '/user/sessions',
+  isRestAuth,
+  ash(async (req, res) => {
+    const { ids } = req.body as { ids: string[] }
+
+    await UserService.dropSessions({ userId: req.user.id, toDeleteIds: ids })
+    res.json(await UserService.getAllSessions(req.user.id, req.tokens.refresh))
+  }),
+)
+
 authRouter.delete(
   '/user',
   isRestAuth,

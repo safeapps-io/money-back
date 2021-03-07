@@ -47,7 +47,7 @@ export class UserService {
     refreshToken,
     userId,
     withCheck = true,
-    expiresIn = '15m',
+    expiresIn = '1m',
     subject = JWTSubjects.session,
   }: {
     refreshToken: string
@@ -61,7 +61,7 @@ export class UserService {
         token: refreshToken,
         userId,
       })
-      if (!tokenValid) throw new InvalidRefreshToken()
+      if (!tokenValid) throw new InvalidToken()
     }
 
     const data: JWTMessage = { id: userId }
@@ -268,6 +268,31 @@ export class UserService {
     return { user, newToken }
   }
 
+  static async getAllSessions(userId: string, currentKey: string) {
+    const sessions = await RefreshTokenManager.byUserId(userId),
+      result = sessions.map((session) => {
+        const json = session.toJSON()
+        json.current = session.key == currentKey
+        return json as {
+          id: string
+          description: string
+          created: number
+          current: boolean
+        }
+      })
+    return result
+  }
+
+  static async dropSessions({
+    userId,
+    toDeleteIds,
+  }: {
+    userId: string
+    toDeleteIds: string[]
+  }) {
+    return RefreshTokenManager.destroyByIds({ userId, ids: toDeleteIds })
+  }
+
   static async updateUsername(
     user: User,
     {
@@ -437,5 +462,4 @@ export enum UserServiceFormErrors {
 }
 
 export class AuthError extends Error {}
-export class InvalidRefreshToken extends AuthError {}
 export class InvalidToken extends AuthError {}
