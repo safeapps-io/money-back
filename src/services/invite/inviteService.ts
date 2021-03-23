@@ -153,7 +153,7 @@ export class InviteService {
     if (!dbWalletOwner || dbWalletOwner.id !== walletOwner.id)
       throw new FormValidationError(InviteServiceFormErrors.unknownError)
 
-    const hasJoiningUserAskedToJoin = await InviteStringService.verifyJoiningUserInviteSignature(
+    const hasJoiningUserAskedToJoin = InviteStringService.verifyJoiningUserInviteSignature(
       {
         inviteString: b64InviteString,
         joiningUserInvitePublicKey: joiningUser.b64InvitePublicKey as string,

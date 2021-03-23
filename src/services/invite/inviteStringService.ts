@@ -95,11 +95,11 @@ export class InviteStringService {
 
     if (
       !inviterUser?.b64InvitePublicKey ||
-      !(await CryptoService.verify({
+      !CryptoService.verify({
         b64PublicKey: inviterUser.b64InvitePublicKey as string,
         dataBuffer,
         signatureBuffer,
-      }))
+      })
     )
       throw new Error()
 

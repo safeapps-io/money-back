@@ -1,5 +1,4 @@
-import { readFileSync } from 'fs'
-import { join } from 'path'
+import data from './data.json'
 
 interface IMCCInput {
   mcc: string
@@ -11,19 +10,13 @@ interface IMCCInput {
   id: number
 }
 
-const getMccData = () => {
-  const mccFilePath = join(__dirname, 'data.json')
-  const parsedData = JSON.parse(
-    readFileSync(mccFilePath, { encoding: 'utf-8' }),
-  ) as IMCCInput[]
-
-  const result: {
-    [id: string]: IMCCInput
-  } = {}
-  parsedData.forEach((item) => (result[parseInt(item.mcc)] = item))
-  return result
-}
-const mccData = getMccData()
+const mccData = (data as IMCCInput[]).reduce<{ [code: string]: IMCCInput }>(
+  (acc, item) => {
+    acc[parseInt(item.mcc)] = item
+    return acc
+  },
+  {},
+)
 
 export class MCCService {
   static getCodeDescription(
