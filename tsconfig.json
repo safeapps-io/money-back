@@ -6,6 +6,7 @@
     "resolveJsonModule": true,
     "strict": true,
     "baseUrl": "./",
+    "allowJs": true,
     "paths": {
       "@/*": [
         "src/*"
@@ -16,6 +17,7 @@
     "outDir": "./dist"
   },
   "exclude": [
-    "*/**/*.test.ts"
+    "*/**/*.test.ts",
+    "dist/**/*"
   ]
 }
