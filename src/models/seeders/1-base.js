@@ -61,5 +61,43 @@ module.exports = {
         assignedMcc: '[]',
       })),
     )
+
+    const productInfo = buildBase()
+
+    await queryInterface.bulkInsert('Products', [
+      {
+        ...productInfo,
+        slug: 'first',
+        productType: 'money',
+        default: true,
+        active: true,
+        price: 5999,
+        duration: 12,
+      },
+    ])
+
+    const subscriptionInfo = buildBase(),
+      expires = new Date(new Date().getTime() + 60 * 60 * 24 * 30)
+
+    await queryInterface.bulkInsert('Subscriptions', [
+      {
+        ...subscriptionInfo,
+        productId: productInfo.id,
+        userId: testData.users.dkzlv.id,
+        expires,
+      },
+    ])
+
+    await queryInterface.bulkInsert('Transactions', [
+      {
+        ...buildBase(),
+        type: 'purchase',
+        expiredNew: expires,
+        subscriptionId: subscriptionInfo.id,
+        productId: productInfo.id,
+        remoteTransactionId: 'none',
+        events: '[]',
+      },
+    ])
   },
 }
