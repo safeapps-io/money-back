@@ -5,6 +5,7 @@ const nanoid = require('nanoid').nanoid
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     const requiredDate = { type: Sequelize.DATE, allowNull: false },
+      optionalDate = { type: Sequelize.DATE, allowNull: true },
       requiredString = { type: Sequelize.STRING, allowNull: false },
       optionalString = { type: Sequelize.STRING, allowNull: true }
 
@@ -23,13 +24,14 @@ module.exports = {
       ...baseModel,
       slug: { ...requiredString, unique: true },
       productType: { allowNull: false, type: Sequelize.ENUM('money') },
-      default: { type: Sequelize.BOOLEAN },
-      active: { type: Sequelize.BOOLEAN },
+      description: requiredString,
+      default: { type: Sequelize.BOOLEAN, defaultValue: false },
+      active: { type: Sequelize.BOOLEAN, defaultValue: true },
       price: { allowNull: false, type: Sequelize.INTEGER },
-      duration: { allowNull: false, type: Sequelize.INTEGER },
+      duration: { allowNull: false, type: Sequelize.INTEGER, defaultValue: 12 },
     })
 
-    await queryInterface.createTable('Subscriptions', {
+    await queryInterface.createTable('Plans', {
       ...baseModel,
       productId: {
         ...requiredString,
@@ -47,25 +49,32 @@ module.exports = {
         },
         onDelete: 'SET NULL',
       },
-      expires: requiredDate,
+      expires: optionalDate,
+      automaticCharge: { type: Sequelize.BOOLEAN, defaultValue: false },
     })
 
-    return queryInterface.createTable('Transactions', {
+    return queryInterface.createTable('ChargeEvents', {
       ...baseModel,
-      type: {
+      eventType: {
         allowNull: false,
-        type: Sequelize.ENUM('purchase', 'viral', 'manual'),
+        type: Sequelize.ENUM(
+          'created',
+          'pending',
+          'confirmed',
+          'failed',
+          'refunded',
+        ),
       },
-      expiredOld: { type: Sequelize.DATE, allowNull: true },
+      chargeType: {
+        allowNull: false,
+        type: Sequelize.ENUM('trial', 'purchase', 'viral', 'manual'),
+      },
+      provider: {
+        allowNull: true,
+        type: Sequelize.ENUM('coinbase', 'tinkoff'),
+      },
+      expiredOld: optionalDate,
       expiredNew: requiredDate,
-      subscriptionId: {
-        ...requiredString,
-        references: {
-          model: 'Subscriptions',
-          key: 'id',
-        },
-        onDelete: 'CASCADE',
-      },
       productId: {
         ...optionalString,
         references: {
@@ -74,8 +83,16 @@ module.exports = {
         },
         onDelete: 'CASCADE',
       },
-      remoteTransactionId: requiredString,
-      events: { type: Sequelize.JSON },
+      planId: {
+        ...requiredString,
+        references: {
+          model: 'Plans',
+          key: 'id',
+        },
+        onDelete: 'CASCADE',
+      },
+      remoteChargeId: optionalString,
+      rawData: { type: Sequelize.JSON },
     })
   },
 

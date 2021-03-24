@@ -1,5 +1,5 @@
-import { Table, Column, DataType, Unique } from 'sequelize-typescript'
-import BaseModel from './base'
+import { Table, Column, DataType, Default } from 'sequelize-typescript'
+import BaseModel from '@/models/base'
 
 export enum ProductType {
   money = 'money',
@@ -7,16 +7,20 @@ export enum ProductType {
 
 @Table
 export default class Product extends BaseModel<Product> {
-  @Unique
   @Column
   slug!: string
 
-  @Column(DataType.ENUM(ProductType.money))
+  @Column(DataType.ENUM(...Object.values(ProductType)))
   productType!: ProductType
 
   @Column
+  description!: string
+
+  @Default(false)
+  @Column
   default!: boolean
 
+  @Default(true)
   @Column
   active!: boolean
 
@@ -24,7 +28,7 @@ export default class Product extends BaseModel<Product> {
   @Column
   price!: number
 
-  // In months
+  @Default(12)
   @Column
   duration!: number
 }

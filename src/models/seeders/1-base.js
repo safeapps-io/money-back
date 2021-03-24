@@ -69,34 +69,33 @@ module.exports = {
         ...productInfo,
         slug: 'first',
         productType: 'money',
+        description: 'First product to buy',
         default: true,
-        active: true,
         price: 5999,
-        duration: 12,
       },
     ])
 
-    const subscriptionInfo = buildBase(),
-      expires = new Date(new Date().getTime() + 60 * 60 * 24 * 30)
+    const planInfo = buildBase(),
+      expires = new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 30)
 
-    await queryInterface.bulkInsert('Subscriptions', [
+    await queryInterface.bulkInsert('Plans', [
       {
-        ...subscriptionInfo,
+        ...planInfo,
         productId: productInfo.id,
         userId: testData.users.dkzlv.id,
         expires,
       },
     ])
 
-    await queryInterface.bulkInsert('Transactions', [
+    await queryInterface.bulkInsert('ChargeEvents', [
       {
         ...buildBase(),
-        type: 'purchase',
+        eventType: 'confirmed',
+        chargeType: 'trial',
         expiredNew: expires,
-        subscriptionId: subscriptionInfo.id,
+        planId: planInfo.id,
         productId: productInfo.id,
-        remoteTransactionId: 'none',
-        events: '[]',
+        rawData: '[]',
       },
     ])
   },

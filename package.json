@@ -4,9 +4,9 @@
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
-    "migrate": "sequelize-cli db:migrate",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:seed": "sequelize-cli db:drop --env development && sequelize-cli db:create && sequelize-cli db:migrate && sequelize-cli db:seed --seed 1-base",
     "shell": "ts-node -T -r tsconfig-paths/register -r ./src/shell.ts",
-    "recreateSeeds": "sequelize-cli db:drop --env development && sequelize-cli db:create && sequelize-cli db:migrate && sequelize-cli db:seed --seed 1-base",
     "pretest": "sequelize-cli db:drop --env test && sequelize-cli db:create --env test && sequelize-cli db:migrate --env test && sequelize-cli db:seed --seed 1-base --env test",
     "test": "jest --watch -i",
     "dev": "nodemon -q --watch src --ignore 'src/**/*.spec.ts' --exec 'ts-node -r tsconfig-paths/register' src/server.ts | pino-pretty"
@@ -81,41 +81,6 @@
     "tslib": "^2.1.0",
     "typescript": "^3.9.5"
   },
-  "eslintConfig": {
-    "env": {
-      "es6": true,
-      "node": true,
-      "jest": true
-    },
-    "parser": "@typescript-eslint/parser",
-    "extends": [
-      "eslint:recommended",
-      "plugin:prettier/recommended"
-    ],
-    "parserOptions": {
-      "ecmaVersion": 2018,
-      "sourceType": "module"
-    },
-    "plugins": [
-      "prettier"
-    ],
-    "rules": {
-      "prettier/prettier": "warn",
-      "no-console": 0,
-      "no-unused-vars": 0,
-      "no-empty": [
-        "error",
-        {
-          "allowEmptyCatch": true
-        }
-      ]
-    }
-  },
-  "eslintIgnore": [
-    "build/",
-    "node_modules/",
-    "**/*.spec.ts"
-  ],
   "prettier": {
     "trailingComma": "all",
     "tabWidth": 2,
