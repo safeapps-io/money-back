@@ -7,7 +7,8 @@ import { RequestError } from '@/services/errors'
 declare global {
   namespace Express {
     interface Request {
-      user: User
+      user?: User
+      userId: string
       tokens: { access: string; refresh: string }
     }
   }
@@ -44,7 +45,7 @@ export const resetCookies = (res: Response) => {
  * If access token if expired, it tries to create a new one automatically out of refresh token.
  * If it is successful, it will send a new token with cookies automatically.
  */
-export const isRestAuth = async (
+export const isRestAuth = (fetchUser = false) => async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -53,9 +54,11 @@ export const isRestAuth = async (
     const authResult = await UserService.getUserFromTokens(
       req.signedCookies[CookieNames.access],
       req.signedCookies[CookieNames.refresh],
+      fetchUser,
     )
 
     req.user = authResult.user
+    req.userId = authResult.userId
     req.tokens = {
       access: authResult.newToken || req.signedCookies[CookieNames.access],
       refresh: req.signedCookies[CookieNames.refresh],
@@ -70,6 +73,6 @@ export const isRestAuth = async (
 }
 
 export const isAdmin = (req: Request, _: Response, next: NextFunction) => {
-  if (req.user.isAdmin) next()
+  if (req.user?.isAdmin) next()
   else next(new RequestError('Forbidden', 401))
 }

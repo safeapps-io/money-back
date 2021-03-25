@@ -8,11 +8,11 @@ export const walletRouter = Router()
 
 walletRouter.post(
   '/create',
-  isRestAuth,
+  isRestAuth(),
   ash(async (req, res) => {
     const { chest } = req.body as { chest: string }
 
-    const wallet = await WalletService.create(req.user.id, chest)
+    const wallet = await WalletService.create(req.userId, chest)
 
     res.json(wallet)
   }),
@@ -20,11 +20,11 @@ walletRouter.post(
 
 walletRouter.post(
   '/delete',
-  isRestAuth,
+  isRestAuth(),
   ash(async (req, res) => {
     const { walletId } = req.body as { walletId: string }
 
-    await WalletService.destroy(req.user.id, walletId)
+    await WalletService.destroy(req.userId, walletId)
 
     res.json({})
   }),
@@ -32,7 +32,7 @@ walletRouter.post(
 
 walletRouter.post(
   '/user/delete',
-  isRestAuth,
+  isRestAuth(),
   ash(async (req, res) => {
     const { walletId, userId: userToRemoveId } = req.body as {
       walletId: string
@@ -40,7 +40,7 @@ walletRouter.post(
     }
 
     const wallet = await WalletService.removeUser({
-      initiatorId: req.user.id,
+      initiatorId: req.userId,
       walletId,
       userToRemoveId,
     })
@@ -51,11 +51,11 @@ walletRouter.post(
 
 walletRouter.post(
   '/updateChest',
-  isRestAuth,
+  isRestAuth(),
   ash(async (req, res) => {
     const wallet = await WalletService.updateSingleChest({
       ...(req.body as { walletId: string; chest: string }),
-      userId: req.user.id,
+      userId: req.userId,
     })
 
     res.json(wallet)

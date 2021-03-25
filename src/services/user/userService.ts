@@ -245,27 +245,54 @@ export class UserService {
     }
   }
 
-  static async getUserFromTokens(accessToken: string, refreshToken: string) {
-    let decoded: JWTMessage
+  private static async rotateAccessToken(
+    accessToken: string,
+    refreshToken: string,
+    expires: number,
+  ) {
+    if (isBefore(expires * 1000, new Date()))
+      return this.getNewAccessToken(accessToken, refreshToken)
+  }
+
+  private static async getUserIdFromAccessToken(accessToken: string) {
     try {
-      decoded = await verifyJwt<JWTMessage>(accessToken, {
+      const { exp, id } = await verifyJwt<JWTMessage>(accessToken, {
         ignoreExpiration: true,
         subject: JWTSubjects.session,
       })
-      if (!decoded.exp) throw new InvalidToken()
+      if (!exp) throw new InvalidToken()
+
+      return { exp, id }
     } catch (err) {
       throw new InvalidToken()
     }
+  }
 
-    let newToken: string | null = null
-    // Date constructor expects ms, but we get seconds here
-    if (isBefore(decoded.exp * 1000, new Date()))
-      newToken = await this.getNewAccessToken(accessToken, refreshToken)
-    const user = await UserManager.byId(decoded.id)
+  static async getUserFromTokens(
+    accessToken: string,
+    refreshToken: string,
+    fetchUser = true,
+  ) {
+    const { id, exp: expires } = await this.getUserIdFromAccessToken(
+        accessToken,
+      ),
+      newToken = await this.rotateAccessToken(
+        accessToken,
+        refreshToken,
+        expires,
+      )
 
-    if (!user) throw new InvalidToken()
-
-    return { user, newToken }
+    const res: { user?: User; userId: string; newToken?: string } = {
+      userId: id,
+      newToken,
+    }
+    let user: User | null = null
+    if (fetchUser) {
+      user = await UserManager.byId(id)
+      if (!user) throw new InvalidToken()
+      res.user = user
+    }
+    return res
   }
 
   static async getAllSessions(userId: string, currentKey: string) {
@@ -361,13 +388,13 @@ export class UserService {
     b64EncryptedInvitePrivateKey: requiredString,
   })
   static async updateMasterPassword({
-    user,
+    userId,
     b64salt,
     b64InvitePublicKey,
     b64EncryptedInvitePrivateKey,
     chests,
   }: {
-    user: User
+    userId: string
     b64salt: string
     b64InvitePublicKey: string
     b64EncryptedInvitePrivateKey: string
@@ -379,12 +406,12 @@ export class UserService {
       b64EncryptedInvitePrivateKey,
     })
     return getTransaction(async () => {
-      const updatedUser = await UserManager.update(user.id, {
+      const updatedUser = await UserManager.update(userId, {
         b64salt,
         b64InvitePublicKey,
         b64EncryptedInvitePrivateKey,
       })
-      await WalletService.updateChests({ userId: user.id, chests })
+      await WalletService.updateChests({ userId, chests })
 
       return updatedUser
     })
@@ -446,10 +473,16 @@ export class UserService {
     await UserManager.deleteUserById(userId)
   }
 
-  static logout({ user, refreshToken }: { user: User; refreshToken: string }) {
+  static logout({
+    userId,
+    refreshToken,
+  }: {
+    userId: string
+    refreshToken: string
+  }) {
     runSchemaWithFormError(requiredString, refreshToken)
 
-    return RefreshTokenManager.destroy({ userId: user.id, key: refreshToken })
+    return RefreshTokenManager.destroy({ userId, key: refreshToken })
   }
 }
 

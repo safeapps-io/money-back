@@ -19,35 +19,35 @@ export const authRouter = Router()
 
 authRouter.get(
   '/user',
-  isRestAuth,
+  isRestAuth(true),
   ash((req, res) => res.json(req.user)),
 )
 
 authRouter.get(
   '/user/sessions',
-  isRestAuth,
+  isRestAuth(),
   ash(async (req, res) => {
-    res.json(await UserService.getAllSessions(req.user.id, req.tokens.refresh))
+    res.json(await UserService.getAllSessions(req.userId, req.tokens.refresh))
   }),
 )
 
 authRouter.delete(
   '/user/sessions',
-  isRestAuth,
+  isRestAuth(),
   ash(async (req, res) => {
     const { ids } = req.body as { ids: string[] }
 
-    await UserService.dropSessions({ userId: req.user.id, toDeleteIds: ids })
-    res.json(await UserService.getAllSessions(req.user.id, req.tokens.refresh))
+    await UserService.dropSessions({ userId: req.userId, toDeleteIds: ids })
+    res.json(await UserService.getAllSessions(req.userId, req.tokens.refresh))
   }),
 )
 
 authRouter.delete(
   '/user',
-  isRestAuth,
+  isRestAuth(true),
   ash(async (req, res) => {
     const { password } = req.body as { password: string }
-    await UserService.dropUser({ password, user: req.user })
+    await UserService.dropUser({ password, user: req.user! })
 
     resetCookies(res)
 
@@ -57,9 +57,9 @@ authRouter.delete(
 
 authRouter.post(
   '/user/wsTicket',
-  isRestAuth,
+  isRestAuth(),
   ash(async (req, res) => {
-    const ticket = await UserService.generateNewWsTicket(req.user.id)
+    const ticket = await UserService.generateNewWsTicket(req.userId)
 
     res.json({ ticket })
   }),
@@ -195,13 +195,13 @@ authRouter.use(
 
 authRouter.post(
   '/changePassword',
-  isRestAuth,
+  isRestAuth(true),
   ash(async (req, res) => {
     const body = req.body as {
       oldPassword: string
       newPassword: string
     }
-    await PasswordService.updatePassword({ ...body, user: req.user })
+    await PasswordService.updatePassword({ ...body, user: req.user! })
 
     res.json({})
   }),
@@ -271,12 +271,12 @@ authRouter.post(
 
 authRouter.post(
   '/updateUsername',
-  isRestAuth,
+  isRestAuth(true),
   ash(async (req, res) => {
     const body = req.body as {
       username: string
     }
-    const user = await UserService.updateUsername(req.user, body)
+    const user = await UserService.updateUsername(req.user!, body)
 
     res.json(user)
   }),
@@ -284,12 +284,12 @@ authRouter.post(
 
 authRouter.post(
   '/updateEmail',
-  isRestAuth,
+  isRestAuth(true),
   ash(async (req, res) => {
     const body = req.body as {
       email: string
     }
-    const user = await UserService.updateEmail(req.user, body.email)
+    const user = await UserService.updateEmail(req.user!, body.email)
 
     res.json(user)
   }),
@@ -297,13 +297,13 @@ authRouter.post(
 
 authRouter.post(
   '/updateIsSubscribed',
-  isRestAuth,
+  isRestAuth(),
   ash(async (req, res) => {
     const body = req.body as {
       isSubscribed: boolean
     }
     const user = await UserService.updateIsSubscribedStatus({
-      userId: req.user.id,
+      userId: req.userId,
       newStatus: body.isSubscribed,
     })
 
@@ -313,7 +313,7 @@ authRouter.post(
 
 authRouter.post(
   '/updateMasterPassword',
-  isRestAuth,
+  isRestAuth(),
   ash(async (req, res) => {
     const {
       b64salt,
@@ -327,7 +327,7 @@ authRouter.post(
       chests: { walletId: string; chest: string }[]
     }
     const user = await UserService.updateMasterPassword({
-      user: req.user,
+      userId: req.userId,
       b64InvitePublicKey,
       b64EncryptedInvitePrivateKey,
       b64salt,
@@ -359,7 +359,7 @@ authRouter.post(
   isRestAuth,
   ash(async (req, res) => {
     await UserService.logout({
-      user: req.user,
+      userId: req.userId,
       refreshToken: req.tokens.refresh,
     })
     resetCookies(res)

@@ -5,6 +5,6 @@ import { getCurrencyList } from '@/services/directory/currency'
 
 export const directoryRouter = Router()
 
-directoryRouter.get('/currency/all', isRestAuth, (_, res) =>
+directoryRouter.get('/currency/all', isRestAuth(), (_, res) =>
   res.set('Cache-Control', `public, max-age=${60 * 5}`).json(getCurrencyList()),
 )
