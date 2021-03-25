@@ -47,7 +47,7 @@ export class UserService {
     refreshToken,
     userId,
     withCheck = true,
-    expiresIn = '1m',
+    expiresIn = '15m',
     subject = JWTSubjects.session,
   }: {
     refreshToken: string
