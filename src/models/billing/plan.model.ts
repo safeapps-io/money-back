@@ -6,9 +6,12 @@ import {
   AllowNull,
   Default,
 } from 'sequelize-typescript'
+import { Includeable } from 'sequelize/types'
+
 import BaseModel from '@/models/base'
-import Product from './product.model'
+import Product, { ProductType } from './product.model'
 import User from '@/models/user.model'
+import ChargeEvent from './chargeEvent.model'
 
 /**
  * How cascading works:
@@ -43,4 +46,41 @@ export default class Plan extends BaseModel<Plan> {
   @Default(false)
   @Column
   automaticCharge!: boolean
+
+  public readonly Product?: Product
+  public readonly Charges?: ChargeEvent[]
+}
+
+export class PlanManager {
+  static create(userId: string, productId: string) {
+    return Plan.create(
+      { userId, productId },
+      { include: [{ model: Product, as: 'Product' }] },
+    )
+  }
+
+  static byUserId(
+    userId: string,
+    productType: ProductType,
+    includeCharges = false,
+  ) {
+    const include: Includeable[] = [
+      { model: Product, where: { productType }, as: 'Product' },
+    ]
+    if (includeCharges) include.push({ model: ChargeEvent, as: 'ChargeEvents' })
+
+    return Plan.findOne({
+      where: { userId },
+      include,
+    })
+  }
+
+  static byRemoteChargeId(chargeId: string) {
+    return Plan.findOne({
+      include: [
+        { model: ChargeEvent, where: { remoteChargeId: chargeId } },
+        { model: Product, as: 'Product' },
+      ],
+    })
+  }
 }

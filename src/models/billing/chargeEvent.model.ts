@@ -39,7 +39,7 @@ export default class ChargeEvent extends BaseModel<ChargeEvent> {
 
   @AllowNull
   @Column(DataType.ENUM(...Object.values(ChargeProviders)))
-  provider!: ChargeProviders
+  provider!: ChargeProviders | null
 
   @AllowNull
   @Column(DataType.DATE)
@@ -47,7 +47,7 @@ export default class ChargeEvent extends BaseModel<ChargeEvent> {
 
   @AllowNull
   @Column(DataType.DATE)
-  expiredNew!: Date
+  expiredNew!: Date | null
 
   @ForeignKey(() => Product)
   @AllowNull
@@ -59,10 +59,19 @@ export default class ChargeEvent extends BaseModel<ChargeEvent> {
   planId!: string
 
   @AllowNull
-  @Column
-  remoteChargeId!: string
+  @Column(DataType.STRING)
+  remoteChargeId!: string | null
 
   @AllowNull
   @Column(DataType.JSON)
-  rawData!: string
+  rawData!: string | null
+}
+
+export type EventChargeData = Partial<ChargeEvent> &
+  Pick<ChargeEvent, 'eventType' | 'chargeType' | 'planId'>
+
+export class ChargeEventManager {
+  static create(charge: EventChargeData) {
+    return ChargeEvent.create(charge)
+  }
 }

@@ -24,11 +24,21 @@ module.exports = {
       ...baseModel,
       slug: { ...requiredString, unique: true },
       productType: { allowNull: false, type: Sequelize.ENUM('money') },
+      internalDescription: requiredString,
+      title: requiredString,
       description: requiredString,
       default: { type: Sequelize.BOOLEAN, defaultValue: false },
       active: { type: Sequelize.BOOLEAN, defaultValue: true },
       price: { allowNull: false, type: Sequelize.INTEGER },
-      duration: { allowNull: false, type: Sequelize.INTEGER, defaultValue: 12 },
+      duration: {
+        allowNull: false,
+        type: Sequelize.INTEGER,
+        defaultValue: 365,
+      },
+      trialDuration: {
+        allowNull: true,
+        type: Sequelize.INTEGER,
+      },
     })
 
     await queryInterface.createTable('Plans', {
@@ -74,7 +84,7 @@ module.exports = {
         type: Sequelize.ENUM('coinbase', 'tinkoff'),
       },
       expiredOld: optionalDate,
-      expiredNew: requiredDate,
+      expiredNew: optionalDate,
       productId: {
         ...optionalString,
         references: {
