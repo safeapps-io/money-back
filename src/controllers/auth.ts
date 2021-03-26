@@ -8,6 +8,7 @@ import { getDeviceDescription } from '@/services/deviceDescription'
 import { ValidateEmailService } from '@/services/user/validateEmailService'
 import { PasswordService } from '@/services/user/passwordService'
 import { InviteService } from '@/services/invite/inviteService'
+import { BillingService } from '@/services/billing/billingService'
 import {
   constructSimplePostRouter,
   createLimiter,
@@ -19,8 +20,13 @@ export const authRouter = Router()
 
 authRouter.get(
   '/user',
-  isRestAuth(true),
-  ash((req, res) => res.json(req.user)),
+  isRestAuth(),
+  ash(async (req, res) => {
+    res.json({
+      user: req.user,
+      plan: await BillingService.getPlanByUserId(req.userId),
+    })
+  }),
 )
 
 authRouter.get(

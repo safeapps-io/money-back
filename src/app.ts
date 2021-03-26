@@ -5,7 +5,7 @@ import express from 'express'
 import expressWs from 'express-ws'
 import cors from 'cors'
 import helmet from 'helmet'
-import bodyParser from 'body-parser'
+import { urlencoded, json } from 'body-parser'
 import cookieParser from 'cookie-parser'
 import multer from 'multer'
 
@@ -17,7 +17,8 @@ import sequelize from '@/models/setup'
 import router from '@/router'
 import delayOnDevMiddleware from '@/middlewares/delayOnDev'
 import { initRedisConnection } from '@/services/redis/connection'
-import { redisPubSub } from './services/redis/pubSub'
+import { redisPubSub } from '@/services/redis/pubSub'
+import { billingRouter } from '@/controllers/billing'
 
 const constructApp = async () => {
   await sequelize.sync()
@@ -43,11 +44,12 @@ const constructApp = async () => {
     .use(logger)
     .use(helmet())
     .use(cookieParser(process.env.SECRET))
-    .use(bodyParser.json())
-    .use(bodyParser.urlencoded({ extended: true }))
+    .use(json())
+    .use(urlencoded({ extended: true }))
     .use(multer().none())
     .use(delayOnDevMiddleware)
     .use('/money', router)
+    .use('/billing', billingRouter)
 
   return app
 }

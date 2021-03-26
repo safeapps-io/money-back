@@ -1,18 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 
 import { UserService, InvalidToken } from '@/services/user/userService'
-import User from '@/models/user.model'
 import { RequestError } from '@/services/errors'
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User
-      userId: string
-      tokens: { access: string; refresh: string }
-    }
-  }
-}
 
 enum CookieNames {
   access = 'access-token',
