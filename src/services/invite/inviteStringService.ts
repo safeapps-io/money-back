@@ -1,6 +1,5 @@
 import * as yup from 'yup'
 import { decode } from 'base64-arraybuffer'
-import { Await } from '@/@types/helpers'
 
 import {
   runSchemaWithFormError,

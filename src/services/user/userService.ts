@@ -236,18 +236,12 @@ export class UserService {
     }
   }
 
-  static async getUserFromWsTicket(ticket: string, prevUser?: User | null) {
+  static async getUserDataFromWsTicket(ticket: string) {
     try {
-      const { id } = await verifyJwt<JWTMessage>(ticket, {
+      const res = await verifyJwt<JWTMessage>(ticket, {
         subject: JWTSubjects.wsTicket,
       })
-      // Avioiding extra query
-      if (prevUser?.id == id) return prevUser
-
-      const user = await UserManager.byId(id)
-      if (!user) throw new InvalidToken()
-
-      return user
+      return { userId: res.id, planExpirations: res.planExp }
     } catch (err) {
       throw new InvalidToken()
     }

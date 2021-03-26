@@ -117,12 +117,12 @@ export class InviteService {
    * reject/accept some other random user.
    */
   private static async checkOwnerInvitationMessage({
-    walletOwner,
+    walletOwnerId,
     joiningUserId,
     b64InviteSignatureByJoiningUser,
     b64InviteString,
   }: {
-    walletOwner: User
+    walletOwnerId: string
     joiningUserId: string
     b64InviteString: string
     b64InviteSignatureByJoiningUser: string
@@ -150,7 +150,7 @@ export class InviteService {
     const dbWalletOwner = wallet.users.find(
       (user) => user.WalletAccess.accessLevel === AccessLevels.owner,
     )
-    if (!dbWalletOwner || dbWalletOwner.id !== walletOwner.id)
+    if (!dbWalletOwner || dbWalletOwner.id !== walletOwnerId)
       throw new FormValidationError(InviteServiceFormErrors.unknownError)
 
     const hasJoiningUserAskedToJoin = InviteStringService.verifyJoiningUserInviteSignature(
@@ -171,18 +171,18 @@ export class InviteService {
    * It will inform joining user that something went wrong.
    */
   static async invitationError({
-    walletOwner,
+    walletOwnerId,
     joiningUserId,
     b64InviteSignatureByJoiningUser,
     b64InviteString,
   }: {
-    walletOwner: User
+    walletOwnerId: string
     joiningUserId: string
     b64InviteString: string
     b64InviteSignatureByJoiningUser: string
   }) {
     const { joiningUser, wallet } = await this.checkOwnerInvitationMessage({
-      walletOwner,
+      walletOwnerId,
       joiningUserId,
       b64InviteString,
       b64InviteSignatureByJoiningUser,
@@ -214,7 +214,7 @@ export class InviteService {
    * to join the wallet.
    */
   static async invitationResolution({
-    walletOwner,
+    walletOwnerId,
     allowJoin,
     joiningUserId,
     b64InviteSignatureByJoiningUser,
@@ -223,7 +223,7 @@ export class InviteService {
     b64PublicECDHKey,
     encryptedSecretKey,
   }: {
-    walletOwner: User
+    walletOwnerId: string
 
     joiningUserId: string
     b64InviteString: string
@@ -251,7 +251,7 @@ export class InviteService {
       joiningUser,
       wallet,
     } = await this.checkOwnerInvitationMessage({
-      walletOwner,
+      walletOwnerId,
       joiningUserId,
       b64InviteString,
       b64InviteSignatureByJoiningUser,

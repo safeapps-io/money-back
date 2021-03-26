@@ -3,6 +3,7 @@ import { WSMiddleware } from '@/utils/wsMiddleware'
 import { UserPubSubService, UserPubSubMessageTypes } from './userPubSubService'
 import { UserService } from './userService'
 import { DefaultWsState } from '@/services/types'
+import { UserManager } from '@/models/user.model'
 
 enum ClientTypes {
   incrementalUpdate = 'user/incrementalUpdate',
@@ -26,8 +27,10 @@ export class UserWsMiddleware implements M {
     wsWrapped,
     message,
   }) => {
+    const user = (await UserManager.byId(wsWrapped.userId))!
+
     const res = await UserService.incrementalUserUpdate({
-      user: wsWrapped.user,
+      user,
       data: message,
       socketId: wsWrapped.id,
     })
@@ -35,7 +38,7 @@ export class UserWsMiddleware implements M {
 
     return UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
-      userId: wsWrapped.user.id,
+      userId: wsWrapped.userId,
       purpose: pubSubPurpose,
       callback: ({ type, data }) => {
         switch (type) {
@@ -50,7 +53,7 @@ export class UserWsMiddleware implements M {
   static close: M['close'] = async (wsWrapped) => {
     return UserPubSubService.unsubscribeSocketForUser({
       socketId: wsWrapped.id,
-      userId: wsWrapped.user.id,
+      userId: wsWrapped.userId,
     })
   }
 }

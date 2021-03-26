@@ -26,14 +26,14 @@ const pubSubPurpose = 'wallet'
 type M = WSMiddleware<WalletIncomingMessages, DefaultWsState>
 export class WalletWsMiddleware implements M {
   static [ClientTypes.get]: M[ClientTypes.get] = async ({ wsWrapped }) => {
-    const wallets = await WalletService.getUserWallets(wsWrapped.user.id)
+    const wallets = await WalletService.getUserWallets(wsWrapped.userId)
     wsWrapped.send({ type: BackTypes.all, data: wallets })
 
     return Promise.all([
       subscribeOwnerForInviteValidation(wsWrapped),
       UserPubSubService.subscribeSocketForUser({
         socketId: wsWrapped.id,
-        userId: wsWrapped.user.id,
+        userId: wsWrapped.userId,
         purpose: pubSubPurpose,
         callback: ({ type, data }) => {
           switch (type) {
@@ -53,7 +53,7 @@ export class WalletWsMiddleware implements M {
   static close: M['close'] = async (wsWrapped) => {
     return UserPubSubService.unsubscribeSocketForUser({
       socketId: wsWrapped.id,
-      userId: wsWrapped.user.id,
+      userId: wsWrapped.userId,
     })
   }
 }

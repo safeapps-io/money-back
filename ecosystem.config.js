@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'app',
 
-      script: './node_modules/.bin/ts-node',
+      script: 'TS_NODE_FILES=true ./node_modules/.bin/ts-node',
       args: '-r tsconfig-paths/register -T ./src/server.ts',
 
       exec_mode: 'cluster',
@@ -17,7 +17,7 @@ module.exports = {
     {
       name: 'worker',
 
-      script: './node_modules/.bin/ts-node',
+      script: 'TS_NODE_FILES=true ./node_modules/.bin/ts-node',
       args: '-r tsconfig-paths/register -T ./src/worker.ts',
 
       exec_mode: 'cluster',

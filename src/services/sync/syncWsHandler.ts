@@ -29,7 +29,7 @@ export class SyncWsMiddleware implements M {
     wsWrapped,
     message,
   }) => {
-    const userId = wsWrapped.user.id
+    const userId = wsWrapped.userId
 
     const items = await SyncService.handleClientUpdates({
         userId,
@@ -63,7 +63,7 @@ export class SyncWsMiddleware implements M {
   static close: M['close'] = async (wsWrapped) => {
     return UserPubSubService.unsubscribeSocketForUser({
       socketId: wsWrapped.id,
-      userId: wsWrapped.user.id,
+      userId: wsWrapped.userId,
     })
   }
 }

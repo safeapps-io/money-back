@@ -5,6 +5,7 @@ import {
   UserPubSubService,
 } from '@/services/user/userPubSubService'
 import { InviteService } from './inviteService'
+import { UserManager } from '@/models/user.model'
 
 enum ClientTypes {
   // Messages from joining user
@@ -76,7 +77,7 @@ export class InviteWsMiddleware implements M {
     // Subscribe joining user to the joining user resolution messages
     await UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
-      userId: wsWrapped.user.id,
+      userId: wsWrapped.userId,
       purpose: pubSubPurpose,
       callback: ({ type, data }) => {
         switch (type) {
@@ -96,8 +97,11 @@ export class InviteWsMiddleware implements M {
     })
 
     try {
+      const joiningUser = await UserManager.byId(wsWrapped.userId)
+      if (!joiningUser) throw new Error()
+
       await InviteService.launchWalletJoin({
-        joiningUser: wsWrapped.user,
+        joiningUser,
         ...message,
       })
       wsWrapped.send({ type: BackTypes.validateTriggerSuccess })
@@ -115,7 +119,7 @@ export class InviteWsMiddleware implements M {
   }) => {
     try {
       await InviteService.invitationError({
-        walletOwner: wsWrapped.user,
+        walletOwnerId: wsWrapped.userId,
         ...message,
       })
     } catch (error) {
@@ -130,7 +134,7 @@ export class InviteWsMiddleware implements M {
   }) => {
     try {
       await InviteService.invitationResolution({
-        walletOwner: wsWrapped.user,
+        walletOwnerId: wsWrapped.userId,
         ...message,
       })
     } catch (error) {
@@ -146,8 +150,11 @@ export class InviteWsMiddleware implements M {
     message,
   }) => {
     try {
+      const joiningUser = await UserManager.byId(wsWrapped.userId)
+      if (!joiningUser) throw new Error()
+
       await InviteService.joiningError({
-        joiningUser: wsWrapped.user,
+        joiningUser,
         ...message,
       })
     } catch (error) {
@@ -161,7 +168,7 @@ export class InviteWsMiddleware implements M {
   static close: M['close'] = async (wsWrapped) => {
     return UserPubSubService.unsubscribeSocketForUser({
       socketId: wsWrapped.id,
-      userId: wsWrapped.user.id,
+      userId: wsWrapped.userId,
     })
   }
 }
@@ -172,7 +179,7 @@ export const subscribeOwnerForInviteValidation = (
 ) =>
   UserPubSubService.subscribeSocketForUser({
     socketId: wsWrapped.id,
-    userId: wsWrapped.user.id,
+    userId: wsWrapped.userId,
     purpose: ownerPubSubPurpose,
     callback: ({ type, data }) => {
       switch (type) {

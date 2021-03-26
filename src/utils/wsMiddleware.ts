@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid'
 
 import chunk from '@/utils/chunk'
 import { UserService } from '@/services/user/userService'
-import User from '@/models/user.model'
+import { BillingJWTAddition } from '@/services/billing/types'
 
 // TODO: Mama, I failed. Make this all type strict… but not like this. Too much `any`
 export type WSMiddleware<MessageMap, State = {}> = {
@@ -36,17 +36,14 @@ export async function handleWsConnection<IncomingMessages, State>(
   ...middlewares: WSMiddleware<IncomingMessages, State>[]
 ) {
   const id = nanoid(),
-    user = await UserService.getUserFromWsTicket(ticket),
-    wsWrapped = new WSWrapper<State>(id, ws, ticket, user)
+    { userId, planExpirations } = await UserService.getUserDataFromWsTicket(
+      ticket,
+    ),
+    wsWrapped = new WSWrapper<State>(id, ws, ticket, userId, planExpirations)
 
   ws.on('message', async (raw) => {
     let type, data, parsed
     try {
-      wsWrapped.user = await UserService.getUserFromWsTicket(
-        ticket,
-        wsWrapped.user,
-      )
-
       parsed = JSON.parse(raw as string) as Message<IncomingMessages>
       type = parsed.type
       data = parsed.data
@@ -70,11 +67,6 @@ export async function handleWsConnection<IncomingMessages, State>(
           parsed,
         })
       } catch (error) {
-        /**
-         * TODO: Сделать так, чтобы определённые ошибки (например, FormValidationError) закрывали коннект с нужным кодом.
-         * Например, если ты пытаешься с неверным рефреш-токеном получить новый аксес-токен.
-         * Или если ты бьёшь в авторизованные места (синк), без аксес-токена.
-         */
         break
       }
     }
@@ -108,13 +100,16 @@ export class WSWrapper<State> {
     public id: string,
     private ws: wsType,
     public ticket: string,
-    public user: User,
+    public userId: string,
+    public planExpirations: BillingJWTAddition | undefined,
     public state = {} as State,
   ) {}
 
   private async isValidTicket() {
     try {
-      this.user = await UserService.getUserFromWsTicket(this.ticket, this.user)
+      const res = await UserService.getUserDataFromWsTicket(this.ticket)
+      this.userId = res.userId
+      this.planExpirations = res.planExpirations
       return true
     } catch (error) {
       this.closeWs()
