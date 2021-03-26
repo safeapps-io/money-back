@@ -1,7 +1,7 @@
 import { Request } from 'express'
 
 import { EventTypes } from '@/models/billing/chargeEvent.model'
-import Product from '@/models/billing/product.model'
+import Product, { ProductType } from '@/models/billing/product.model'
 
 export type EventHandlerContext = {
   rawRequestData: string
@@ -24,3 +24,5 @@ export interface BillingProvider {
     context: EventHandlerContext,
   ) => Promise<ChargeEventData | null>
 }
+
+export type BillingJWTAddition = { [productType in ProductType]: number }

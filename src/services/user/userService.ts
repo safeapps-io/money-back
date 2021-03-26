@@ -15,12 +15,14 @@ import { decryptAes, encryptAes, signJwt, verifyJwt } from '@/utils/crypto'
 import { FormValidationError } from '@/services/errors'
 import { InviteService } from '@/services/invite/inviteService'
 import { WalletService } from '@/services/wallet/walletService'
+import { BillingJWTAddition } from '@/services/billing/types'
+import { InviteStringTypes } from '@/services/invite/inviteTypes'
+import { getFullPath } from '@/services/getPath'
 
 import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from './passwordService'
 import { UserUpdatesPubSubService } from './userUpdatesPubSubService'
-import { InviteStringTypes } from '@/services/invite/inviteTypes'
-import { getFullPath } from '../getPath'
+import { BillingService } from '../billing/billingService'
 
 export enum JWTSubjects {
   session = 'sess',
@@ -28,7 +30,10 @@ export enum JWTSubjects {
 }
 
 type JWTMessage = {
+  // user id
   id: string
+  // expires for Plans
+  planExp?: BillingJWTAddition
   exp?: number
 }
 
@@ -64,7 +69,10 @@ export class UserService {
       if (!tokenValid) throw new InvalidToken()
     }
 
-    const data: JWTMessage = { id: userId }
+    const data: JWTMessage = {
+      id: userId,
+      planExp: await BillingService.getJWTAddition(userId),
+    }
 
     return signJwt(data, {
       subject,

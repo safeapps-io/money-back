@@ -13,7 +13,7 @@ import User, { UserManager } from '@/models/user.model'
 import { ProductManager, ProductType } from '@/models/billing/product.model'
 import { getTransaction } from '@/models/setup'
 
-import { ChargeEventData } from './types'
+import { BillingJWTAddition, ChargeEventData } from './types'
 import { coinbaseProvider } from './coinbaseProvider'
 
 export class BillingService {
@@ -103,7 +103,7 @@ export class BillingService {
       let res = await PlanManager.byUserId(userId, productType, true)
       if (!res) {
         await this.getPlanByUserId(userId, productType)
-        res = await PlanManager.byUserId(userId, productType, true)
+        res = (await PlanManager.byUserId(userId, productType, true))!
       }
       return res
     })
@@ -118,7 +118,7 @@ export class BillingService {
 
   static async createCharge(
     userId: string,
-    provider: ChargeProviders,
+    provider: string,
     productType = ProductType.money,
   ) {
     return getTransaction(async () => {
@@ -127,17 +127,17 @@ export class BillingService {
       let remoteChargeData: Omit<ChargeEventData, 'eventType'>
       if (provider == ChargeProviders.coinbase) {
         remoteChargeData = await coinbaseProvider.createCharge(
-          plan.Product!,
+          plan.product,
           userId,
           plan.id,
         )
-      }
+      } else throw new Error('Unknown provider')
 
       return this.createChargeEvent(
         {
           provider,
           planId: plan.id,
-          productId: plan.Product!.id,
+          productId: plan.product.id,
           eventType: EventTypes.created,
           chargeType: ChargeTypes.purchase,
           ...remoteChargeData!,
@@ -152,7 +152,7 @@ export class BillingService {
     event,
     ...context
   }: {
-    provider: ChargeProviders
+    provider: string
     event: any
     rawRequestData: string
     headers: Request['headers']
@@ -160,6 +160,7 @@ export class BillingService {
     let remoteChargeData: ChargeEventData | null = null
     if (provider == ChargeProviders.coinbase)
       remoteChargeData = await coinbaseProvider.handleEvent(event, context)
+    else throw new Error('Unknown provider')
 
     if (!remoteChargeData) return
 
@@ -174,12 +175,24 @@ export class BillingService {
         {
           provider,
           planId: plan.id,
-          productId: plan.Product!.id,
+          productId: plan.product.id,
           chargeType: ChargeTypes.purchase,
           ...remoteChargeData!,
         },
         plan,
       )
     })
+  }
+
+  static async getJWTAddition(userId: string) {
+    const plans = await PlanManager.allByUserId(userId)
+
+    return plans.reduce((acc, curr) => {
+      const expires = curr.expires?.getTime() || 0
+      if (acc?.[curr.product.productType] < expires)
+        acc[curr.product.productType] = expires
+
+      return acc
+    }, {} as BillingJWTAddition)
   }
 }
