@@ -5,6 +5,8 @@ import {
   DataType,
   AllowNull,
   Default,
+  HasMany,
+  BelongsTo,
 } from 'sequelize-typescript'
 import { Includeable } from 'sequelize/types'
 
@@ -30,6 +32,9 @@ import ChargeEvent from './chargeEvent.model'
 export default class Plan extends BaseModel<Plan> {
   // productId and userId are UNIQUE together, so one user can only have one subscription
   // for one product
+  @BelongsTo(() => Product, { onDelete: 'CASCADE' })
+  product!: Product
+
   @ForeignKey(() => Product)
   @Column
   productId!: string
@@ -47,16 +52,23 @@ export default class Plan extends BaseModel<Plan> {
   @Column
   automaticCharge!: boolean
 
-  public readonly Product?: Product
-  public readonly Charges?: ChargeEvent[]
+  @HasMany(() => ChargeEvent)
+  chargeEvents!: ChargeEvent[]
+
+  public toJSON() {
+    const curr = super.toJSON() as any
+
+    delete curr.automaticCharge
+    delete curr.userId
+    delete curr.productId
+
+    return curr
+  }
 }
 
 export class PlanManager {
   static create(userId: string, productId: string) {
-    return Plan.create(
-      { userId, productId },
-      { include: [{ model: Product, as: 'Product' }] },
-    )
+    return Plan.create({ userId, productId }, { include: [{ model: Product }] })
   }
 
   static byUserId(
@@ -64,15 +76,17 @@ export class PlanManager {
     productType: ProductType,
     includeCharges = false,
   ) {
-    const include: Includeable[] = [
-      { model: Product, where: { productType }, as: 'Product' },
-    ]
-    if (includeCharges) include.push({ model: ChargeEvent, as: 'ChargeEvents' })
+    const include: Includeable[] = [{ model: Product, where: { productType } }]
+    if (includeCharges) include.push({ model: ChargeEvent })
 
     return Plan.findOne({
       where: { userId },
       include,
     })
+  }
+
+  static allByUserId(userId: string) {
+    return Plan.findAll({ where: { userId }, include: [{ model: Product }] })
   }
 
   static byRemoteChargeId(chargeId: string) {

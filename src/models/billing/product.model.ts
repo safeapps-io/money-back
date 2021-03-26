@@ -4,8 +4,10 @@ import {
   DataType,
   Default,
   AllowNull,
+  HasMany,
 } from 'sequelize-typescript'
 import BaseModel from '@/models/base'
+import Plan from './plan.model'
 
 export enum ProductType {
   money = 'money',
@@ -47,6 +49,24 @@ export default class Product extends BaseModel<Product> {
   @AllowNull
   @Column
   trialDuration!: number
+
+  @HasMany(() => Plan)
+  plans!: Plan[]
+
+  public toJSON() {
+    const curr = super.toJSON() as any
+
+    delete curr.productType
+    delete curr.internalDescription
+    delete curr.title
+    delete curr.description
+    delete curr.default
+    delete curr.active
+    delete curr.created
+    delete curr.updated
+
+    return curr
+  }
 }
 
 export class ProductManager {

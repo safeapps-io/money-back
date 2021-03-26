@@ -17,6 +17,7 @@ import BaseModel from '@/models/base'
 import RefreshToken from '@/models/refreshToken.model'
 import Wallet from '@/models/wallet.model'
 import WalletAccess from '@/models/walletAccess.model'
+import Plan from './billing/plan.model'
 
 @Table
 export default class User extends BaseModel<User> {
@@ -117,6 +118,9 @@ export default class User extends BaseModel<User> {
 
   @HasMany(() => RefreshToken)
   refreshTokens!: RefreshToken[]
+
+  @HasMany(() => Plan)
+  plans!: Plan[]
 
   @BelongsToMany(() => Wallet, () => WalletAccess)
   wallets!: Array<Wallet & { WalletAccess: WalletAccess }>
