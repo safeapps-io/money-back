@@ -37,6 +37,13 @@ type JWTMessage = {
   exp?: number
 }
 
+export type Session = {
+  id: string
+  description: string
+  created: number
+  current: boolean
+}
+
 const usernameScheme = yup.string().required().min(5).max(50),
   emailScheme = yup.string().email().notRequired().nullable()
 
@@ -258,13 +265,13 @@ export class UserService {
 
   private static async getUserIdFromAccessToken(accessToken: string) {
     try {
-      const { exp, id } = await verifyJwt<JWTMessage>(accessToken, {
+      const { exp, id, planExp } = await verifyJwt<JWTMessage>(accessToken, {
         ignoreExpiration: true,
         subject: JWTSubjects.session,
       })
       if (!exp) throw new InvalidToken()
 
-      return { exp, id }
+      return { exp, id, planExpirations: planExp }
     } catch (err) {
       throw new InvalidToken()
     }
@@ -275,22 +282,29 @@ export class UserService {
     refreshToken: string,
     fetchUser = true,
   ) {
-    const { id, exp: expires } = await this.getUserIdFromAccessToken(
-        accessToken,
-      ),
+    const {
+        id,
+        exp: expires,
+        planExpirations,
+      } = await this.getUserIdFromAccessToken(accessToken),
       newToken = await this.rotateAccessToken(
         accessToken,
         refreshToken,
         expires,
       )
 
-    const res: { user?: User; userId: string; newToken?: string } = {
+    const res: {
+      user?: User
+      userId: string
+      newToken?: string
+      planExpirations?: BillingJWTAddition
+    } = {
       userId: id,
       newToken,
+      planExpirations,
     }
-    let user: User | null = null
     if (fetchUser) {
-      user = await UserManager.byId(id)
+      const user = await UserManager.byId(id)
       if (!user) throw new InvalidToken()
       res.user = user
     }
@@ -302,12 +316,7 @@ export class UserService {
       result = sessions.map((session) => {
         const json = session.toJSON()
         json.current = session.key == currentKey
-        return json as {
-          id: string
-          description: string
-          created: number
-          current: boolean
-        }
+        return json as Session
       })
     return result
   }

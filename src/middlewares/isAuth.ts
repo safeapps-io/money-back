@@ -40,19 +40,25 @@ export const isRestAuth = (fetchUser = false) => async (
   next: NextFunction,
 ) => {
   try {
-    const authResult = await UserService.getUserFromTokens(
+    const {
+      user,
+      userId,
+      planExpirations,
+      newToken,
+    } = await UserService.getUserFromTokens(
       req.signedCookies[CookieNames.access],
       req.signedCookies[CookieNames.refresh],
       fetchUser,
     )
 
-    req.user = authResult.user
-    req.userId = authResult.userId
+    req.user = user
+    req.userId = userId
+    req.planExpirations = planExpirations
     req.tokens = {
-      access: authResult.newToken || req.signedCookies[CookieNames.access],
+      access: newToken || req.signedCookies[CookieNames.access],
       refresh: req.signedCookies[CookieNames.refresh],
     }
-    if (authResult.newToken) sendAuthCookies(res, authResult.newToken)
+    if (newToken) sendAuthCookies(res, newToken)
     next()
   } catch (error) {
     if (error instanceof InvalidToken)

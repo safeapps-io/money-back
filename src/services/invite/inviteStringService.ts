@@ -131,7 +131,7 @@ type WalletInviteObject = ServiceInvitePayload & {
   inviteId: string
   walletId: string
 }
-type InvitePayload =
+export type InvitePayload =
   | {
       type: InviteStringTypes.service
       userInviter: User
