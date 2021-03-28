@@ -1,5 +1,5 @@
 import { Request } from 'express'
-import { addDays, isBefore } from 'date-fns'
+import { addDays, isAfter, isBefore } from 'date-fns'
 
 import ChargeEvent, {
   ChargeEventManager,
@@ -10,6 +10,7 @@ import ChargeEvent, {
 } from '@/models/billing/chargeEvent.model'
 import Plan, { PlanManager } from '@/models/billing/plan.model'
 import User, { UserManager } from '@/models/user.model'
+import Wallet from '@/models/wallet.model'
 import { ProductManager, ProductType } from '@/models/billing/product.model'
 import { getTransaction } from '@/models/setup'
 
@@ -81,6 +82,17 @@ export class BillingService {
         }),
       ))!.plan
     })
+  }
+
+  static isMoneySubscriptionActive(wallet: Wallet) {
+    return wallet?.users.some((user) =>
+      user?.plans.some(
+        (plan) =>
+          plan?.product.productType == ProductType.money &&
+          plan.expires &&
+          isAfter(plan.expires, new Date()),
+      ),
+    )
   }
 
   static async getPlanByUserId(

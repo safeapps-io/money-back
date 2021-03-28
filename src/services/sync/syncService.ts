@@ -5,6 +5,7 @@ import { runSchemaWithFormError, requiredString } from '@/utils/yupHelpers'
 import Entity, { EntityManager } from '@/models/entity.model'
 import Wallet from '@/models/wallet.model'
 import { WalletService } from '@/services/wallet/walletService'
+import { BillingService } from '@/services/billing/billingService'
 import { ClientChangesData, EntityUpdated, ServerUpdatesMap } from './types'
 import { SyncPubSubService } from './syncPubSubService'
 
@@ -92,8 +93,16 @@ export class SyncService {
     socketId: string
     entityMap: ClientChangesData
   }) {
-    // Only allow access to user's wallets, filter other data out
-    const usersWallets = await WalletService.getUserWallets(userId),
+    /**
+     * Only allow access to:
+     * 1. this user's wallets;
+     * 2. wallets which owner has an active subscription.
+     *
+     * Other data will be filtered out.
+     */
+    const usersWallets = (
+        await WalletService.getUserWallets(userId)
+      ).filter((wallet) => BillingService.isMoneySubscriptionActive(wallet)),
       entityMap: {
         entities: EntityUpdated[]
         wallet: Wallet

@@ -7,6 +7,7 @@ import BaseModel from '@/models/base'
 import User from '@/models/user.model'
 import WalletAccess, { AccessLevels } from '@/models/walletAccess.model'
 import Plan from '@/models/billing/plan.model'
+import Product from './billing/product.model'
 
 @Table
 export default class Wallet extends BaseModel<Wallet> {
@@ -15,30 +16,17 @@ export default class Wallet extends BaseModel<Wallet> {
 
   public toJSON() {
     const curr = super.toJSON() as any,
-      users = this.users.map((user) => ({
+      users = this.users?.map((user) => ({
         ...user.toJSON(false),
         WalletAccess: user.WalletAccess.toJSON(),
       }))
 
-    curr.users = users
+    curr.users = users || []
     return curr
   }
 }
 
 export class WalletManager {
-  private static filterByUser = (userId: string) => ({
-    attributes: ['id'],
-    include: [
-      {
-        model: User,
-        required: true,
-        through: {
-          where: { accessLevel: { [Op.not]: AccessLevels.rejected }, userId },
-        },
-      },
-    ],
-  })
-
   static async byIdAndUserId({
     userId,
     walletId,
@@ -51,15 +39,26 @@ export class WalletManager {
   }
 
   static async byUserId(userId: string) {
-    return Wallet.findAll({
+    const userWalletIds = await Wallet.findAll({
+      attributes: ['id'],
       include: [
         {
           model: User,
-          required: true,
+          required: false,
           through: {
-            where: { accessLevel: { [Op.not]: AccessLevels.rejected, userId } },
+            where: { accessLevel: { [Op.not]: AccessLevels.rejected }, userId },
           },
-          include: [{ model: Plan, required: true }],
+          attributes: [],
+        },
+      ],
+    })
+
+    return Wallet.findAll({
+      where: { id: { [Op.in]: userWalletIds.map((record) => record.id) } },
+      include: [
+        {
+          model: User,
+          include: [{ model: Plan, include: [{ model: Product }] }],
         },
       ],
     })

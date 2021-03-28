@@ -2,11 +2,11 @@ import { WSMiddleware } from '@/utils/wsMiddleware'
 
 import { SyncService } from './syncService'
 import { ClientChangesData } from './types'
-import { DefaultWsState } from '../types'
+import { DefaultWsState } from '@/services/types'
 import {
   UserPubSubService,
   UserPubSubMessageTypes,
-} from '../user/userPubSubService'
+} from '@/services/user/userPubSubService'
 
 enum ClientTypes {
   clientData = 'sync/data',
