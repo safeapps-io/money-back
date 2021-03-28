@@ -5,31 +5,29 @@ import ash from 'express-async-handler'
 import { isRestAuth } from '@/middlewares/isAuth'
 import { BillingService } from '@/services/billing/billingService'
 
-export const billingRouter = Router().use(isRestAuth())
-
-billingRouter.get(
+export const userBillingRouter = Router().get(
   '/plans',
+  isRestAuth(),
   ash(async (req, res) => {
     const result = await BillingService.getFullPlanDataByUserId(req.userId)
     return res.json(result)
   }),
 )
 
-billingRouter.post(
-  '/charge/:provider',
-  ash(async (req, res) => {
-    await BillingService.createCharge(req.userId, req.params.provider)
-
-    return res.json({})
-  }),
-)
-
-billingRouter
+export const billingProviderRouter = Router()
   .use(
     json({
       verify: (req, _, buf) => {
         ;(req as any).rawBody = buf.toString('utf-8')
       },
+    }),
+  )
+  .post(
+    '/charge/:provider',
+    ash(async (req, res) => {
+      await BillingService.createCharge(req.userId, req.params.provider)
+
+      return res.json({})
     }),
   )
   .post(

@@ -2,62 +2,58 @@ import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
+import { isPlanActive } from '@/middlewares/isPlanActive'
 import { WalletService } from '@/services/wallet/walletService'
+import Wallet from '@/models/wallet.model'
 
 export const walletRouter = Router()
+  .use(isRestAuth())
+  .post<{}, Wallet, { chest: string }>(
+    '',
+    isPlanActive(),
+    ash(async (req, res) => {
+      const wallet = await WalletService.create(req.userId, req.body.chest)
 
-walletRouter.post(
-  '/create',
-  isRestAuth(),
-  ash(async (req, res) => {
-    const { chest } = req.body as { chest: string }
+      res.json(wallet)
+    }),
+  )
+  .delete<{}, {}, { walletId: string }>(
+    '',
+    ash(async (req, res) => {
+      await WalletService.destroy(req.userId, req.body.walletId)
 
-    const wallet = await WalletService.create(req.userId, chest)
-
-    res.json(wallet)
-  }),
-)
-
-walletRouter.post(
-  '/delete',
-  isRestAuth(),
-  ash(async (req, res) => {
-    const { walletId } = req.body as { walletId: string }
-
-    await WalletService.destroy(req.userId, walletId)
-
-    res.json({})
-  }),
-)
-
-walletRouter.post(
-  '/user/delete',
-  isRestAuth(),
-  ash(async (req, res) => {
-    const { walletId, userId: userToRemoveId } = req.body as {
+      res.json({})
+    }),
+  )
+  .delete<
+    {},
+    Wallet,
+    {
       walletId: string
       userId: string
     }
+  >(
+    '/user',
+    ash(async (req, res) => {
+      const { walletId, userId: userToRemoveId } = req.body
 
-    const wallet = await WalletService.removeUser({
-      initiatorId: req.userId,
-      walletId,
-      userToRemoveId,
-    })
+      const wallet = await WalletService.removeUser({
+        initiatorId: req.userId,
+        walletId,
+        userToRemoveId,
+      })
 
-    res.json(wallet)
-  }),
-)
+      res.json(wallet!)
+    }),
+  )
+  .put<{}, Wallet, { walletId: string; chest: string }>(
+    '/chest',
+    ash(async (req, res) => {
+      const wallet = await WalletService.updateSingleChest({
+        ...req.body,
+        userId: req.userId,
+      })
 
-walletRouter.post(
-  '/updateChest',
-  isRestAuth(),
-  ash(async (req, res) => {
-    const wallet = await WalletService.updateSingleChest({
-      ...(req.body as { walletId: string; chest: string }),
-      userId: req.userId,
-    })
-
-    res.json(wallet)
-  }),
-)
+      res.json(wallet)
+    }),
+  )

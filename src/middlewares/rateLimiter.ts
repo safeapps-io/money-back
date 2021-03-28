@@ -1,4 +1,10 @@
-import { Request, Response, NextFunction, Router } from 'express'
+import {
+  Request,
+  Response,
+  NextFunction,
+  Router,
+  RequestHandler,
+} from 'express'
 import { RateLimiterRedis } from 'rate-limiter-flexible'
 import ash from 'express-async-handler'
 import { getRedisClient } from '@/services/redis/connection'
@@ -50,7 +56,7 @@ export const constructSimplePostRouter = ({
   keyGetter = ipKeyGetter,
   consumeMode,
 }: {
-  handler: (req: Request, res: Response, next: NextFunction) => any
+  handler: RequestHandler
   limiter: ReturnType<typeof createLimiter>
   keyGetter?: KeyGetter
   consumeMode?: 'onError' | 'always'

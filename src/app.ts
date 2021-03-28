@@ -14,11 +14,11 @@ const { app } = expressWs(express())
 import pathJoin from '@/utils/pathJoin'
 import logger from '@/middlewares/logger'
 import sequelize from '@/models/setup'
-import router from '@/router'
+import { router } from '@/router'
 import delayOnDevMiddleware from '@/middlewares/delayOnDev'
 import { initRedisConnection } from '@/services/redis/connection'
 import { redisPubSub } from '@/services/redis/pubSub'
-import { billingRouter } from '@/controllers/billing'
+import { billingProviderRouter, userBillingRouter } from '@/controllers/billing'
 
 const constructApp = async () => {
   await sequelize.sync()
@@ -49,7 +49,7 @@ const constructApp = async () => {
     .use(multer().none())
     .use(delayOnDevMiddleware)
     .use('/money', router)
-    .use('/billing', billingRouter)
+    .use('/billing', userBillingRouter, billingProviderRouter)
 
   return app
 }
