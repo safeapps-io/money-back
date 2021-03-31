@@ -17,10 +17,22 @@ export const walletRouter = Router()
       res.json(wallet)
     }),
   )
-  .delete<{}, {}, { walletId: string }>(
-    '',
+  .put<{ walletId: string }, Wallet, { chest: string }>(
+    '/:walletId',
     ash(async (req, res) => {
-      await WalletService.destroy(req.userId, req.body.walletId)
+      const wallet = await WalletService.updateSingleChest({
+        walletId: req.params.walletId,
+        userId: req.userId,
+        chest: req.body.chest,
+      })
+
+      res.json(wallet)
+    }),
+  )
+  .delete<{ walletId: string }>(
+    '/:walletId',
+    ash(async (req, res) => {
+      await WalletService.destroy(req.userId, req.params.walletId)
 
       res.json({})
     }),
@@ -44,16 +56,5 @@ export const walletRouter = Router()
       })
 
       res.json(wallet!)
-    }),
-  )
-  .put<{}, Wallet, { walletId: string; chest: string }>(
-    '/chest',
-    ash(async (req, res) => {
-      const wallet = await WalletService.updateSingleChest({
-        ...req.body,
-        userId: req.userId,
-      })
-
-      res.json(wallet)
     }),
   )

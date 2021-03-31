@@ -9,7 +9,7 @@ import User from '@/models/user.model'
 export const userRouter = Router()
   .get(
     '',
-    isRestAuth(),
+    isRestAuth(true),
     ash(async (req, res) => {
       res.json({
         user: req.user,
