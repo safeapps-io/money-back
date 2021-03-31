@@ -23,10 +23,16 @@ export class CryptoService {
       {
         padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
         saltLength: 64,
-        // @ts-ignore
+        // @ts-expect-error
         key: publicKey,
       },
       Buffer.from(signatureBuffer),
     )
+  }
+
+  static getDigest(data: string) {
+    const sha256 = crypto.createHash('sha256')
+    sha256.update(Buffer.from(data))
+    return sha256.digest('hex')
   }
 }

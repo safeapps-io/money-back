@@ -16,6 +16,7 @@ import { getTransaction } from '@/models/setup'
 
 import { BillingJWTAddition, ChargeEventData } from './types'
 import { coinbaseProvider } from './coinbaseProvider'
+import { tinkoffProvider } from './tinkoffProvider'
 
 export class BillingService {
   private static async updatePlanAccordingToCharge(
@@ -137,13 +138,19 @@ export class BillingService {
       const plan = await this.getPlanByUserId(userId, productType)
 
       let remoteChargeData: Omit<ChargeEventData, 'eventType'>
-      if (provider == ChargeProviders.coinbase) {
+      if (provider === ChargeProviders.coinbase)
         remoteChargeData = await coinbaseProvider.createCharge(
           plan.product,
           userId,
           plan.id,
         )
-      } else throw new Error('Unknown provider')
+      else if (provider === ChargeProviders.tinkoff)
+        remoteChargeData = await tinkoffProvider.createCharge(
+          plan.product,
+          userId,
+          plan.id,
+        )
+      else throw new Error('Unknown provider')
 
       return this.createChargeEvent(
         {
@@ -170,8 +177,10 @@ export class BillingService {
     headers: Request['headers']
   }) {
     let remoteChargeData: ChargeEventData | null = null
-    if (provider == ChargeProviders.coinbase)
+    if (provider === ChargeProviders.coinbase)
       remoteChargeData = await coinbaseProvider.handleEvent(event, context)
+    else if (provider === ChargeProviders.tinkoff)
+      remoteChargeData = await tinkoffProvider.handleEvent(event, context)
     else throw new Error('Unknown provider')
 
     if (!remoteChargeData) return

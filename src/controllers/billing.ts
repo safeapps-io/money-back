@@ -4,6 +4,7 @@ import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
 import { BillingService } from '@/services/billing/billingService'
+import { ChargeProviders } from '@/models/billing/chargeEvent.model'
 
 export const userBillingRouter = Router().get(
   '/plans',
@@ -22,7 +23,7 @@ export const billingProviderRouter = Router()
       },
     }),
   )
-  .post(
+  .post<{ provider: ChargeProviders }>(
     '/charge/:provider',
     ash(async (req, res) => {
       await BillingService.createCharge(req.userId, req.params.provider)
@@ -30,7 +31,7 @@ export const billingProviderRouter = Router()
       return res.json({})
     }),
   )
-  .post(
+  .post<{ provider: ChargeProviders }>(
     '/webhook/:provider',
     ash(async (req, res) => {
       const provider = req.params.provider
