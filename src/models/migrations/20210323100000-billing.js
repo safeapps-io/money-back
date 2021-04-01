@@ -1,6 +1,18 @@
 'use strict'
 
-const nanoid = require('nanoid').nanoid
+const nanoid = require('nanoid').nanoid,
+  { addDays } = require('date-fns')
+
+// const argon2 = require('argon2')
+
+const buildBase = () => {
+  const now = new Date()
+  return {
+    id: nanoid(),
+    created: now,
+    updated: now,
+  }
+}
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
@@ -41,6 +53,34 @@ module.exports = {
       },
     })
 
+    const commonProductData = {
+      productType: 'money',
+      trialDuration: 15,
+    }
+
+    const earlyProductData = buildBase()
+    await queryInterface.bulkInsert('Products', [
+      {
+        ...buildBase(),
+        ...commonProductData,
+        slug: 'money:default',
+        internalDescription: 'Main subscription',
+        title: '[safe] money subscription',
+        description: '1 year of full service',
+        default: true,
+        price: 5999,
+      },
+      {
+        ...earlyProductData,
+        ...commonProductData,
+        slug: 'money:early_bird',
+        internalDescription: 'Early bird subscription (-15%)',
+        title: '[safe] money Early bird subscription',
+        description: '1 year of full service with 15% discount',
+        price: 5099,
+      },
+    ])
+
     await queryInterface.createTable('Plans', {
       ...baseModel,
       productId: {
@@ -63,7 +103,7 @@ module.exports = {
       automaticCharge: { type: Sequelize.BOOLEAN, defaultValue: false },
     })
 
-    return queryInterface.createTable('ChargeEvents', {
+    await queryInterface.createTable('ChargeEvents', {
       ...baseModel,
       eventType: {
         allowNull: false,
@@ -104,6 +144,39 @@ module.exports = {
       remoteChargeId: optionalString,
       rawData: { type: Sequelize.JSON },
     })
+
+    // await queryInterface.bulkInsert('Users', [
+    //   {
+    //     ...buildBase(),
+    //     username: '___test',
+    //     password: await argon2.hash('qwerty123456'),
+    //   },
+    // ])
+
+    const userIds = await queryInterface.sequelize.query(
+      'SELECT * FROM "Users"',
+      { type: queryInterface.sequelize.QueryTypes.SELECT },
+    )
+
+    const expires = addDays(new Date(), 15)
+    const planObjs = userIds.map(({ id }) => ({
+        ...buildBase(),
+        productId: earlyProductData.id,
+        expires,
+        userId: id,
+      })),
+      chargesObjs = planObjs.map((plan) => ({
+        ...buildBase(),
+        eventType: 'confirmed',
+        chargeType: 'trial',
+        expiredNew: expires,
+        productId: plan.productId,
+        planId: plan.id,
+        rawData: '{}',
+      }))
+
+    await queryInterface.bulkInsert('Plans', planObjs)
+    return queryInterface.bulkInsert('ChargeEvents', chargesObjs)
   },
 
   down: (queryInterface, Sequelize) => {},

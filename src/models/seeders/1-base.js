@@ -61,53 +61,5 @@ module.exports = {
         assignedMcc: '[]',
       })),
     )
-
-    const productInfo = buildBase()
-
-    await queryInterface.bulkInsert('Products', [
-      {
-        ...productInfo,
-        slug: 'money:default',
-        productType: 'money',
-        internalDescription: 'Main subscription',
-        title: '[safe] money subscription',
-        description: '1 year of full service',
-        default: true,
-        price: 5999,
-      },
-      {
-        ...buildBase(),
-        slug: 'money:early_bird',
-        productType: 'money',
-        internalDescription: 'Early bird subscription (-15%)',
-        title: '[safe] money Early bird subscription',
-        description: '1 year of full service with 15% discount',
-        price: 5099,
-      },
-    ])
-
-    const planInfo = buildBase(),
-      expires = new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 30)
-
-    await queryInterface.bulkInsert('Plans', [
-      {
-        ...planInfo,
-        productId: productInfo.id,
-        userId: testData.users.dkzlv.id,
-        expires,
-      },
-    ])
-
-    await queryInterface.bulkInsert('ChargeEvents', [
-      {
-        ...buildBase(),
-        eventType: 'confirmed',
-        chargeType: 'trial',
-        expiredNew: expires,
-        planId: planInfo.id,
-        productId: productInfo.id,
-        rawData: '[]',
-      },
-    ])
   },
 }
