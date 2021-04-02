@@ -165,19 +165,24 @@ export class UserService {
       invite,
     })
 
-    const [passwordHashed, parsedInvite] = await Promise.all([
-        PasswordService.hashPassword(password),
-        invite ? InviteService.parseAndValidateInvite(invite) : null,
-        this.checkCredentialsAvailability({ username, email }),
-      ]),
-      isWalletInvite = parsedInvite?.type == InviteStringTypes.wallet
+    const { user, isWalletInvite } = await getTransaction(async () => {
+      const [passwordHashed, parsedInvite] = await Promise.all([
+          PasswordService.hashPassword(password),
+          invite ? InviteService.parseAndValidateInvite(invite) : null,
+          this.checkCredentialsAvailability({ username, email }),
+        ]),
+        isWalletInvite = parsedInvite?.type == InviteStringTypes.wallet
 
-    const user = await UserManager.create({
-      username,
-      password: passwordHashed,
-      isSubscribed,
-      ...parsedInvite?.payload,
+      const user = await UserManager.create({
+        username,
+        password: passwordHashed,
+        isSubscribed,
+        ...parsedInvite?.payload,
+      })
+
+      return { user, isWalletInvite }
     })
+
     await ValidateEmailService.triggerEmailValidation(user, email)
 
     return {
@@ -254,44 +259,59 @@ export class UserService {
     }
   }
 
-  private static async rotateAccessToken(
+  private static async getUserIdFromAccessToken(
     accessToken: string,
     refreshToken: string,
-    expires: number,
-  ) {
-    if (isBefore(expires * 1000, new Date()))
-      return this.getNewAccessToken(accessToken, refreshToken)
-  }
-
-  private static async getUserIdFromAccessToken(accessToken: string) {
+    newToken: boolean = false,
+  ): Promise<{
+    userId: string
+    planExpirations: BillingJWTAddition
+    newToken?: string
+  }> {
     try {
-      const { exp, id, planExp } = await verifyJwt<JWTMessage>(accessToken, {
+      const {
+        exp: expires,
+        id: userId,
+        planExp: planExpirations,
+      } = await verifyJwt<JWTMessage>(accessToken, {
         ignoreExpiration: true,
         subject: JWTSubjects.session,
       })
-      if (!exp) throw new InvalidToken()
+      if (!expires) throw new InvalidToken()
 
-      return { exp, id, planExpirations: planExp }
+      // Issuing a new access token if the previous one is expired or if billing data is insufficient
+      if (
+        isBefore(expires * 1000, new Date()) ||
+        !BillingService.isJwtAdditionFull(planExpirations)
+      ) {
+        // Calling the same method stuff recursively with a new fresh access token
+        return this.getUserIdFromAccessToken(
+          await this.getNewAccessToken(accessToken, refreshToken),
+          refreshToken,
+          true,
+        )
+      }
+
+      return {
+        userId,
+        planExpirations: planExpirations!,
+        newToken: newToken ? accessToken : undefined,
+      }
     } catch (err) {
       throw new InvalidToken()
     }
   }
 
-  static async getUserFromTokens(
+  static async getUserDataFromTokens(
     accessToken: string,
     refreshToken: string,
     fetchUser = true,
   ) {
     const {
-        id,
-        exp: expires,
-        planExpirations,
-      } = await this.getUserIdFromAccessToken(accessToken),
-      newToken = await this.rotateAccessToken(
-        accessToken,
-        refreshToken,
-        expires,
-      )
+      userId,
+      planExpirations,
+      newToken,
+    } = await this.getUserIdFromAccessToken(accessToken, refreshToken)
 
     const res: {
       user?: User
@@ -299,12 +319,12 @@ export class UserService {
       newToken?: string
       planExpirations?: BillingJWTAddition
     } = {
-      userId: id,
+      userId,
       newToken,
       planExpirations,
     }
     if (fetchUser) {
-      const user = await UserManager.byId(id)
+      const user = await UserManager.byId(userId)
       if (!user) throw new InvalidToken()
       res.user = user
     }

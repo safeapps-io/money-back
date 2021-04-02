@@ -47,8 +47,8 @@ export default class Product extends BaseModel<Product> {
   duration!: number
 
   @AllowNull
-  @Column
-  trialDuration!: number
+  @Column(DataType.NUMBER)
+  trialDuration!: number | null
 
   @HasMany(() => Plan)
   plans!: Plan[]

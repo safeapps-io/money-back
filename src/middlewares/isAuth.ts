@@ -45,7 +45,7 @@ export const isRestAuth = (fetchUser = false) => async (
       userId,
       planExpirations,
       newToken,
-    } = await UserService.getUserFromTokens(
+    } = await UserService.getUserDataFromTokens(
       req.signedCookies[CookieNames.access],
       req.signedCookies[CookieNames.refresh],
       fetchUser,

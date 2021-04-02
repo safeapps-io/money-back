@@ -31,7 +31,7 @@ export class BillingService {
     switch (charge.chargeType) {
       case ChargeTypes.trial: {
         const product = await ProductManager.byId(plan.productId)
-        expiredNew = addDays(expiredOld, product!.trialDuration)
+        expiredNew = addDays(expiredOld, product!.trialDuration || 0)
         break
       }
 
@@ -205,15 +205,12 @@ export class BillingService {
     })
   }
 
-  static async getJWTAddition(userId: string) {
-    const plans = await PlanManager.allByUserId(userId)
+  static async getJWTAddition(userId: string): Promise<BillingJWTAddition> {
+    const plan = await this.getPlanByUserId(userId)
+    return { [ProductType.money]: plan.expires?.getTime() }
+  }
 
-    return plans.reduce((acc, curr) => {
-      const expires = curr.expires?.getTime() || 0
-      if (acc?.[curr.product.productType] < expires)
-        acc[curr.product.productType] = expires
-
-      return acc
-    }, {} as BillingJWTAddition)
+  static isJwtAdditionFull(addition?: BillingJWTAddition) {
+    return addition && !!addition[ProductType.money]
   }
 }

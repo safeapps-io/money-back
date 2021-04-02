@@ -175,8 +175,9 @@ module.exports = {
         rawData: '{}',
       }))
 
-    await queryInterface.bulkInsert('Plans', planObjs)
-    return queryInterface.bulkInsert('ChargeEvents', chargesObjs)
+    planObjs.length && (await queryInterface.bulkInsert('Plans', planObjs))
+    chargesObjs.length &&
+      (await queryInterface.bulkInsert('ChargeEvents', chargesObjs))
   },
 
   down: (queryInterface, Sequelize) => {},
