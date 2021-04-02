@@ -137,32 +137,37 @@ export class BillingService {
     return getTransaction(async () => {
       const plan = await this.getPlanByUserId(userId, productType)
 
-      let remoteChargeData: Omit<ChargeEventData, 'eventType'>
+      let providerResult: Await<ReturnType<
+        | typeof tinkoffProvider['createCharge']
+        | typeof coinbaseProvider['createCharge']
+      >>
       if (provider === ChargeProviders.coinbase)
-        remoteChargeData = await coinbaseProvider.createCharge(
+        providerResult = await coinbaseProvider.createCharge(
           plan.product,
           userId,
           plan.id,
         )
       else if (provider === ChargeProviders.tinkoff)
-        remoteChargeData = await tinkoffProvider.createCharge(
+        providerResult = await tinkoffProvider.createCharge(
           plan.product,
           userId,
           plan.id,
         )
       else throw new Error('Unknown provider')
 
-      return this.createChargeEvent(
+      await this.createChargeEvent(
         {
           provider,
           planId: plan.id,
           productId: plan.product.id,
           eventType: EventTypes.created,
           chargeType: ChargeTypes.purchase,
-          ...remoteChargeData!,
+          ...providerResult.chargeData,
         },
         plan,
       )
+
+      return providerResult.sendToClient
     })
   }
 

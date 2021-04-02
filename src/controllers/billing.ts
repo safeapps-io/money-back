@@ -5,6 +5,8 @@ import ash from 'express-async-handler'
 import { isRestAuth } from '@/middlewares/isAuth'
 import { BillingService } from '@/services/billing/billingService'
 import { ChargeProviders } from '@/models/billing/chargeEvent.model'
+import { TinkoffClientDataReturn } from '@/services/billing/tinkoffProvider'
+import { CoinbaseClientDataReturn } from '@/services/billing/coinbaseProvider'
 
 export const userBillingRouter = Router().get(
   '/plans',
@@ -23,12 +25,18 @@ export const billingProviderRouter = Router()
       },
     }),
   )
-  .post<{ provider: ChargeProviders }>(
+  .post<
+    { provider: ChargeProviders },
+    TinkoffClientDataReturn | CoinbaseClientDataReturn
+  >(
     '/charge/:provider',
     ash(async (req, res) => {
-      await BillingService.createCharge(req.userId, req.params.provider)
+      const result = await BillingService.createCharge(
+        req.userId,
+        req.params.provider,
+      )
 
-      return res.json({})
+      return res.json(result)
     }),
   )
   .post<{ provider: ChargeProviders }>(

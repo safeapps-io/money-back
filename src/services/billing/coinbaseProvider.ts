@@ -7,6 +7,8 @@ import { BillingProvider, EventHandlerContext } from './types'
 Client.init(process.env.COINBASE_KEY as string)
 const Charge = resources.Charge
 
+export type CoinbaseClientDataReturn = { link: string }
+
 class CoinbaseProvider implements BillingProvider {
   async createCharge(product: Product, userId: string, planId: string) {
     const res = await Charge.create({
@@ -19,7 +21,13 @@ class CoinbaseProvider implements BillingProvider {
       pricing_type: 'fixed_price',
       metadata: { userId, planId },
     })
-    return { remoteChargeId: res.id, rawData: JSON.stringify(res) }
+    const chargeData = {
+        remoteChargeId: res.id,
+        rawData: JSON.stringify(res),
+      },
+      sendToClient: CoinbaseClientDataReturn = { link: res.hosted_url }
+
+    return { chargeData, sendToClient }
   }
 
   async handleEvent(event: resources.Event, context: EventHandlerContext) {

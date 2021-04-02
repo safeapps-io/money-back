@@ -18,7 +18,10 @@ export interface BillingProvider {
     product: Product,
     userId: string,
     subscriptionId: string,
-  ) => Promise<Omit<ChargeEventData, 'eventType'>>
+  ) => Promise<{
+    chargeData: Omit<ChargeEventData, 'eventType'>
+    sendToClient: any
+  }>
   handleEvent: (
     event: any,
     context: EventHandlerContext,

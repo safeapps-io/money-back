@@ -4,6 +4,8 @@ import { CryptoService } from '@/services/crypto/cryptoService'
 import { request } from '@/services/request'
 import { EventTypes } from '@/models/billing/chargeEvent.model'
 
+export type TinkoffClientDataReturn = { link: string }
+
 class TinkoffProvider implements BillingProvider {
   private endpoint = 'https://securepay.tinkoff.ru/v2/'
 
@@ -51,10 +53,13 @@ class TinkoffProvider implements BillingProvider {
       throw new Error(`[${json.ErrorCode}] ${json.Message}: ${json.Details}`)
     }
 
-    return {
-      remoteChargeId: json.PaymentId.toString(),
-      rawData: JSON.stringify(json),
-    }
+    const chargeData = {
+        remoteChargeId: json.PaymentId.toString(),
+        rawData: JSON.stringify(json),
+      },
+      sendToClient: TinkoffClientDataReturn = { link: json.PaymentURL }
+
+    return { chargeData, sendToClient }
   }
 
   async handleEvent(event: Event, _: EventHandlerContext) {
