@@ -17,6 +17,8 @@ import { getTransaction } from '@/models/setup'
 import { BillingJWTAddition, ChargeEventData } from './types'
 import { coinbaseProvider } from './coinbaseProvider'
 import { tinkoffProvider } from './tinkoffProvider'
+import { WalletService } from '@/services/wallet/walletService'
+import { BillingPubSubService } from './billingPubSubService'
 
 export class BillingService {
   private static async updatePlanAccordingToCharge(
@@ -129,6 +131,24 @@ export class BillingService {
     })
   }
 
+  private static async informUserAboutCharge(
+    userId: string,
+    chargeEvent: ChargeEvent,
+  ) {
+    const userWallets = await WalletService.getUserWallets(userId),
+      relatedUserIds = [
+        ...new Set(
+          userWallets
+            .filter((wallet) => WalletService.isUserOwner({ wallet, userId }))
+            .flatMap((wallet) => wallet.users.map((user) => user.id)),
+        ),
+      ]
+    return BillingPubSubService.publishChargedata({
+      chargeEvent,
+      relatedUserIds,
+    })
+  }
+
   static async createCharge(
     userId: string,
     provider: string,
@@ -155,7 +175,7 @@ export class BillingService {
         )
       else throw new Error('Unknown provider')
 
-      await this.createChargeEvent(
+      const { charge } = (await this.createChargeEvent(
         {
           provider,
           planId: plan.id,
@@ -165,7 +185,9 @@ export class BillingService {
           ...providerResult.chargeData,
         },
         plan,
-      )
+      ))!
+
+      await this.informUserAboutCharge(userId, charge)
 
       return providerResult.sendToClient
     })
@@ -190,7 +212,7 @@ export class BillingService {
 
     if (!remoteChargeData) return
 
-    return getTransaction(async () => {
+    const res = await getTransaction(async () => {
       const plan = await PlanManager.byRemoteChargeId(
         remoteChargeData!.remoteChargeId,
       )
@@ -208,6 +230,9 @@ export class BillingService {
         plan,
       )
     })
+
+    if (res?.plan.userId)
+      return this.informUserAboutCharge(res.plan.userId, res.charge)
   }
 
   static async getJWTAddition(userId: string): Promise<BillingJWTAddition> {

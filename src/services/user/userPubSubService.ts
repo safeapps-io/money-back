@@ -16,6 +16,9 @@ export enum UserPubSubMessageTypes {
 
   // SyncPubSubService
   syncData = 'sync/data',
+
+  // BillingPubSubService
+  chargeEvent = 'billing/charge',
 }
 
 /**
