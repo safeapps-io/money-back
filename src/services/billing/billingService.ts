@@ -1,5 +1,8 @@
 import { Request } from 'express'
 import { addDays, isAfter, isBefore } from 'date-fns'
+import _ from 'lodash'
+
+import { copy } from '@/utils/copy'
 
 import ChargeEvent, {
   ChargeEventManager,
@@ -14,10 +17,11 @@ import Wallet from '@/models/wallet.model'
 import { ProductManager, ProductType } from '@/models/billing/product.model'
 import { getTransaction } from '@/models/setup'
 
+import { MessageService } from '@/services/message/messageService'
+import { WalletService } from '@/services/wallet/walletService'
 import { BillingJWTAddition, ChargeEventData } from './types'
 import { coinbaseProvider } from './coinbaseProvider'
 import { tinkoffProvider } from './tinkoffProvider'
-import { WalletService } from '@/services/wallet/walletService'
 import { BillingPubSubService } from './billingPubSubService'
 
 export class BillingService {
@@ -231,8 +235,18 @@ export class BillingService {
       )
     })
 
-    if (res?.plan.userId)
-      return this.informUserAboutCharge(res.plan.userId, res.charge)
+    if (res?.plan.userId) {
+      const promises: Promise<any>[] = [
+        this.informUserAboutCharge(res.plan.userId, res.charge),
+      ]
+
+      if (res.charge.eventType === EventTypes.confirmed && res.plan.user?.email)
+        promises.push(
+          MessageService.sendSuccessfulPurchaseEmail(res.plan.user.email),
+        )
+
+      return Promise.all(promises)
+    }
   }
 
   static async getJWTAddition(userId: string): Promise<BillingJWTAddition> {
@@ -242,5 +256,33 @@ export class BillingService {
 
   static isJwtAdditionFull(addition?: BillingJWTAddition) {
     return addition && !!addition[ProductType.money]
+  }
+
+  private static isPlanTrial(plan: Plan) {
+    return (
+      // Charges from new to old
+      _.head(_.reverse(_.sortBy(copy(plan.chargeEvents), ['created'])))
+        ?.chargeType === ChargeTypes.trial
+    )
+  }
+
+  static async notifyExpiringPlans() {
+    const expiresStart = new Date(),
+      expiresEnd = addDays(expiresStart, 1),
+      plans = await PlanManager.findExpiringPlans(expiresStart, expiresEnd)
+
+    const promises: Promise<any>[] = []
+    for (const plan of plans) {
+      if (!plan.user?.email) continue
+
+      promises.push(
+        MessageService.sendExpiringPlanEmail({
+          email: plan.user.email,
+          isTrial: this.isPlanTrial(plan),
+        }),
+      )
+    }
+
+    return Promise.all(promises)
   }
 }

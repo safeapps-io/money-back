@@ -6,7 +6,7 @@ export interface BaseEmail {
       email: string
       username?: string
     }
-    context: {
+    context?: {
       [key: string]: any
     }
   }[]

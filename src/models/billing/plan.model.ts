@@ -8,6 +8,7 @@ import {
   HasMany,
   BelongsTo,
 } from 'sequelize-typescript'
+import { Op } from 'sequelize'
 import { Includeable } from 'sequelize/types'
 
 import BaseModel from '@/models/base'
@@ -43,6 +44,9 @@ export default class Plan extends BaseModel<Plan> {
   @ForeignKey(() => User)
   @Column(DataType.STRING)
   userId!: string | null
+
+  @BelongsTo(() => User)
+  user!: User | null
 
   @AllowNull
   @Column(DataType.DATE)
@@ -93,8 +97,21 @@ export class PlanManager {
     return Plan.findOne({
       include: [
         { model: ChargeEvent, where: { remoteChargeId: chargeId } },
-        { model: Product, as: 'Product' },
+        { model: Product },
       ],
+    })
+  }
+
+  static findExpiringPlans(start: Date, end: Date) {
+    return Plan.findAll({
+      where: {
+        expires: {
+          [Op.gt]: start,
+          [Op.lt]: end,
+        },
+        userId: { [Op.not]: null },
+      },
+      include: [{ model: ChargeEvent }, { model: User }],
     })
   }
 }

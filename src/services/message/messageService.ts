@@ -80,4 +80,32 @@ export class MessageService {
       ],
     })
   }
+
+  public static async sendSuccessfulPurchaseEmail(email: string) {
+    return this.sendEmail({
+      templateId: 'successful-purchase',
+      recepients: [{ address: { email } }],
+    })
+  }
+
+  public static async sendExpiringPlanEmail({
+    email,
+    isTrial,
+  }: {
+    email: string
+    isTrial: boolean
+  }) {
+    return this.sendEmail({
+      templateId: 'expiring-plan',
+      recepients: [
+        {
+          address: { email },
+          context: {
+            url: this.getGotoUrl({ token: 'no', purpose: 'billing' }),
+            isTrial,
+          },
+        },
+      ],
+    })
+  }
 }
