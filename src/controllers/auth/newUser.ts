@@ -1,4 +1,4 @@
-import { RequestHandler, Router } from 'express'
+import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { sendAuthCookies } from '@/middlewares/isAuth'
@@ -13,6 +13,7 @@ import {
   ipKeyGetter,
   KeyGetter,
 } from '@/middlewares/rateLimiter'
+import { serializeModel, Serializers } from '@/models/serializers'
 
 export const newUserRouter = Router()
   .use(
@@ -66,7 +67,10 @@ export const newUserRouter = Router()
 
         sendAuthCookies(res, accessToken, refreshToken)
 
-        res.json({ user, isWalletInvite })
+        res.json({
+          user: serializeModel(user, Serializers.userFull),
+          isWalletInvite,
+        })
       },
     }),
   )
@@ -136,7 +140,7 @@ newUserRouter.use(
 
         sendAuthCookies(res, accessToken, refreshToken)
 
-        res.json({ user })
+        res.json(serializeModel(user, Serializers.userFull))
       } catch (error) {
         await Promise.all(
           checksAndKeysMap.map(([key, limiter]) => limiter.consume(key)),

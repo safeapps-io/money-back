@@ -3,33 +3,29 @@ import ash from 'express-async-handler'
 
 import { isRestAuth, resetCookies } from '@/middlewares/isAuth'
 import { UserService } from '@/services/user/userService'
-import { BillingService } from '@/services/billing/billingService'
-import User from '@/models/user.model'
+import { UserManager } from '@/models/user.model'
+import { serializeModel, Serializers } from '@/models/serializers'
 
 export const userRouter = Router()
+
+userRouter
+  .route('')
   .get(
-    '',
-    isRestAuth(true),
+    isRestAuth(),
     ash(async (req, res) => {
-      res.json({
-        user: req.user,
-        plan: await BillingService.getPlanByUserId(req.userId),
-      })
+      const user = (await UserManager.byIdWithDataIncluded(req.userId))!
+
+      res.json(serializeModel(user, Serializers.userFull))
     }),
   )
-  .patch<
-    {},
-    User,
-    {
-      username?: string
-      email?: string
-      isSubscribed?: boolean
-    }
-  >(
-    '',
+  .patch(
     isRestAuth(true),
     ash(async (req, res) => {
-      const { username, email, isSubscribed } = req.body
+      const { username, email, isSubscribed } = req.body as {
+        username?: string
+        email?: string
+        isSubscribed?: boolean
+      }
       let user = req.user!
       if (username) {
         user = await UserService.updateUsername(user, { username })
@@ -41,11 +37,10 @@ export const userRouter = Router()
           newStatus: isSubscribed,
         })
 
-      res.json(user)
+      res.json(serializeModel(user, Serializers.userFull))
     }),
   )
-  .delete<{}, {}, { password: string }>(
-    '',
+  .delete(
     isRestAuth(true),
     ash(async (req, res) => {
       await UserService.dropUser({
@@ -58,6 +53,8 @@ export const userRouter = Router()
       res.json({})
     }),
   )
+
+userRouter
   .get<{}, { ticket: string }>(
     '/wsTicket',
     isRestAuth(),

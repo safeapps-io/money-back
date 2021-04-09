@@ -18,7 +18,6 @@ import { router } from '@/router'
 import delayOnDevMiddleware from '@/middlewares/delayOnDev'
 import { initRedisConnection } from '@/services/redis/connection'
 import { redisPubSub } from '@/services/redis/pubSub'
-import { billingProviderRouter, userBillingRouter } from '@/controllers/billing'
 
 const constructApp = async () => {
   await sequelize.sync()
@@ -49,7 +48,6 @@ const constructApp = async () => {
     .use(multer().none())
     .use(delayOnDevMiddleware)
     .use('/money', router)
-    .use('/billing', userBillingRouter, billingProviderRouter)
 
   return app
 }

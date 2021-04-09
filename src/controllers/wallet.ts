@@ -5,6 +5,7 @@ import { isRestAuth } from '@/middlewares/isAuth'
 import { isPlanActive } from '@/middlewares/isPlanActive'
 import { WalletService } from '@/services/wallet/walletService'
 import Wallet from '@/models/wallet.model'
+import { serializeModel, Serializers } from '@/models/serializers'
 
 export const walletRouter = Router()
   .use(isRestAuth())
@@ -14,7 +15,7 @@ export const walletRouter = Router()
     ash(async (req, res) => {
       const wallet = await WalletService.create(req.userId, req.body.chest)
 
-      res.json(wallet)
+      res.json(serializeModel(wallet, Serializers.wallet))
     }),
   )
   .put<{ walletId: string }, Wallet, { chest: string }>(
@@ -26,7 +27,7 @@ export const walletRouter = Router()
         chest: req.body.chest,
       })
 
-      res.json(wallet)
+      res.json(serializeModel(wallet, Serializers.wallet))
     }),
   )
   .delete<{ walletId: string }>(
@@ -55,6 +56,6 @@ export const walletRouter = Router()
         userToRemoveId,
       })
 
-      res.json(wallet!)
+      res.json(serializeModel(wallet!, Serializers.wallet))
     }),
   )

@@ -52,21 +52,6 @@ export default class Product extends BaseModel<Product> {
 
   @HasMany(() => Plan)
   plans!: Plan[]
-
-  public toJSON() {
-    const curr = super.toJSON() as any
-
-    delete curr.productType
-    delete curr.internalDescription
-    delete curr.title
-    delete curr.description
-    delete curr.default
-    delete curr.active
-    delete curr.created
-    delete curr.updated
-
-    return curr
-  }
 }
 
 export class ProductManager {

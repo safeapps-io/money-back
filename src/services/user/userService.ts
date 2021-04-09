@@ -23,6 +23,7 @@ import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from './passwordService'
 import { UserUpdatesPubSubService } from './userUpdatesPubSubService'
 import { BillingService } from '../billing/billingService'
+import { serializeModel, Serializers } from '@/models/serializers'
 
 export enum JWTSubjects {
   session = 'sess',
@@ -332,13 +333,17 @@ export class UserService {
   }
 
   static async getAllSessions(userId: string, currentKey: string) {
-    const sessions = await RefreshTokenManager.byUserId(userId),
-      result = sessions.map((session) => {
-        const json = session.toJSON()
-        json.current = session.key == currentKey
-        return json as Session
-      })
-    return result
+    const sessions = await RefreshTokenManager.byUserId(userId)
+
+    const res = serializeModel(sessions, Serializers.session)
+    for (const session of res) {
+      if (session.key == currentKey) {
+        res.current = true
+        break
+      }
+    }
+
+    return res
   }
 
   static async dropSessions({

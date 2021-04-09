@@ -18,6 +18,8 @@ import RefreshToken from '@/models/refreshToken.model'
 import Wallet from '@/models/wallet.model'
 import WalletAccess from '@/models/walletAccess.model'
 import Plan from './billing/plan.model'
+import Product from './billing/product.model'
+import ChargeEvent from './billing/chargeEvent.model'
 
 @Table
 export default class User extends BaseModel<User> {
@@ -161,6 +163,14 @@ export class UserManager {
 
   static byId(userId: string) {
     return User.findByPk(userId)
+  }
+
+  static byIdWithDataIncluded(userId: string) {
+    return User.findByPk(userId, {
+      include: [
+        { model: Plan, include: [{ model: Product }, { model: ChargeEvent }] },
+      ],
+    })
   }
 
   static async isUsernameTaken(username: string, excludeId?: string) {

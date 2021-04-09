@@ -65,17 +65,6 @@ export default class ChargeEvent extends BaseModel<ChargeEvent> {
   @AllowNull
   @Column(DataType.JSON)
   rawData!: string | null
-
-  public toJSON() {
-    const curr = super.toJSON() as any
-
-    delete curr.productId
-    delete curr.planId
-    delete curr.remoteChargeId
-    delete curr.rawData
-
-    return curr
-  }
 }
 
 export type EventChargeData = Partial<ChargeEvent> &

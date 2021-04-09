@@ -179,7 +179,7 @@ export class BillingService {
         )
       else throw new Error('Unknown provider')
 
-      const { charge } = (await this.createChargeEvent(
+      const result = (await this.createChargeEvent(
         {
           provider,
           planId: plan.id,
@@ -191,7 +191,7 @@ export class BillingService {
         plan,
       ))!
 
-      await this.informUserAboutCharge(userId, charge)
+      if (result) await this.informUserAboutCharge(userId, result.charge)
 
       return providerResult.sendToClient
     })

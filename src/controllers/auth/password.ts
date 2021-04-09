@@ -10,6 +10,7 @@ import {
 } from '@/middlewares/rateLimiter'
 import { UserService } from '@/services/user/userService'
 import User from '@/models/user.model'
+import { serializeModel, Serializers } from '@/models/serializers'
 
 export const authorizedPasswordRouter = Router()
   .post<{}, {}, { oldPassword: string; newPassword: string }>(
@@ -39,7 +40,7 @@ export const authorizedPasswordRouter = Router()
         userId: req.userId,
       })
 
-      res.json(user)
+      res.json(serializeModel(user, Serializers.userFull))
     }),
   )
 

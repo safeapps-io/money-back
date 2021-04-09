@@ -7,17 +7,22 @@ import { BillingService } from '@/services/billing/billingService'
 import { ChargeProviders } from '@/models/billing/chargeEvent.model'
 import { TinkoffClientDataReturn } from '@/services/billing/tinkoffProvider'
 import { CoinbaseClientDataReturn } from '@/services/billing/coinbaseProvider'
+import Plan from '@/models/billing/plan.model'
+import { serializeModel, Serializers } from '@/models/serializers'
+import { errorHandler } from '@/middlewares/errorHandler'
 
-export const userBillingRouter = Router().get(
-  '/plans',
+export const billingRouter = Router()
+
+billingRouter.get<{}, Plan>(
+  '/plan',
   isRestAuth(),
   ash(async (req, res) => {
     const result = await BillingService.getFullPlanDataByUserId(req.userId)
-    return res.json(result)
+    return res.json(serializeModel(result, Serializers.planFull))
   }),
 )
 
-export const billingProviderRouter = Router()
+billingRouter
   .use(
     json({
       verify: (req, _, buf) => {
@@ -30,6 +35,7 @@ export const billingProviderRouter = Router()
     TinkoffClientDataReturn | CoinbaseClientDataReturn
   >(
     '/charge/:provider',
+    isRestAuth(),
     ash(async (req, res) => {
       const result = await BillingService.createCharge(
         req.userId,
@@ -53,3 +59,7 @@ export const billingProviderRouter = Router()
       return res.status(200)
     }),
   )
+
+billingRouter
+  .use((_, res) => res.status(404).json({ error: 'No such path' }).end())
+  .use(errorHandler)

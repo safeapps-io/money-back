@@ -58,16 +58,6 @@ export default class Plan extends BaseModel<Plan> {
 
   @HasMany(() => ChargeEvent)
   chargeEvents!: ChargeEvent[]
-
-  public toJSON() {
-    const curr = super.toJSON() as any
-
-    delete curr.automaticCharge
-    delete curr.userId
-    delete curr.productId
-
-    return curr
-  }
 }
 
 export class PlanManager {
