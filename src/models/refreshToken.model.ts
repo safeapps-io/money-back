@@ -19,11 +19,6 @@ export default class RefreshToken extends BaseModel<RefreshToken> {
 
   @Column
   description!: string
-
-  public toJSON() {
-    const { id, description, created } = super.toJSON() as any
-    return { id, description, created, current: false } as any
-  }
 }
 
 export class RefreshTokenManager {
@@ -56,13 +51,17 @@ export class RefreshTokenManager {
     return RefreshToken.findAll({ where: { userId } })
   }
 
-  static async destroyByIds({
-    ids,
+  static async destroyById({ id, userId }: { id: string; userId: string }) {
+    return RefreshToken.destroy({ where: { id, userId } })
+  }
+
+  static async destroyAllButOneKey({
+    key,
     userId,
   }: {
-    ids: string[]
+    key: string
     userId: string
   }) {
-    return RefreshToken.destroy({ where: { id: { [Op.in]: ids }, userId } })
+    return RefreshToken.destroy({ where: { key: { [Op.not]: key }, userId } })
   }
 }

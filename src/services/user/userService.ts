@@ -334,26 +334,34 @@ export class UserService {
 
   static async getAllSessions(userId: string, currentKey: string) {
     const sessions = await RefreshTokenManager.byUserId(userId)
-
-    const res = serializeModel(sessions, Serializers.session)
-    for (const session of res) {
+    for (const session of sessions) {
       if (session.key == currentKey) {
-        res.current = true
+        // @ts-expect-error
+        session.current = true
         break
       }
     }
+    const res = serializeModel(sessions, Serializers.session)
 
     return res
   }
 
   static async dropSessions({
     userId,
-    toDeleteIds,
+    currentKey,
+    toDeleteId,
   }: {
     userId: string
-    toDeleteIds: string[]
+    currentKey: string
+    toDeleteId: string | null
   }) {
-    return RefreshTokenManager.destroyByIds({ userId, ids: toDeleteIds })
+    if (toDeleteId)
+      return RefreshTokenManager.destroyById({ userId, id: toDeleteId })
+    else
+      return RefreshTokenManager.destroyAllButOneKey({
+        userId,
+        key: currentKey,
+      })
   }
 
   static async updateUsername(

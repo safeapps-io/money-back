@@ -12,10 +12,11 @@ export const sessionsRouter = Router()
       res.json(await UserService.getAllSessions(req.userId, req.tokens.refresh))
     }),
   )
-  .delete<{}, Session[], { ids: string[] }>('', async (req, res) => {
+  .delete<{}, Session[], { id: string | null }>('', async (req, res) => {
     await UserService.dropSessions({
       userId: req.userId,
-      toDeleteIds: req.body.ids,
+      toDeleteId: req.body.id,
+      currentKey: req.tokens.refresh,
     })
     res.json(await UserService.getAllSessions(req.userId, req.tokens.refresh))
   })
