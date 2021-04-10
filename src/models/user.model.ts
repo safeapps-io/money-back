@@ -162,7 +162,9 @@ export class UserManager {
   }
 
   static byId(userId: string) {
-    return User.findByPk(userId)
+    return User.findByPk(userId, {
+      include: [{ model: Plan }],
+    })
   }
 
   static byIdWithDataIncluded(userId: string) {

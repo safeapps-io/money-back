@@ -26,7 +26,8 @@ export class SimpleSyncWsMiddleware implements M {
     const items = await SimpleSyncService.getUpdatedSchemes(
       message.latestUpdated,
     )
-    wsWrapped.sequentialSend({ type: BackTypes.provideScheme, items })
+    if (items.length)
+      wsWrapped.sequentialSend({ type: BackTypes.provideScheme, items })
   }
 
   static [ClientTypes.getMetaCategory]: M[ClientTypes.getMetaCategory] = async ({
@@ -36,6 +37,7 @@ export class SimpleSyncWsMiddleware implements M {
     const items = await SimpleSyncService.getUpdatedMetaCategories(
       message.latestUpdated,
     )
-    wsWrapped.sequentialSend({ type: BackTypes.provideMetaCategory, items })
+    if (items.length)
+      wsWrapped.sequentialSend({ type: BackTypes.provideMetaCategory, items })
   }
 }

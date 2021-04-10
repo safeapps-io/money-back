@@ -4,6 +4,7 @@ import { UserPubSubService, UserPubSubMessageTypes } from './userPubSubService'
 import { UserService } from './userService'
 import { DefaultWsState } from '@/services/types'
 import { UserManager } from '@/models/user.model'
+import { serializeModel, Serializers } from '@/models/serializers'
 
 enum ClientTypes {
   incrementalUpdate = 'user/incrementalUpdate',
@@ -34,7 +35,10 @@ export class UserWsMiddleware implements M {
       data: message,
       socketId: wsWrapped.id,
     })
-    wsWrapped.send({ type: BackTypes.data, data: res })
+    wsWrapped.send({
+      type: BackTypes.data,
+      data: serializeModel(res, Serializers.userFull),
+    })
 
     return UserPubSubService.subscribeSocketForUser({
       socketId: wsWrapped.id,
@@ -43,7 +47,10 @@ export class UserWsMiddleware implements M {
       callback: ({ type, data }) => {
         switch (type) {
           case UserPubSubMessageTypes.userData:
-            wsWrapped.send({ type: BackTypes.data, data })
+            wsWrapped.send({
+              type: BackTypes.data,
+              data: serializeModel(data, Serializers.userFull),
+            })
             break
         }
       },

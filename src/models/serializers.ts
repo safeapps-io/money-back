@@ -46,7 +46,7 @@ const serializerNameToConfig: {
     attrs: userCommonFields,
     associations: [
       ['WalletAccess', Serializers.walletAccess],
-      ['plan', Serializers.planPartial],
+      ['plans', Serializers.planPartial],
     ],
   },
   wallet: {
@@ -101,15 +101,19 @@ export const serializeModel = <T>(
       }
 
       for (const [fieldname, serializerName] of serializer.associations || []) {
-        const fieldValue = (model as any)[fieldname]
+        let fieldValue = (model as any)[fieldname]
 
-        if (!fieldValue) continue
+        if (!fieldValue) {
+          console.warn('Unfetched dependency: ', {
+            instance: model.constructor.name,
+            fieldname,
+            serializerName,
+            stack: new Error().stack,
+          })
+          continue
+        }
 
-        result[fieldname] = Array.isArray(fieldValue)
-          ? fieldValue.map((instance) =>
-              serializeModel(instance, serializerName),
-            )
-          : serializeModel(fieldValue, serializerName)
+        result[fieldname] = serializeModel(fieldValue, serializerName)
       }
 
       return result

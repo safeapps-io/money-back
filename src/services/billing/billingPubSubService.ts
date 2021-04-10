@@ -1,4 +1,5 @@
 import ChargeEvent from '@/models/billing/chargeEvent.model'
+import { serializeModel, Serializers } from '@/models/serializers'
 import {
   UserPubSubMessageTypes,
   UserPubSubService,
@@ -17,7 +18,7 @@ export class BillingPubSubService {
         UserPubSubService.publishForUser({
           userId: id,
           type: UserPubSubMessageTypes.chargeEvent,
-          data: chargeEvent,
+          data: serializeModel(chargeEvent, Serializers.chargeEvent),
         }),
       ),
     )

@@ -6,6 +6,7 @@ import {
   UserPubSubMessageTypes,
 } from '@/services/user/userPubSubService'
 import { subscribeOwnerForInviteValidation } from '../invite/inviteWsHandler'
+import { serializeModel, Serializers } from '@/models/serializers'
 
 enum ClientTypes {
   get = 'wallet/get',
@@ -27,7 +28,10 @@ type M = WSMiddleware<WalletIncomingMessages, DefaultWsState>
 export class WalletWsMiddleware implements M {
   static [ClientTypes.get]: M[ClientTypes.get] = async ({ wsWrapped }) => {
     const wallets = await WalletService.getUserWallets(wsWrapped.userId)
-    wsWrapped.send({ type: BackTypes.all, data: wallets })
+    wsWrapped.send({
+      type: BackTypes.all,
+      data: serializeModel(wallets, Serializers.wallet),
+    })
 
     return Promise.all([
       subscribeOwnerForInviteValidation(wsWrapped),
@@ -38,7 +42,10 @@ export class WalletWsMiddleware implements M {
         callback: ({ type, data }) => {
           switch (type) {
             case UserPubSubMessageTypes.walletData:
-              wsWrapped.send({ type: BackTypes.single, data })
+              wsWrapped.send({
+                type: BackTypes.single,
+                data: serializeModel(data, Serializers.wallet),
+              })
               break
 
             case UserPubSubMessageTypes.walletDelete:

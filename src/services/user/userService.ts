@@ -341,9 +341,8 @@ export class UserService {
         break
       }
     }
-    const res = serializeModel(sessions, Serializers.session)
 
-    return res
+    return serializeModel(sessions, Serializers.session)
   }
 
   static async dropSessions({

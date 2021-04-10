@@ -49,7 +49,7 @@ export class UserPubSubService {
     userId: string
     socketId?: string
     type: UserPubSubMessageTypes
-    data: Object
+    data: any
   }) {
     return redisPubSub.publish({
       channel: this.getUserChannel(userId),
@@ -67,7 +67,7 @@ export class UserPubSubService {
     socketId: string
     userId: string
     purpose: string
-    callback: (data: { type: UserPubSubMessageTypes; data: Object }) => void
+    callback: (data: { type: UserPubSubMessageTypes; data: any }) => void
   }) {
     return redisPubSub.subscribe({
       channels: [this.getUserChannel(userId)],
