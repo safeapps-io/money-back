@@ -4,7 +4,7 @@ import Wallet from '@/models/wallet.model'
 import { redisPubSub } from '../redis/pubSub'
 
 const enum MessageTypes {
-  data = 'sync/data',
+  data = 'data',
 }
 
 type SyncDataEvent = { type: MessageTypes.data; data: Entity[] }

@@ -4,9 +4,9 @@ import { redisPubSub } from '../redis/pubSub'
 import { WalletService } from './walletService'
 
 const enum MessageTypes {
-  all = 'wallet/all',
-  single = 'wallet/single',
-  delete = 'wallet/delete',
+  all = 'all',
+  single = 'single',
+  delete = 'delete',
 }
 
 type WalletDataEvent = { type: MessageTypes.single; data: Wallet }

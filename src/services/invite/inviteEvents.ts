@@ -2,10 +2,10 @@ import User from '@/models/user.model'
 import { redisPubSub } from '../redis/pubSub'
 
 const enum MessageTypes {
-  validate = 'invite/validate',
-  error = 'invite/error',
-  reject = 'invite/reject',
-  accept = 'invite/accept',
+  validate = 'validate',
+  error = 'error',
+  reject = 'reject',
+  accept = 'accept',
 }
 
 const callbackKey = 'invite'

@@ -3,7 +3,7 @@ import { serializeModel, Serializers } from '@/models/serializers'
 import { redisPubSub } from '@/services/redis/pubSub'
 
 const enum MessageTypes {
-  charge = 'billing/charge',
+  charge = 'charge',
 }
 
 type BillingChargeEvent = { type: MessageTypes.charge; data: ChargeEvent }

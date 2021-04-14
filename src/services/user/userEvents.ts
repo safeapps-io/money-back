@@ -3,7 +3,7 @@ import User from '@/models/user.model'
 import { redisPubSub } from '../redis/pubSub'
 
 const enum MessageTypes {
-  data = 'user/data',
+  data = 'data',
 }
 
 type UserDataEvent = { type: MessageTypes.data; data: User }
