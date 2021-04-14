@@ -21,9 +21,9 @@ import { getFullPath } from '@/services/getPath'
 
 import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from './passwordService'
-import { UserUpdatesPubSubService } from './userUpdatesPubSubService'
 import { BillingService } from '../billing/billingService'
 import { serializeModel, Serializers } from '@/models/serializers'
+import { publishUserUpdate } from './userEvents'
 
 export enum JWTSubjects {
   session = 'sess',
@@ -342,7 +342,7 @@ export class UserService {
       }
     }
 
-    return serializeModel(sessions, Serializers.session)
+    return sessions
   }
 
   static async dropSessions({
@@ -366,10 +366,10 @@ export class UserService {
   static async updateUsername(
     user: User,
     {
-      socketId,
+      clientId,
       username,
     }: {
-      socketId?: string
+      clientId?: string
       username: string
     },
   ) {
@@ -380,11 +380,7 @@ export class UserService {
 
     const res = await UserManager.update(user.id, { username })
 
-    // We plan to use this method outside of websocket connection, so no socket id here is ok
-    await UserUpdatesPubSubService.publishUserUpdates({
-      user: res,
-      socketId,
-    })
+    await publishUserUpdate({ user: res, clientId })
     return res
   }
 
@@ -406,11 +402,11 @@ export class UserService {
     .noUnknown()
   static async incrementalUserUpdate({
     user,
-    socketId,
+    clientId,
     data,
   }: {
     user: User
-    socketId?: string
+    clientId?: string
     data?: { encr: string; clientUpdated: number }
   }) {
     // No client update
@@ -421,7 +417,7 @@ export class UserService {
     if (data.clientUpdated < user.updated.getTime()) return user
 
     const res = await UserManager.update(user.id, { encr: data.encr })
-    await UserUpdatesPubSubService.publishUserUpdates({ user: res, socketId })
+    await publishUserUpdate({ user: res, clientId })
     return res
   }
 
@@ -487,14 +483,16 @@ export class UserService {
     }
   }
 
-  static updateIsSubscribedStatus({
+  static async updateIsSubscribedStatus({
     userId,
     newStatus,
   }: {
     userId: string
     newStatus: boolean
   }) {
-    return UserManager.update(userId, { isSubscribed: newStatus })
+    const user = await UserManager.update(userId, { isSubscribed: newStatus })
+    publishUserUpdate({ user })
+    return user
   }
 
   static async dropUser({ user, password }: { user: User; password: string }) {

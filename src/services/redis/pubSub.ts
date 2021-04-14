@@ -2,8 +2,8 @@ import { subscriptionConnection, connection } from './connection'
 
 type BaseMessage = {
   data: any
-  // publisherId
-  id: string
+  clientId: string
+  callbackKey: string
 }
 
 /**
@@ -16,10 +16,12 @@ type BaseMessage = {
  * pubsub mechanizm. Allows any number of subscriber handlers for a given subscriber id and channel.
  */
 class RedisPubSubService {
-  public log: Map<
+  private log: Map<
     string,
     {
-      [subscriberId: string]: { [handlerKey: string]: (data: any) => void }
+      [clientId: string]: {
+        [callbackKey: string]: (data: any) => void
+      }
     }
   >
   constructor() {
@@ -32,39 +34,49 @@ class RedisPubSubService {
     )
   }
 
-  handleMessage(channel: string, message: string) {
-    if (!this.log.has(channel)) return
+  getUserChannel(userId: string) {
+    return `user--${userId}`
+  }
 
-    try {
-      const { id: publisherId, data } = JSON.parse(message) as BaseMessage,
-        channelSubs = this.log.get(channel)
-      if (!channelSubs) return
+  private handleMessage(channel: string, message: string) {
+    const channelSubs = this.log.get(channel)
+    if (!channelSubs) return
 
-      Object.entries(channelSubs).forEach(
-        // Preventing users from getting their own updates
-        ([subscriberId, fns]) =>
-          publisherId !== subscriberId &&
-          Object.values(fns).forEach((fn) => fn(data)),
-      )
-    } catch (error) {
-      // Maybe logging? Something went wrong with either parsing or function handler
+    const { clientId: messageClientId, callbackKey, data } = JSON.parse(
+      message,
+    ) as BaseMessage
+
+    for (const [clientId, fns] of Object.entries(channelSubs)) {
+      // Preventing users from getting their own updates
+      if (clientId === messageClientId) continue
+
+      try {
+        fns[callbackKey]?.(data)
+      } catch (error) {
+        console.error('Redis Pubsub message handler fail', error)
+      }
     }
   }
 
   publish({
     channel,
-    publisherId,
     data,
+    callbackKey,
+    clientId = '',
   }: {
     channel: string
-    publisherId: string
-    data: any
+    callbackKey: string
+    data: Object | number | string
+    clientId?: string
   }) {
-    const message: BaseMessage = { id: publisherId, data }
+    const message: BaseMessage = { clientId, callbackKey, data }
     return connection.publish(channel, JSON.stringify(message))
   }
 
   /**
+   * Нам надо также передавать его в publish-метод, чтобы он пихался в редис, чтобы тот в
+   * `handleMessage` вызывал только те коллбэки, которые к этому `callbackKey` относятся.
+   *
    * Everything seems quite obvious except callbackKey.
    * So the idea is that we decouple redis work with subscription callbacks. Because of that we
    * can have many subscriber handlers for one subscription. This method can be called multiple
@@ -73,15 +85,15 @@ class RedisPubSubService {
    * That is why we made an array of handlers into a map of handlers.
    * Now you can invoke this method as many times as you wish and functions won't pile up in stack.
    */
-  async subscribe({
+  async subscribe<T>({
     channels,
-    subscriberId,
+    clientId,
     callback,
     callbackKey,
   }: {
     channels: string[]
-    subscriberId: string
-    callback: (data: any) => void
+    clientId: string
+    callback: (data: T) => void
     callbackKey: string
   }) {
     const subscribeToChannels = channels.filter(
@@ -96,8 +108,8 @@ class RedisPubSubService {
       if (!this.log.has(channel)) this.log.set(channel, {})
       const channelSubs = this.log.get(channel)!
 
-      if (!channelSubs[subscriberId]) channelSubs[subscriberId] = {}
-      channelSubs[subscriberId][callbackKey] = callback
+      if (!channelSubs[clientId]) channelSubs[clientId] = {}
+      channelSubs[clientId][callbackKey] = callback
     }
   }
 
@@ -109,40 +121,16 @@ class RedisPubSubService {
     }
   }
 
-  async removeHandler({
-    channels,
-    subscriberId,
-    callbackKey = '',
-  }: {
-    channels: string[]
-    subscriberId: string
-    callbackKey?: string
-  }) {
-    for (const channel of channels) {
-      const channelSubs = this.log.get(channel)
-      if (!channelSubs) continue
-
-      // Filtering out the callback
-
-      delete channelSubs[subscriberId][callbackKey]
-      // If this was the last callback we remove the subscriber
-      if (!Object.keys(channelSubs[subscriberId]).length)
-        delete channelSubs[subscriberId]
-
-      await this.handleChannelWithoutSubscribers(channel)
-    }
-  }
-
   async unsubscribe({
     channels,
-    subscriberId,
+    clientId,
   }: {
     channels: string[]
-    subscriberId: string
+    clientId: string
   }) {
     for (const channel of channels) {
       const channelSubs = this.log.get(channel)
-      if (channelSubs) delete channelSubs[subscriberId]
+      if (channelSubs) delete channelSubs[clientId]
 
       await this.handleChannelWithoutSubscribers(channel)
     }

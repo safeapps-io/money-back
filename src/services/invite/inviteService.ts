@@ -12,10 +12,16 @@ import { WalletManager } from '@/models/wallet.model'
 import { AccessLevels } from '@/models/walletAccess.model'
 
 import { FormValidationError } from '@/services/errors'
-import { InvitePubSubService } from './invitePubSubService'
-import { WalletPubSubService } from '@/services/wallet/walletPubSubService'
 import { InviteServiceFormErrors, InviteStringTypes } from './inviteTypes'
 import { InviteStringService } from './inviteStringService'
+import { publishWalletUpdate } from '@/services/wallet/walletEvents'
+import {
+  invitationError,
+  inviteAccept,
+  requestToOwner,
+  inviteReject,
+  joiningError,
+} from './inviteEvents'
 
 type EncryptedUserId = {
   userId: string
@@ -94,7 +100,7 @@ export class InviteService {
         throw new FormValidationError(InviteServiceFormErrors.unknownError)
     }
 
-    const devicesReached = await InvitePubSubService.requestToOwner({
+    const devicesReached = await requestToOwner({
       walletOwner: userInviter,
       joiningUser,
       b64PublicECDHKey,
@@ -187,7 +193,7 @@ export class InviteService {
       b64InviteString,
       b64InviteSignatureByJoiningUser,
     })
-    return InvitePubSubService.invitationError({
+    return invitationError({
       joiningUser,
       walletId: wallet.id,
     })
@@ -265,11 +271,11 @@ export class InviteService {
        */
       return Promise.all([
         WalletManager.addRejectedInvite(payload),
-        InvitePubSubService.invitationReject({
+        inviteReject({
           walletId: wallet.id,
           joiningUser,
         }),
-        WalletPubSubService.publishWalletUpdates({
+        publishWalletUpdate({
           wallet: (await WalletManager.byId(wallet.id))!,
         }),
       ])
@@ -280,7 +286,7 @@ export class InviteService {
         ...payload,
         userId: joiningUser.id,
       }),
-      InvitePubSubService.invitationAccept({
+      inviteAccept({
         joiningUser,
         walletId: wallet.id,
         encryptedSecretKey: encryptedSecretKey!,
@@ -338,12 +344,12 @@ export class InviteService {
 
     if (result > 0)
       return Promise.all([
-        InvitePubSubService.joiningError({
+        joiningError({
           ownerId: owner.id,
           walletId: wallet.id,
           username: joiningUser.username,
         }),
-        WalletPubSubService.publishWalletUpdates({ wallet }),
+        publishWalletUpdate({ wallet }),
       ])
   }
 }

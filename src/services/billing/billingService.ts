@@ -22,7 +22,7 @@ import { WalletService } from '@/services/wallet/walletService'
 import { BillingJWTAddition, ChargeEventData } from './types'
 import { coinbaseProvider } from './coinbaseProvider'
 import { tinkoffProvider } from './tinkoffProvider'
-import { BillingPubSubService } from './billingPubSubService'
+import { publishChargeUpdate } from './billingEvents'
 
 export class BillingService {
   private static async updatePlanAccordingToCharge(
@@ -147,7 +147,7 @@ export class BillingService {
             .flatMap((wallet) => wallet.users.map((user) => user.id)),
         ),
       ]
-    return BillingPubSubService.publishChargedata({
+    return publishChargeUpdate({
       chargeEvent,
       relatedUserIds,
     })

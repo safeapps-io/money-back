@@ -4,7 +4,7 @@ import { AccessError, RequestError } from '@/services/errors'
 import Wallet, { WalletManager } from '@/models/wallet.model'
 import { runSchemaWithFormError, requiredString } from '@/utils/yupHelpers'
 import { AccessLevels } from '@/models/walletAccess.model'
-import { WalletPubSubService } from './walletPubSubService'
+import { publishWalletDestroy, publishWalletUpdate } from './walletEvents'
 
 export class WalletService {
   static async getWalletByUserAndId({
@@ -67,7 +67,7 @@ export class WalletService {
 
     const connectedUserIds = await this.getWalletUserIds(wallet.id)
     await WalletManager.destroy(walletId)
-    return WalletPubSubService.publishWalletDestroy({
+    return publishWalletDestroy({
       walletId: wallet.id,
       connectedUserIds: connectedUserIds!,
     })
@@ -81,10 +81,10 @@ export class WalletService {
 
     const updatedWallet = await WalletManager.byId(walletId)
     await Promise.all([
-      WalletPubSubService.publishWalletUpdates({
+      publishWalletUpdate({
         wallet: updatedWallet!,
       }),
-      WalletPubSubService.publishWalletDestroy({
+      publishWalletDestroy({
         walletId,
         connectedUserIds: [userId],
       }),
@@ -167,9 +167,7 @@ export class WalletService {
 
     const refetchedWallets = await WalletManager.byIds(userWalletIds)
     await Promise.all(
-      refetchedWallets.map((wallet) =>
-        WalletPubSubService.publishWalletUpdates({ wallet }),
-      ),
+      refetchedWallets.map((wallet) => publishWalletUpdate({ wallet })),
     )
     return refetchedWallets
   }
@@ -209,7 +207,7 @@ export class WalletService {
       }
     }
 
-    await WalletPubSubService.publishWalletUpdates({ wallet })
+    await publishWalletUpdate({ wallet })
 
     return wallet
   }

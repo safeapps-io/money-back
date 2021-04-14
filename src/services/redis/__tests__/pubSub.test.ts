@@ -19,7 +19,7 @@ import { clearMocks } from '@/utils/jestHelpers'
 describe('Redis PubSub', () => {
   const channels = ['channel'],
     otherChannels = ['otherChannels'],
-    subscriberId = 'subsId',
+    clientId = 'subsId',
     callback = jest.fn(),
     callbackKey = '1',
     callback2 = jest.fn(),
@@ -43,13 +43,13 @@ describe('Redis PubSub', () => {
   it('subscribes and calls callbacks if it is not from the same publisher', async () => {
     await redisPubSub.subscribe({
       channels,
-      subscriberId,
+      clientId,
       callback,
       callbackKey,
     })
     await redisPubSub.subscribe({
       channels: otherChannels,
-      subscriberId,
+      clientId,
       callback: callback2,
       callbackKey: callbackKey2,
     })
@@ -57,7 +57,7 @@ describe('Redis PubSub', () => {
 
     redisPubSub.handleMessage(
       channels[0],
-      JSON.stringify({ data, id: subscriberId }),
+      JSON.stringify({ data, id: clientId }),
     )
     expect(callback.mock.calls.length).toBe(0)
 
@@ -73,13 +73,13 @@ describe('Redis PubSub', () => {
   it('does not subscribe in redis if subscription was already triggered', async () => {
     await redisPubSub.subscribe({
       channels,
-      subscriberId,
+      clientId,
       callback,
       callbackKey,
     })
     await redisPubSub.subscribe({
       channels,
-      subscriberId: 'other',
+      clientId: 'other',
       callback,
       callbackKey,
     })
@@ -89,14 +89,14 @@ describe('Redis PubSub', () => {
   it('publishes messages', async () => {
     await redisPubSub.publish({
       channel: channels[0],
-      publisherId: subscriberId,
+      clientId,
       data: { data },
     })
 
     expect(mockConnection.publish.mock.calls.length).toBe(1)
     expect(mockConnection.publish.mock.calls[0][0]).toBe(channels[0])
     expect(mockConnection.publish.mock.calls[0][1]).toBe(
-      JSON.stringify({ id: subscriberId, data: { data } }),
+      JSON.stringify({ id: clientId, data: { data } }),
     )
   })
 
@@ -106,24 +106,24 @@ describe('Redis PubSub', () => {
 
     await redisPubSub.subscribe({
       channels,
-      subscriberId,
+      clientId,
       callback,
       callbackKey,
     })
     await redisPubSub.subscribe({
       channels,
-      subscriberId,
+      clientId,
       callback: callback2,
       callbackKey: callbackKey2,
     })
 
-    await redisPubSub.removeHandler({ channels, subscriberId, callbackKey })
+    await redisPubSub.removeHandler({ channels, clientId, callbackKey })
     expect(mockSubscriptionConnection.unsubscribe.mock.calls.length).toBe(0)
     expect(Object.keys(redisPubSub.log.get(channels[0])!).length).toBe(1)
 
     await redisPubSub.removeHandler({
       channels,
-      subscriberId,
+      clientId,
       callbackKey: callbackKey2,
     })
     expect(mockSubscriptionConnection.unsubscribe.mock.calls.length).toBe(1)
@@ -135,22 +135,22 @@ describe('Redis PubSub', () => {
 
     await redisPubSub.subscribe({
       channels,
-      subscriberId,
+      clientId,
       callback,
       callbackKey,
     })
     await redisPubSub.subscribe({
       channels,
-      subscriberId: otherSubscriberId,
+      clientId: otherSubscriberId,
       callback,
       callbackKey,
     })
 
-    await redisPubSub.unsubscribe({ channels, subscriberId })
+    await redisPubSub.unsubscribe({ channels, clientId })
     expect(mockSubscriptionConnection.unsubscribe.mock.calls.length).toBe(0)
     expect(Object.keys(redisPubSub.log.get(channels[0])!).length).toBe(1)
 
-    await redisPubSub.unsubscribe({ channels, subscriberId: otherSubscriberId })
+    await redisPubSub.unsubscribe({ channels, clientId: otherSubscriberId })
     expect(mockSubscriptionConnection.unsubscribe.mock.calls.length).toBe(1)
     expect(redisPubSub.log.get(channels[0])).toBeUndefined()
   })

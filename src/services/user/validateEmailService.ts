@@ -2,7 +2,7 @@ import User, { UserManager } from '@/models/user.model'
 import { signJwt, verifyJwt } from '@/utils/crypto'
 import { FormValidationError } from '@/services/errors'
 import { MessageService } from '@/services/message/messageService'
-import { UserUpdatesPubSubService } from './userUpdatesPubSubService'
+import { publishUserUpdate } from './userEvents'
 
 export const jwtSubject = 'vem' // Validate EMail
 
@@ -82,7 +82,7 @@ export class ValidateEmailService {
     await this.isEmailTaken(email, userId)
     const res = await UserManager.update(userId, { email })
 
-    await UserUpdatesPubSubService.publishUserUpdates({ user: res })
+    await publishUserUpdate({ user: res })
     return res
   }
 }

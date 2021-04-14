@@ -6,7 +6,6 @@ import { sendAuthCookies } from '@/middlewares/isAuth'
 import { UserService } from '@/services/user/userService'
 import { getDeviceDescription } from '@/services/deviceDescription'
 import { ValidateEmailService } from '@/services/user/validateEmailService'
-import { InviteService } from '@/services/invite/inviteService'
 import {
   constructSimplePostRouter,
   createLimiter,
@@ -16,27 +15,6 @@ import {
 import { serializeModel, Serializers } from '@/models/serializers'
 
 export const newUserRouter = Router()
-  .use(
-    '/invite/is-valid/:invite',
-    constructSimplePostRouter({
-      // Block for 1 hour if 25 failed attempts were taken in a 1 hour
-      limiter: createLimiter('inviteIsValid', {
-        points: 25,
-        duration: 60 * 60,
-        blockDuration: 60 * 60,
-      }),
-      handler: async (req, res) => {
-        const parsedInvite = await InviteService.parseAndValidateInvite(
-          req.params.invite as string,
-        )
-
-        // @ts-ignore
-        if ('userInviter' in parsedInvite) delete parsedInvite.userInviter
-
-        res.json(parsedInvite)
-      },
-    }),
-  )
   .use(
     '/signup',
     constructSimplePostRouter({
@@ -68,7 +46,7 @@ export const newUserRouter = Router()
         sendAuthCookies(res, accessToken, refreshToken)
 
         res.json({
-          user: serializeModel(user, Serializers.userFull),
+          user: serializeModel(user, Serializers.userFullNoAssociations),
           isWalletInvite,
         })
       },
@@ -140,7 +118,7 @@ newUserRouter.use(
 
         sendAuthCookies(res, accessToken, refreshToken)
 
-        res.json(serializeModel(user, Serializers.userFull))
+        res.json(serializeModel(user, Serializers.userFullNoAssociations))
       } catch (error) {
         await Promise.all(
           checksAndKeysMap.map(([key, limiter]) => limiter.consume(key)),

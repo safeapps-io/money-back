@@ -2,14 +2,11 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 import express from 'express'
-import expressWs from 'express-ws'
 import cors from 'cors'
 import helmet from 'helmet'
 import { urlencoded, json } from 'body-parser'
 import cookieParser from 'cookie-parser'
 import multer from 'multer'
-
-const { app } = expressWs(express())
 
 import pathJoin from '@/utils/pathJoin'
 import logger from '@/middlewares/logger'
@@ -18,6 +15,8 @@ import { router } from '@/router'
 import delayOnDevMiddleware from '@/middlewares/delayOnDev'
 import { initRedisConnection } from '@/services/redis/connection'
 import { redisPubSub } from '@/services/redis/pubSub'
+
+const app = express()
 
 const constructApp = async () => {
   await sequelize.sync()

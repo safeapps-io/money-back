@@ -3,12 +3,17 @@ import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
 import { isPlanActive } from '@/middlewares/isPlanActive'
+import { sse } from '@/middlewares/sse'
+
 import { WalletService } from '@/services/wallet/walletService'
+import { walletEventSender } from '@/services/wallet/walletEvents'
 import Wallet from '@/models/wallet.model'
 import { serializeModel, Serializers } from '@/models/serializers'
 
-export const walletRouter = Router()
-  .use(isRestAuth())
+export const walletRouter = Router().use(isRestAuth())
+
+walletRouter
+  .get('/updates', sse(walletEventSender))
   .post<{}, Wallet, { chest: string }>(
     '',
     isPlanActive(),

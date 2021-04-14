@@ -3,13 +3,14 @@ import { json } from 'body-parser'
 import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
+import { sse } from '@/middlewares/sse'
 import { BillingService } from '@/services/billing/billingService'
+import { chargeEventSender } from '@/services/billing/billingEvents'
 import { ChargeProviders } from '@/models/billing/chargeEvent.model'
 import { TinkoffClientDataReturn } from '@/services/billing/tinkoffProvider'
 import { CoinbaseClientDataReturn } from '@/services/billing/coinbaseProvider'
 import Plan from '@/models/billing/plan.model'
 import { serializeModel, Serializers } from '@/models/serializers'
-import { errorHandler } from '@/middlewares/errorHandler'
 
 export const billingRouter = Router()
 
@@ -21,6 +22,8 @@ billingRouter.get<{}, Plan>(
     return res.json(serializeModel(result, Serializers.planFull))
   }),
 )
+
+billingRouter.get('/charge/updates', isRestAuth(), sse(chargeEventSender))
 
 billingRouter
   .use(
@@ -59,7 +62,3 @@ billingRouter
       return res.status(200)
     }),
   )
-
-billingRouter
-  .use((_, res) => res.status(404).json({ error: 'No such path' }).end())
-  .use(errorHandler)

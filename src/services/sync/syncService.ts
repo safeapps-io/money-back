@@ -7,17 +7,17 @@ import Wallet from '@/models/wallet.model'
 import { WalletService } from '@/services/wallet/walletService'
 import { BillingService } from '@/services/billing/billingService'
 import { ClientChangesData, EntityUpdated, ServerUpdatesMap } from './types'
-import { SyncPubSubService } from './syncPubSubService'
+import { publishEntityUpdate } from './syncEvents'
 
 export class SyncService {
   private static async handleUpdatesByWallet({
     entities,
     wallet,
-    socketId,
+    clientId,
   }: {
     entities: EntityUpdated[]
     wallet: Wallet
-    socketId: string
+    clientId: string
   }) {
     if (!entities.length) return
 
@@ -66,10 +66,10 @@ export class SyncService {
       results.push(...(await Promise.all(promises)))
     }
 
-    return SyncPubSubService.publishEntitiesUpdates({
-      data: results,
+    return publishEntityUpdate({
       wallet,
-      socketId,
+      clientId,
+      entities: results,
     })
   }
 
@@ -86,11 +86,11 @@ export class SyncService {
   )
   static async handleClientUpdates({
     userId,
-    socketId,
+    clientId,
     entityMap: unfilteredEntityMap,
   }: {
     userId: string
-    socketId: string
+    clientId: string
     entityMap: ClientChangesData
   }) {
     /**
@@ -135,7 +135,7 @@ export class SyncService {
         return this.handleUpdatesByWallet({
           wallet,
           entities,
-          socketId,
+          clientId,
         })
       }),
     )

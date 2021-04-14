@@ -3,13 +3,18 @@ import ash from 'express-async-handler'
 
 import { isRestAuth, resetCookies } from '@/middlewares/isAuth'
 import { UserService, Session } from '@/services/user/userService'
+import { serializeModel, Serializers } from '@/models/serializers'
 
 export const sessionsRouter = Router()
   .use(isRestAuth())
   .get<{}, Session[]>(
     '',
     ash(async (req, res) => {
-      res.json(await UserService.getAllSessions(req.userId, req.tokens.refresh))
+      const sessions = await UserService.getAllSessions(
+        req.userId,
+        req.tokens.refresh,
+      )
+      res.json(serializeModel(sessions, Serializers.session))
     }),
   )
   .delete<{}, Session[], { id: string | null }>('', async (req, res) => {
@@ -18,7 +23,11 @@ export const sessionsRouter = Router()
       toDeleteId: req.body.id,
       currentKey: req.tokens.refresh,
     })
-    res.json(await UserService.getAllSessions(req.userId, req.tokens.refresh))
+    const sessions = await UserService.getAllSessions(
+      req.userId,
+      req.tokens.refresh,
+    )
+    res.json(serializeModel(sessions, Serializers.session))
   })
   .post<{}, {}, {}>(
     '/logout',

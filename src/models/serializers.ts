@@ -2,6 +2,7 @@ import BaseModel from '@/models/base'
 
 export enum Serializers {
   userFull = 'userFull',
+  userFullNoAssociations = 'userFullNoAssociations',
   session = 'session',
   walletAccess = 'walletAccess',
   walletUser = 'walletUser',
@@ -11,10 +12,23 @@ export enum Serializers {
   chargeEvent = 'chargeEvent',
   planFull = 'planFull',
   planPartial = 'planPartial',
+  scheme = 'scheme',
+  metaCategory = 'metaCategory',
 }
 
 const baseModelFields = ['id', 'created', 'updated'],
-  userCommonFields = [...baseModelFields, 'username']
+  userCommonFields = [...baseModelFields, 'username'],
+  userFullAttrs = [
+    ...userCommonFields,
+    'email',
+    'isAdmin',
+    'isSubscribed',
+    'b64InvitePublicKey',
+    'b64EncryptedInvitePrivateKey',
+    'b64salt',
+    'encr',
+    'isAdmin',
+  ]
 
 const serializerNameToConfig: {
   [serializerName in Serializers]: {
@@ -23,18 +37,11 @@ const serializerNameToConfig: {
   }
 } = {
   userFull: {
-    attrs: [
-      ...userCommonFields,
-      'email',
-      'isAdmin',
-      'isSubscribed',
-      'b64InvitePublicKey',
-      'b64EncryptedInvitePrivateKey',
-      'b64salt',
-      'encr',
-      'isAdmin',
-    ],
+    attrs: userFullAttrs,
     associations: [['plans', Serializers.planPartial]],
+  },
+  userFullNoAssociations: {
+    attrs: userFullAttrs,
   },
   session: {
     attrs: [...baseModelFields, 'description', 'current'],
@@ -76,6 +83,24 @@ const serializerNameToConfig: {
   },
   planPartial: {
     attrs: [...baseModelFields, 'expires'],
+  },
+  scheme: {
+    attrs: [
+      ...baseModelFields,
+      'title',
+      'encoding',
+      'header',
+      'decimalDelimiterChar',
+      'transformDateFormat',
+      'fieldnameMap',
+      'delimiter',
+      'newline',
+      'quoteChar',
+      'escapeChar',
+    ],
+  },
+  metaCategory: {
+    attrs: [...baseModelFields, 'isIncome', 'name', 'color', 'assignedMcc'],
   },
 }
 
