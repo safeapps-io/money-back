@@ -137,9 +137,11 @@ export class WalletService {
       .noUnknown(),
   )
   static async updateChests({
+    clientId,
     userId,
     chests,
   }: {
+    clientId: string | null
     userId: string
     chests: { walletId: string; chest: string }[]
   }) {
@@ -167,7 +169,9 @@ export class WalletService {
 
     const refetchedWallets = await WalletManager.byIds(userWalletIds)
     await Promise.all(
-      refetchedWallets.map((wallet) => publishWalletUpdate({ wallet })),
+      refetchedWallets.map((wallet) =>
+        publishWalletUpdate({ wallet, clientId: clientId || '' }),
+      ),
     )
     return refetchedWallets
   }

@@ -27,6 +27,8 @@ export const authorizedPasswordRouter = Router()
     User,
     {
       b64salt: string
+      encr: string | null
+      clientId: string | null
       b64InvitePublicKey: string
       b64EncryptedInvitePrivateKey: string
       chests: { walletId: string; chest: string }[]

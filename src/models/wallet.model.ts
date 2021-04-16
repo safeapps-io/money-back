@@ -67,7 +67,7 @@ export class WalletManager {
   static byId(id: string) {
     return Wallet.findOne({
       where: { id },
-      include: [User],
+      include: [{ model: User, include: [{ model: Plan }] }],
     })
   }
 
