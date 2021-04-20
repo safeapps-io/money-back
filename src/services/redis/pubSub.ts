@@ -1,4 +1,4 @@
-import { subscriptionConnection, connection } from './connection'
+import { subscriptionConnection, redisConnection } from './connection'
 
 type BaseMessage = {
   data: any
@@ -70,7 +70,7 @@ class RedisPubSubService {
     clientId?: string
   }) {
     const message: BaseMessage = { clientId, callbackKey, data }
-    return connection.publish(channel, JSON.stringify(message))
+    return redisConnection.publish(channel, JSON.stringify(message))
   }
 
   /**

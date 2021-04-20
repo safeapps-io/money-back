@@ -5,9 +5,9 @@ export const request = async <Res = {}>({
   path = '',
   data = {},
 }: {
-  method: 'GET' | 'POST'
+  method?: 'GET' | 'POST'
   path: string
-  data: Object
+  data?: Object
 }) => {
   const body = method === 'GET' ? undefined : JSON.stringify(data),
     req = new Request(path, {
@@ -17,6 +17,7 @@ export const request = async <Res = {}>({
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
+      timeout: 5000,
     })
 
   let res: Response, json: Res

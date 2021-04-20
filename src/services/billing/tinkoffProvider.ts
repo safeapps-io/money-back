@@ -1,8 +1,11 @@
+import { nanoid } from 'nanoid'
+
 import productModel from '@/models/billing/product.model'
 import { BillingProvider, EventHandlerContext } from './types'
 import { CryptoService } from '@/services/crypto/cryptoService'
 import { request } from '@/services/request'
 import { EventTypes } from '@/models/billing/chargeEvent.model'
+import { ExchangeRateService } from './exchangeRate'
 
 export type TinkoffClientDataReturn = { link: string }
 
@@ -27,7 +30,17 @@ class TinkoffProvider implements BillingProvider {
   }
 
   async createCharge(product: productModel, userId: string, planId: string) {
-    const body: {
+    // Tinkoff requires each order to have a unique ID
+    const currentRate = await ExchangeRateService.getExchangeRate()
+    /**
+     * Making the price round to 10 rubles for the beauty of it.
+     * `product.price` is cents, and we need to pass the price in kopeykas, so
+     * multiply/divide by 1000.
+     */
+    const price = Math.floor((product.price * currentRate) / 1000) * 1000
+
+    const orderId = nanoid(),
+      body: {
         TerminalKey: string
         Amount: number
         OrderId: string
@@ -35,9 +48,8 @@ class TinkoffProvider implements BillingProvider {
         DATA: { [key: string]: string }
       } = {
         TerminalKey: process.env.TINKOFF_TERMINAL_KEY as string,
-        // FIXME: pull exchange rates from some place
-        Amount: product.price * 76,
-        OrderId: planId,
+        Amount: price,
+        OrderId: orderId,
         Language: 'en',
         DATA: { planId, userId },
       },
@@ -54,6 +66,7 @@ class TinkoffProvider implements BillingProvider {
     }
 
     const chargeData = {
+        id: orderId,
         remoteChargeId: json.PaymentId.toString(),
         rawData: JSON.stringify(json),
       },

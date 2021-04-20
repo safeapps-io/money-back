@@ -8,6 +8,7 @@ export type EventHandlerContext = {
   headers: Request['headers']
 }
 export type ChargeEventData = {
+  id?: string
   eventType: EventTypes
   remoteChargeId: string
   rawData: string
