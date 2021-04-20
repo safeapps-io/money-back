@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { inviteRouter } from './invite'
 import { newUserRouter } from './newUser'
 import { authorizedPasswordRouter, resetPasswordRouter } from './password'
 
@@ -11,3 +12,4 @@ export const authRouter = Router()
   .use('/user/session', sessionsRouter)
   .use('/user/password', authorizedPasswordRouter)
   .use('/reset-password', resetPasswordRouter)
+  .use('/invite', inviteRouter)

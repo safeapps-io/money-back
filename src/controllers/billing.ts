@@ -3,9 +3,7 @@ import { json } from 'body-parser'
 import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
-import { sse } from '@/middlewares/sse'
 import { BillingService } from '@/services/billing/billingService'
-import { chargeEventSender } from '@/services/billing/billingEvents'
 import { ChargeProviders } from '@/models/billing/chargeEvent.model'
 import { TinkoffClientDataReturn } from '@/services/billing/tinkoffProvider'
 import { CoinbaseClientDataReturn } from '@/services/billing/coinbaseProvider'
@@ -22,8 +20,6 @@ billingRouter.get<{}, Plan>(
     return res.json(serializeModel(result, Serializers.planFull))
   }),
 )
-
-billingRouter.get('/charge/updates', isRestAuth(), sse(chargeEventSender))
 
 billingRouter
   .use(

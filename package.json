@@ -10,6 +10,7 @@
     "run:shell": "TS_NODE_FILES=true ts-node -T -r tsconfig-paths/register -r ./src/shell.ts",
     "pretest": "sequelize-cli db:drop --env test && sequelize-cli db:create --env test && sequelize-cli db:migrate --env test && sequelize-cli db:seed --seed 1-base --env test",
     "test": "jest --watch -i",
+    "type": "tsc --noEmit",
     "dev": "nodemon -q --watch src --ignore 'src/**/*.spec.ts' --exec 'TS_NODE_FILES=true ts-node -r tsconfig-paths/register' src/server.ts | pino-pretty"
   },
   "dependencies": {

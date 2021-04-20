@@ -56,7 +56,7 @@ export class WalletService {
       walletId: requiredString,
     })
     .noUnknown()
-  static async destroy(userId: string, walletId: string) {
+  static async destroy(userId: string, walletId: string, clientId: string) {
     runSchemaWithFormError(this.destroyScheme, { userId, walletId })
 
     const wallet = await WalletManager.byId(walletId)
@@ -68,12 +68,17 @@ export class WalletService {
     const connectedUserIds = await this.getWalletUserIds(wallet.id)
     await WalletManager.destroy(walletId)
     return publishWalletDestroy({
+      clientId,
       walletId: wallet.id,
       connectedUserIds: connectedUserIds!,
     })
   }
 
-  static async removeUserWalletAccess(userId: string, walletId: string) {
+  static async removeUserWalletAccess(
+    userId: string,
+    walletId: string,
+    clientId: string,
+  ) {
     await WalletManager.removeUser({
       walletId,
       userId,
@@ -82,9 +87,11 @@ export class WalletService {
     const updatedWallet = await WalletManager.byId(walletId)
     await Promise.all([
       publishWalletUpdate({
+        clientId,
         wallet: updatedWallet!,
       }),
       publishWalletDestroy({
+        clientId,
         walletId,
         connectedUserIds: [userId],
       }),
@@ -104,10 +111,12 @@ export class WalletService {
     initiatorId,
     walletId,
     userToRemoveId,
+    clientId,
   }: {
     initiatorId: string
     walletId: string
     userToRemoveId: string
+    clientId: string
   }) {
     runSchemaWithFormError(this.removeUserScheme, {
       initiatorId,
@@ -125,7 +134,7 @@ export class WalletService {
         (isOwner && !isRemovingSelf) || (!isOwner && isRemovingSelf)
 
     if (!allowOperation) throw new RequestError('Operation not allowed')
-    return this.removeUserWalletAccess(userToRemoveId, wallet.id)
+    return this.removeUserWalletAccess(userToRemoveId, wallet.id, clientId)
   }
 
   private static updateChestsScheme = yup.array(
@@ -141,7 +150,7 @@ export class WalletService {
     userId,
     chests,
   }: {
-    clientId: string | null
+    clientId: string
     userId: string
     chests: { walletId: string; chest: string }[]
   }) {
@@ -170,7 +179,7 @@ export class WalletService {
     const refetchedWallets = await WalletManager.byIds(userWalletIds)
     await Promise.all(
       refetchedWallets.map((wallet) =>
-        publishWalletUpdate({ wallet, clientId: clientId || '' }),
+        publishWalletUpdate({ wallet, clientId }),
       ),
     )
     return refetchedWallets
@@ -187,10 +196,12 @@ export class WalletService {
     userId,
     walletId,
     chest,
+    clientId,
   }: {
     userId: string
     walletId: string
     chest: string
+    clientId: string
   }) {
     runSchemaWithFormError(this.updateSingleChestScheme, {
       userId,
@@ -211,7 +222,7 @@ export class WalletService {
       }
     }
 
-    await publishWalletUpdate({ wallet })
+    await publishWalletUpdate({ wallet, clientId })
 
     return wallet
   }

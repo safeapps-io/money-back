@@ -2,17 +2,18 @@ import { Request, Response, NextFunction } from 'express'
 import { nanoid } from 'nanoid'
 import ash from 'express-async-handler'
 import { random } from 'lodash'
-import { VoidExpression } from 'typescript'
 
 /**
  * Offers a basic boilerplate to make this endpoint SSE compatible.
  */
 export const sse = (
-  eventSender: (
-    userId: string,
-    clientId: string,
-    send: SSESender,
-  ) => Promise<() => Promise<void>>,
+  senders: Array<
+    (
+      userId: string,
+      clientId: string,
+      send: SSESender,
+    ) => Promise<() => Promise<void>>
+  >,
 ) =>
   ash(async (req: Request, res: Response, _: NextFunction) => {
     const headers = {
@@ -22,17 +23,21 @@ export const sse = (
     }
     res.writeHead(200, headers)
 
-    const clientId = nanoid(),
-      send: SSESender = (data) =>
-        res.write(`data: ${JSON.stringify(data)}\nid: ${nanoid()}\n\n`)
-
+    const send: SSESender = ({ type, data }) => {
+      let dataToSend = `event: ${type}\n`
+      if (typeof data !== 'undefined')
+        dataToSend += `data: ${JSON.stringify(data)}\n`
+      dataToSend += `id: ${nanoid()}\n\n`
+      res.write(dataToSend)
+    }
     res.write(`retry: ${random(3000, 10000)}\n\n`)
-    send({ type: 'clientId', data: clientId })
 
-    const unsub = await eventSender(req.userId, clientId, send)
+    const unsubs = await Promise.all(
+      senders.map((sender) => sender(req.userId, req.params.clientId, send)),
+    )
 
     req.on('close', () =>
-      unsub!()
+      Promise.all(unsubs.map((unsub) => unsub()))
         .catch((e) => console.error('Error during closing SSE', e))
         .finally(() => res.end()),
     )

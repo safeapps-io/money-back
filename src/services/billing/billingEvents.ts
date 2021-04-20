@@ -3,7 +3,7 @@ import { serializeModel, Serializers } from '@/models/serializers'
 import { redisPubSub } from '@/services/redis/pubSub'
 
 const enum MessageTypes {
-  charge = 'charge',
+  charge = 'billing/charge',
 }
 
 type BillingChargeEvent = { type: MessageTypes.charge; data: ChargeEvent }
@@ -36,12 +36,19 @@ export const publishChargeUpdate = ({
   chargeEvent: ChargeEvent
   relatedUserIds: string[]
 }) => {
+  const data: BillingChargeEvent = {
+    type: MessageTypes.charge,
+    data: serializeModel(chargeEvent, Serializers.chargeEvent),
+  }
+
   return Promise.all(
     relatedUserIds.map((id) =>
       redisPubSub.publish({
         channel: redisPubSub.getUserChannel(id),
         callbackKey,
-        data: serializeModel(chargeEvent, Serializers.chargeEvent),
+        data,
+        // It is triggered by webhooks and not user, so there's no clientId
+        clientId: '',
       }),
     ),
   )

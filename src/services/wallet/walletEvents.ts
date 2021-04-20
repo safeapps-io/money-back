@@ -4,13 +4,16 @@ import { redisPubSub } from '../redis/pubSub'
 import { WalletService } from './walletService'
 
 const enum MessageTypes {
-  all = 'all',
-  single = 'single',
-  delete = 'delete',
+  all = 'wallet/all',
+  single = 'wallet/single',
+  delete = 'wallet/delete',
 }
 
 type WalletDataEvent = { type: MessageTypes.single; data: Wallet }
-type WalletDestroyEvent = { type: MessageTypes.delete; data: string }
+type WalletDestroyEvent = {
+  type: MessageTypes.delete
+  data: { walletId: string }
+}
 
 const callbackKey = 'wallet'
 
@@ -43,7 +46,7 @@ export const publishWalletUpdate = ({
     clientId,
     wallet,
   }: {
-    clientId?: string
+    clientId: string
     wallet: Wallet
   }) => {
     if (!wallet.users)
@@ -68,16 +71,24 @@ export const publishWalletUpdate = ({
   },
   publishWalletDestroy = ({
     walletId,
+    clientId,
     connectedUserIds,
   }: {
     walletId: string
+    clientId: string
     connectedUserIds: string[]
   }) => {
+    const data: WalletDestroyEvent = {
+      type: MessageTypes.delete,
+      data: { walletId },
+    }
+
     return Promise.all(
       connectedUserIds.map((userId) =>
         redisPubSub.publish({
           channel: redisPubSub.getUserChannel(userId),
-          data: walletId,
+          clientId,
+          data,
           callbackKey,
         }),
       ),

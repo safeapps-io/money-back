@@ -28,7 +28,6 @@ export const authorizedPasswordRouter = Router()
     {
       b64salt: string
       encr: string | null
-      clientId: string | null
       b64InvitePublicKey: string
       b64EncryptedInvitePrivateKey: string
       chests: { walletId: string; chest: string }[]
@@ -40,6 +39,7 @@ export const authorizedPasswordRouter = Router()
       const user = await UserService.updateMasterPassword({
         ...req.body,
         userId: req.userId,
+        clientId: req.sse.clientId,
       })
 
       res.json(serializeModel(user, Serializers.userFull))
@@ -47,7 +47,14 @@ export const authorizedPasswordRouter = Router()
   )
 
 export const resetPasswordRouter = Router()
-  .post(
+  .get('/:token', async (req, res) => {
+    await PasswordService.getUserIdFromPasswordResetToken(
+      req.params.token as string,
+    )
+
+    res.json({})
+  })
+  .use(
     '/request',
     constructSimplePostRouter({
       // Block for 5 hour after 50 resets were performed in 1 hour
@@ -64,25 +71,7 @@ export const resetPasswordRouter = Router()
       },
     }),
   )
-  .get(
-    '/:token',
-    constructSimplePostRouter({
-      // Block for 24 hours if 25 failed attempts were taken in a day
-      limiter: createLimiter('usePasswordReset', {
-        points: 25,
-        duration: 60 * 60 * 24,
-        blockDuration: 60 * 60 * 24,
-      }),
-      handler: async (req, res) => {
-        await PasswordService.getUserIdFromPasswordResetToken(
-          req.params.token as string,
-        )
-
-        res.json({})
-      },
-    }),
-  )
-  .post(
+  .use(
     '/:token',
     constructSimplePostRouter({
       // Block for 24 hours if 25 failed attempts were taken in a day

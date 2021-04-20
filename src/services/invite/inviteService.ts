@@ -62,11 +62,13 @@ export class InviteService {
    * Runs invite string validations and sends first notification to the wallet owner.
    */
   static async launchWalletJoin({
+    clientId,
     joiningUser,
     b64InviteString,
     b64InviteSignatureByJoiningUser,
     b64PublicECDHKey,
   }: {
+    clientId: string
     joiningUser: User
     b64InviteString: string
     b64InviteSignatureByJoiningUser: string
@@ -101,6 +103,7 @@ export class InviteService {
     }
 
     const devicesReached = await requestToOwner({
+      clientId,
       walletOwner: userInviter,
       joiningUser,
       b64PublicECDHKey,
@@ -177,11 +180,13 @@ export class InviteService {
    * It will inform joining user that something went wrong.
    */
   static async invitationError({
+    clientId,
     walletOwnerId,
     joiningUserId,
     b64InviteSignatureByJoiningUser,
     b64InviteString,
   }: {
+    clientId: string
     walletOwnerId: string
     joiningUserId: string
     b64InviteString: string
@@ -194,6 +199,7 @@ export class InviteService {
       b64InviteSignatureByJoiningUser,
     })
     return invitationError({
+      clientId,
       joiningUser,
       walletId: wallet.id,
     })
@@ -220,6 +226,7 @@ export class InviteService {
    * to join the wallet.
    */
   static async invitationResolution({
+    clientId,
     walletOwnerId,
     allowJoin,
     joiningUserId,
@@ -229,6 +236,7 @@ export class InviteService {
     b64PublicECDHKey,
     encryptedSecretKey,
   }: {
+    clientId: string
     walletOwnerId: string
 
     joiningUserId: string
@@ -272,10 +280,12 @@ export class InviteService {
       return Promise.all([
         WalletManager.addRejectedInvite(payload),
         inviteReject({
+          clientId,
           walletId: wallet.id,
           joiningUser,
         }),
         publishWalletUpdate({
+          clientId,
           wallet: (await WalletManager.byId(wallet.id))!,
         }),
       ])
@@ -287,6 +297,7 @@ export class InviteService {
         userId: joiningUser.id,
       }),
       inviteAccept({
+        clientId,
         joiningUser,
         walletId: wallet.id,
         encryptedSecretKey: encryptedSecretKey!,
@@ -310,9 +321,11 @@ export class InviteService {
    * Wipes the WA and notifies the wallet owner about this.
    */
   static async joiningError({
+    clientId,
     joiningUser,
     b64InviteString,
   }: {
+    clientId: string
     joiningUser: User
     b64InviteString: string
   }) {
@@ -345,11 +358,12 @@ export class InviteService {
     if (result > 0)
       return Promise.all([
         joiningError({
+          clientId,
           ownerId: owner.id,
           walletId: wallet.id,
           username: joiningUser.username,
         }),
-        publishWalletUpdate({ wallet }),
+        publishWalletUpdate({ clientId, wallet }),
       ])
   }
 }

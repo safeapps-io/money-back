@@ -82,7 +82,8 @@ export class ValidateEmailService {
     await this.isEmailTaken(email, userId)
     const res = await UserManager.update(userId, { email })
 
-    await publishUserUpdate({ user: res })
+    // This Can be performed by an unauthorized user, so no clientId
+    await publishUserUpdate({ user: res, clientId: '' })
     return res
   }
 }

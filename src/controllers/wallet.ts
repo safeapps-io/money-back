@@ -3,17 +3,14 @@ import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
 import { isPlanActive } from '@/middlewares/isPlanActive'
-import { sse } from '@/middlewares/sse'
 
 import { WalletService } from '@/services/wallet/walletService'
-import { walletEventSender } from '@/services/wallet/walletEvents'
 import Wallet from '@/models/wallet.model'
 import { serializeModel, Serializers } from '@/models/serializers'
 
 export const walletRouter = Router().use(isRestAuth())
 
 walletRouter
-  .get('/updates', sse(walletEventSender))
   .post<{}, Wallet, { chest: string }>(
     '',
     isPlanActive(),
@@ -27,6 +24,7 @@ walletRouter
     '/:walletId',
     ash(async (req, res) => {
       const wallet = await WalletService.updateSingleChest({
+        clientId: req.sse.clientId,
         walletId: req.params.walletId,
         userId: req.userId,
         chest: req.body.chest,
@@ -38,24 +36,28 @@ walletRouter
   .delete<{ walletId: string }>(
     '/:walletId',
     ash(async (req, res) => {
-      await WalletService.destroy(req.userId, req.params.walletId)
+      await WalletService.destroy(
+        req.userId,
+        req.params.walletId,
+        req.sse.clientId,
+      )
 
       res.json({})
     }),
   )
   .delete<
-    {},
-    Wallet,
     {
       walletId: string
       userId: string
-    }
+    },
+    Wallet
   >(
-    '/user',
+    '/:walletId/user/:userId',
     ash(async (req, res) => {
-      const { walletId, userId: userToRemoveId } = req.body
+      const { walletId, userId: userToRemoveId } = req.params
 
       const wallet = await WalletService.removeUser({
+        clientId: req.sse.clientId,
         initiatorId: req.userId,
         walletId,
         userToRemoveId,

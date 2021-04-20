@@ -3,7 +3,7 @@ import User from '@/models/user.model'
 import { redisPubSub } from '../redis/pubSub'
 
 const enum MessageTypes {
-  data = 'data',
+  data = 'user/data',
 }
 
 type UserDataEvent = { type: MessageTypes.data; data: User }
@@ -33,7 +33,7 @@ export const publishUserUpdate = ({
   clientId,
   user,
 }: {
-  clientId?: string
+  clientId: string
   user: User
 }) => {
   const data: UserDataEvent = {

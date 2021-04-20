@@ -2,10 +2,10 @@ import User from '@/models/user.model'
 import { redisPubSub } from '../redis/pubSub'
 
 const enum MessageTypes {
-  validate = 'validate',
-  error = 'error',
-  reject = 'reject',
-  accept = 'accept',
+  validate = 'invite/validate',
+  error = 'invite/error',
+  reject = 'invite/reject',
+  accept = 'invite/accept',
 }
 
 const callbackKey = 'invite'
@@ -36,12 +36,14 @@ export const inviteEventSender = async (
 }
 
 export const requestToOwner = ({
+    clientId,
     walletOwner,
     joiningUser,
     b64InviteString,
     b64InviteSignatureByJoiningUser,
     b64PublicECDHKey,
   }: {
+    clientId: string
     walletOwner: User
     joiningUser: User
     b64InviteString: string
@@ -63,16 +65,19 @@ export const requestToOwner = ({
 
     return redisPubSub.publish({
       channel: redisPubSub.getUserChannel(walletOwner.id),
+      clientId,
       data,
       callbackKey,
     })
   },
   invitationError = ({
+    clientId,
     joiningUser,
     walletId,
   }: {
     joiningUser: User
     walletId: string
+    clientId: string
   }) => {
     const data: InviteErrorEvent = {
       type: MessageTypes.error,
@@ -83,11 +88,13 @@ export const requestToOwner = ({
 
     return redisPubSub.publish({
       channel: redisPubSub.getUserChannel(joiningUser.id),
+      clientId,
       data,
       callbackKey,
     })
   },
   inviteAccept = ({
+    clientId,
     joiningUser,
     encryptedSecretKey,
     walletId,
@@ -97,6 +104,7 @@ export const requestToOwner = ({
     encryptedSecretKey: string
     walletId: string
     b64PublicECDHKey: string
+    clientId: string
   }) => {
     const data: InviteAcceptEvent = {
       type: MessageTypes.accept,
@@ -109,16 +117,19 @@ export const requestToOwner = ({
 
     return redisPubSub.publish({
       channel: redisPubSub.getUserChannel(joiningUser.id),
+      clientId,
       data,
       callbackKey,
     })
   },
   inviteReject = ({
+    clientId,
     joiningUser,
     walletId,
   }: {
     joiningUser: User
     walletId: string
+    clientId: string
   }) => {
     const data: InviteRejectEvent = {
       type: MessageTypes.reject,
@@ -128,11 +139,13 @@ export const requestToOwner = ({
     }
     return redisPubSub.publish({
       channel: redisPubSub.getUserChannel(joiningUser.id),
+      clientId,
       data,
       callbackKey,
     })
   },
   joiningError = ({
+    clientId,
     ownerId,
     walletId,
     username,
@@ -140,6 +153,7 @@ export const requestToOwner = ({
     ownerId: string
     walletId: string
     username: string
+    clientId: string
   }) => {
     const data: InviteJoiningError = {
       type: MessageTypes.error,
@@ -150,6 +164,7 @@ export const requestToOwner = ({
     }
     return redisPubSub.publish({
       channel: redisPubSub.getUserChannel(ownerId),
+      clientId,
       data,
       callbackKey,
     })

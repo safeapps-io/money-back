@@ -2,10 +2,7 @@ import User from '@/models/user.model'
 import { BillingJWTAddition } from '@/services/billing/types'
 
 declare global {
-  type SSESender = (data: {
-    type: string
-    data: Object | string | number
-  }) => void
+  type SSESender = (data: { type: string; data: Object | Object[] }) => void
 
   namespace Express {
     interface Request {
@@ -17,7 +14,7 @@ declare global {
 
       rawBody?: string
 
-      sse?: {
+      sse: {
         clientId: string
       }
     }

@@ -22,7 +22,6 @@ import { getFullPath } from '@/services/getPath'
 import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from './passwordService'
 import { BillingService } from '../billing/billingService'
-import { serializeModel, Serializers } from '@/models/serializers'
 import { publishUserUpdate } from './userEvents'
 
 export enum JWTSubjects {
@@ -369,7 +368,7 @@ export class UserService {
       clientId,
       username,
     }: {
-      clientId?: string
+      clientId: string
       username: string
     },
   ) {
@@ -406,7 +405,7 @@ export class UserService {
     data,
   }: {
     user: User
-    clientId?: string
+    clientId: string
     data?: { encr: string; clientUpdated: number }
   }) {
     // No client update
@@ -438,7 +437,7 @@ export class UserService {
     chests,
   }: {
     userId: string
-    clientId: string | null
+    clientId: string
     b64salt: string
     encr: string | null
     b64InvitePublicKey: string
@@ -484,7 +483,12 @@ export class UserService {
   static async useUnsubscribeLink(token: string) {
     try {
       const userId = this.parseUnsubscribeToken(token)
-      return this.updateIsSubscribedStatus({ userId, newStatus: false })
+      return this.updateIsSubscribedStatus({
+        userId,
+        // User can be unauthorized, so no clientId here is ok
+        clientId: '',
+        newStatus: false,
+      })
     } catch (error) {
       throw new FormValidationError(
         UserServiceFormErrors.invalidUnsubscribeToken,
@@ -493,14 +497,16 @@ export class UserService {
   }
 
   static async updateIsSubscribedStatus({
+    clientId,
     userId,
     newStatus,
   }: {
+    clientId: string
     userId: string
     newStatus: boolean
   }) {
     const user = await UserManager.update(userId, { isSubscribed: newStatus })
-    publishUserUpdate({ user })
+    publishUserUpdate({ user, clientId })
     return user
   }
 
@@ -509,14 +515,16 @@ export class UserService {
 
     await PasswordService.verifyPassword(user.password, password)
 
-    const userId = user.id,
+    // The user is being dropped, so no `clientId` is ok
+    const clientId = '',
+      userId = user.id,
       wallets = await WalletService.getUserWallets(userId)
 
     // Deleting wallets that user owns and their presence in other wallets
     const promises: Promise<any>[] = wallets.map((wallet) =>
       WalletService.isUserOwner({ userId, wallet })
-        ? WalletService.destroy(userId, wallet.id)
-        : WalletService.removeUserWalletAccess(userId, wallet.id),
+        ? WalletService.destroy(userId, wallet.id, clientId)
+        : WalletService.removeUserWalletAccess(userId, wallet.id, clientId),
     )
 
     await Promise.all(promises)

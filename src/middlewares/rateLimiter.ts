@@ -30,6 +30,7 @@ export const createLimiter = (
   })
 
   return {
+    name: keyPrefix,
     shouldProceed: async (key: string) => {
       const res = await limiter.get(key)
       if (!res) return true
@@ -61,33 +62,30 @@ export const constructSimplePostRouter = ({
   keyGetter?: KeyGetter
   consumeMode?: 'onError' | 'always'
 }) =>
-  Router()
-    .use(
-      ash(async (req: Request, _: Response, next: NextFunction) => {
-        const key = keyGetter(req),
-          res = await limiter.shouldProceed(key)
+  Router().use(
+    ash(async (req: Request, res: Response, next: NextFunction) => {
+      if (req.method !== 'POST') return next(new Error())
 
-        next(res ? null : new Error())
-      }),
-    )
-    .post(
-      '',
-      ash(async (req, res, next) => {
+      const key = keyGetter(req),
+        result = await limiter.shouldProceed(key)
+
+      // Limit is exceeded
+      if (!result) return next(new Error())
+
+      try {
         await handler(req, res, next)
-        next()
-      }),
-    )
-    .use(
-      ash(async (req) => {
+      } catch (error) {
+        if (consumeMode == 'onError') {
+          const key = keyGetter(req)
+          await limiter.consume(key)
+        }
+        // Forwarding the error to the error handling middleware
+        return next(error)
+      } finally {
         if (consumeMode == 'always') {
           const key = keyGetter(req)
           await limiter.consume(key)
         }
-      }),
-    )
-    .use((err: Error, req: Request, _: Response, next: NextFunction) => {
-      if (consumeMode == 'onError') {
-        const key = keyGetter(req)
-        limiter.consume(key).then(() => next(err))
-      } else next(err)
-    })
+      }
+    }),
+  )

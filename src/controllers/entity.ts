@@ -2,30 +2,23 @@ import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
+import { isPlanActive } from '@/middlewares/isPlanActive'
 
 import { SyncService } from '@/services/sync/syncService'
-import { isPlanActive } from '@/middlewares/isPlanActive'
 import { ClientChangesData } from '@/services/sync/types'
+import Entity from '@/models/entity.model'
 import { serializeModel, Serializers } from '@/models/serializers'
-import { sse } from '@/middlewares/sse'
-import { syncEventSender } from '@/services/sync/syncEvents'
 
-export const entityRouter = Router().use(isRestAuth())
-
-entityRouter
-  .use(isPlanActive())
-  .route('')
-  .post(
+export const entityRouter = Router()
+  .use(isRestAuth())
+  .post<{}, Entity[], ClientChangesData>(
+    '',
+    isPlanActive(),
     ash(async (req, res) => {
-      const body = req.body as {
-        clientId: string
-        data: ClientChangesData
-      }
-
       const items = await SyncService.handleClientUpdates({
         userId: req.userId,
-        entityMap: body.data,
-        clientId: body.clientId,
+        entityMap: req.body,
+        clientId: req.sse.clientId,
       })
 
       /**
@@ -41,16 +34,13 @@ entityRouter
       return res.json(serializeModel(items, Serializers.entity))
     }),
   )
-  .delete(
+  .delete<{}, {}, { [walletId: string]: string[] }>(
+    '',
     ash(async (req, res) => {
-      const body = req.body as { [walletId: string]: string[] }
-
       await SyncService.deleteEntitiesById({
         userId: req.userId,
-        deleteMap: body,
+        deleteMap: req.body,
       })
       res.json({})
     }),
   )
-
-entityRouter.get('/updates', sse(syncEventSender))

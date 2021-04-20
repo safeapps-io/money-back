@@ -62,12 +62,12 @@ class RedisPubSubService {
     channel,
     data,
     callbackKey,
-    clientId = '',
+    clientId,
   }: {
     channel: string
     callbackKey: string
     data: Object | number | string
-    clientId?: string
+    clientId: string
   }) {
     const message: BaseMessage = { clientId, callbackKey, data }
     return redisConnection.publish(channel, JSON.stringify(message))

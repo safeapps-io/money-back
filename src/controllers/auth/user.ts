@@ -2,11 +2,9 @@ import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { isRestAuth, resetCookies } from '@/middlewares/isAuth'
-import { sse } from '@/middlewares/sse'
 import { UserService } from '@/services/user/userService'
 import { UserManager } from '@/models/user.model'
 import { serializeModel, Serializers } from '@/models/serializers'
-import { userEventSender } from '@/services/user/userEvents'
 
 export const userRouter = Router()
 
@@ -27,22 +25,28 @@ userRouter
         | { username: string }
         | { email: string }
         | { isSubscribed: boolean }
-        | { encr: string; clientUpdated: number; clientId: string }
+        | { encr: string; clientUpdated: number }
 
       let user = req.user!
       if ('username' in body)
-        user = await UserService.updateUsername(user, body)
+        user = await UserService.updateUsername(user, {
+          ...body,
+          clientId: req.sse.clientId,
+        })
       else if ('email' in body)
         user = await UserService.updateEmail(user, body.email)
       else if ('isSubscribed' in body)
         user = await UserService.updateIsSubscribedStatus({
           userId: user.id,
           newStatus: body.isSubscribed,
+          clientId: req.sse.clientId,
         })
-      else if ('encr' in body) {
-        const { clientId, ...data } = body
-        user = await UserService.incrementalUserUpdate({ user, data, clientId })
-      }
+      else if ('encr' in body)
+        user = await UserService.incrementalUserUpdate({
+          user,
+          data: body,
+          clientId: req.sse.clientId,
+        })
 
       res.json(serializeModel(user, Serializers.userFullNoAssociations))
     }),
@@ -61,12 +65,10 @@ userRouter
     }),
   )
 
-userRouter
-  .get('/updates', isRestAuth(), sse(userEventSender))
-  .post<{ unsubscribeToken: string }, {}>(
-    '/unsubscribe/:unsubscribeToken',
-    ash(async (req, res) => {
-      await UserService.useUnsubscribeLink(req.params.unsubscribeToken)
-      res.json({})
-    }),
-  )
+userRouter.post<{ unsubscribeToken: string }, {}>(
+  '/unsubscribe/:unsubscribeToken',
+  ash(async (req, res) => {
+    await UserService.useUnsubscribeLink(req.params.unsubscribeToken)
+    res.json({})
+  }),
+)

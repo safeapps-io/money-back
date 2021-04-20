@@ -3,7 +3,7 @@ import { Router } from 'express'
 import { apiRouter } from '@/controllers'
 import { adminRouter } from '@/controllers/admin'
 import { billingRouter } from '@/controllers/billing'
-import { errorHandler } from '@/middlewares/errorHandler'
+import { errorHandler } from './middlewares/errorHandler'
 
 export const router = Router()
   .use('/api', apiRouter)
