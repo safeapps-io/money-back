@@ -2,62 +2,67 @@ import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
+import { isPlanActive } from '@/middlewares/isPlanActive'
+
 import { WalletService } from '@/services/wallet/walletService'
+import Wallet from '@/models/wallet.model'
+import { serializeModel, Serializers } from '@/models/serializers'
 
-export const walletRouter = Router()
+export const walletRouter = Router().use(isRestAuth())
 
-walletRouter.post(
-  '/create',
-  isRestAuth,
-  ash(async (req, res) => {
-    const { chest } = req.body as { chest: string }
+walletRouter
+  .post<{}, Wallet, { chest: string }>(
+    '',
+    isPlanActive(),
+    ash(async (req, res) => {
+      const wallet = await WalletService.create(req.userId, req.body.chest)
 
-    const wallet = await WalletService.create(req.user.id, chest)
+      res.json(serializeModel(wallet, Serializers.wallet))
+    }),
+  )
+  .put<{ walletId: string }, Wallet, { chest: string }>(
+    '/:walletId',
+    ash(async (req, res) => {
+      const wallet = await WalletService.updateSingleChest({
+        clientId: req.sse.clientId,
+        walletId: req.params.walletId,
+        userId: req.userId,
+        chest: req.body.chest,
+      })
 
-    res.json(wallet)
-  }),
-)
+      res.json(serializeModel(wallet, Serializers.wallet))
+    }),
+  )
+  .delete<{ walletId: string }>(
+    '/:walletId',
+    ash(async (req, res) => {
+      await WalletService.destroy(
+        req.userId,
+        req.params.walletId,
+        req.sse.clientId,
+      )
 
-walletRouter.post(
-  '/delete',
-  isRestAuth,
-  ash(async (req, res) => {
-    const { walletId } = req.body as { walletId: string }
-
-    await WalletService.destroy(req.user.id, walletId)
-
-    res.json({})
-  }),
-)
-
-walletRouter.post(
-  '/user/delete',
-  isRestAuth,
-  ash(async (req, res) => {
-    const { walletId, userId: userToRemoveId } = req.body as {
+      res.json({})
+    }),
+  )
+  .delete<
+    {
       walletId: string
       userId: string
-    }
+    },
+    Wallet
+  >(
+    '/:walletId/user/:userId',
+    ash(async (req, res) => {
+      const { walletId, userId: userToRemoveId } = req.params
 
-    const wallet = await WalletService.removeUser({
-      initiatorId: req.user.id,
-      walletId,
-      userToRemoveId,
-    })
+      const wallet = await WalletService.removeUser({
+        clientId: req.sse.clientId,
+        initiatorId: req.userId,
+        walletId,
+        userToRemoveId,
+      })
 
-    res.json(wallet)
-  }),
-)
-
-walletRouter.post(
-  '/updateChest',
-  isRestAuth,
-  ash(async (req, res) => {
-    const wallet = await WalletService.updateSingleChest({
-      ...(req.body as { walletId: string; chest: string }),
-      userId: req.user.id,
-    })
-
-    res.json(wallet)
-  }),
-)
+      res.json(serializeModel(wallet!, Serializers.wallet))
+    }),
+  )

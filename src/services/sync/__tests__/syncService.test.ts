@@ -38,7 +38,7 @@ import { EntityManager } from '@/models/entity.model'
 
 describe('Sync service', () => {
   const walletId = '1234',
-    socketId = '132',
+    clientId = '132',
     userId = 'qwerqwer',
     entityMap = ({
       [walletId]: {
@@ -72,7 +72,7 @@ describe('Sync service', () => {
 
   describe('sync', () => {
     it('filters out entities, that belong to other wallet', async () => {
-      await SyncService.handleClientUpdates({ userId, entityMap, socketId })
+      await SyncService.handleClientUpdates({ userId, entityMap, clientId })
       expect(mockEnitityManager.bulkCreate.mock.calls[0][0]).toEqual(
         entityMap[walletId].entities.filter(
           (ent) => ent.walletId === walletId && !ent.updated,
@@ -81,7 +81,7 @@ describe('Sync service', () => {
     })
 
     it('checks if user has access to wallet', async () => {
-      await SyncService.handleClientUpdates({ userId, entityMap, socketId })
+      await SyncService.handleClientUpdates({ userId, entityMap, clientId })
       expect(mockWalletService.getUserWallets.mock.calls.length).toBe(1)
       expect(mockWalletService.getUserWallets.mock.calls[0][0]).toBe(userId)
     })
@@ -99,7 +99,7 @@ describe('Sync service', () => {
       await SyncService.handleClientUpdates({
         userId,
         entityMap: copy,
-        socketId,
+        clientId,
       })
       // only saves one wallet
       expect(mockEnitityManager.bulkCreate.mock.calls.length).toBe(1)
@@ -112,13 +112,13 @@ describe('Sync service', () => {
         SyncService.handleClientUpdates({
           userId,
           entityMap: copy,
-          socketId,
+          clientId,
         }),
       ).rejects.toThrow(FormValidationError)
     })
 
     it('creates transactions without updated', async () => {
-      await SyncService.handleClientUpdates({ userId, entityMap, socketId })
+      await SyncService.handleClientUpdates({ userId, entityMap, clientId })
       expect(mockEnitityManager.bulkCreate.mock.calls.length).toBe(1)
       expect(mockEnitityManager.bulkCreate.mock.calls[0][0]).toEqual(
         entityMap[walletId].entities.filter(
@@ -167,21 +167,21 @@ describe('Sync service', () => {
         buildEnt({ id: 'qwer2', updated: sub(new Date(), { hours: 5 }) }),
       ])
 
-      await SyncService.handleClientUpdates({ userId, entityMap, socketId })
+      await SyncService.handleClientUpdates({ userId, entityMap, clientId })
 
       expect(mockEnitityManager.update.mock.calls.length).toBe(1)
       expect(mockEnitityManager.update.mock.calls[0][1]).toEqual(entToBeSaved)
     })
 
     it('publishes stuff to redis after saving', async () => {
-      await SyncService.handleClientUpdates({ userId, entityMap, socketId })
+      await SyncService.handleClientUpdates({ userId, entityMap, clientId })
 
       expect(
         mockSyncPubSubService.publishEntitiesUpdates.mock.calls.length,
       ).toBe(1)
       const args = mockSyncPubSubService.publishEntitiesUpdates.mock.calls[0][0]
       expect(args.wallet.id).toBe(walletId)
-      expect(args.socketId).toBe(socketId)
+      expect(args.clientId).toBe(socketId)
       expect(args.data).toEqual(
         entityMap[walletId].entities.filter((ent) => ent.walletId === walletId),
       )

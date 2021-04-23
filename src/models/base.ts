@@ -22,13 +22,4 @@ export default class BaseModel<T> extends Model<T> {
   [inspect.custom]() {
     return this.toJSON()
   }
-
-  public toJSON() {
-    const prev = super.toJSON()
-    return {
-      ...prev,
-      created: this.created?.getTime(),
-      updated: this.updated?.getTime(),
-    }
-  }
 }

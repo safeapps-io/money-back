@@ -1,17 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 
 import { UserService, InvalidToken } from '@/services/user/userService'
-import User from '@/models/user.model'
 import { RequestError } from '@/services/errors'
-
-declare global {
-  namespace Express {
-    interface Request {
-      user: User
-      tokens: { access: string; refresh: string }
-    }
-  }
-}
 
 enum CookieNames {
   access = 'access-token',
@@ -44,23 +34,31 @@ export const resetCookies = (res: Response) => {
  * If access token if expired, it tries to create a new one automatically out of refresh token.
  * If it is successful, it will send a new token with cookies automatically.
  */
-export const isRestAuth = async (
+export const isRestAuth = (fetchUser = false) => async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const authResult = await UserService.getUserFromTokens(
+    const {
+      user,
+      userId,
+      planExpirations,
+      newToken,
+    } = await UserService.getUserDataFromTokens(
       req.signedCookies[CookieNames.access],
       req.signedCookies[CookieNames.refresh],
+      fetchUser,
     )
 
-    req.user = authResult.user
+    req.user = user
+    req.userId = userId
+    req.planExpirations = planExpirations
     req.tokens = {
-      access: authResult.newToken || req.signedCookies[CookieNames.access],
+      access: newToken || req.signedCookies[CookieNames.access],
       refresh: req.signedCookies[CookieNames.refresh],
     }
-    if (authResult.newToken) sendAuthCookies(res, authResult.newToken)
+    if (newToken) sendAuthCookies(res, newToken)
     next()
   } catch (error) {
     if (error instanceof InvalidToken)
@@ -70,6 +68,6 @@ export const isRestAuth = async (
 }
 
 export const isAdmin = (req: Request, _: Response, next: NextFunction) => {
-  if (req.user.isAdmin) next()
+  if (req.user?.isAdmin) next()
   else next(new RequestError('Forbidden', 401))
 }

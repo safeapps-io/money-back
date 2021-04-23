@@ -1,13 +1,8 @@
+import crypto from 'crypto'
 import { decode } from 'base64-arraybuffer'
-import { Crypto } from 'node-webcrypto-ossl'
-
-const crypto = new Crypto()
 
 export class CryptoService {
-  static signatureAlgorithm = 'RSA-PSS'
-  static hashAlgorithm = 'SHA-512'
-
-  static async verify({
+  static verify({
     b64PublicKey,
     dataBuffer,
     signatureBuffer,
@@ -15,26 +10,29 @@ export class CryptoService {
     b64PublicKey: string
     dataBuffer: ArrayBuffer
     signatureBuffer: ArrayBuffer
-  }): Promise<Boolean> {
-    const publicKey = await crypto.subtle.importKey(
-      'spki',
-      decode(b64PublicKey),
-      {
-        name: this.signatureAlgorithm,
-        hash: this.hashAlgorithm,
-      },
-      false,
-      ['verify'],
-    )
+  }) {
+    const publicKey = crypto.createPublicKey({
+      key: Buffer.from(decode(b64PublicKey)),
+      format: 'der',
+      type: 'spki',
+    })
 
-    return crypto.subtle.verify(
+    return crypto.verify(
+      'rsa-sha512',
+      Buffer.from(dataBuffer),
       {
-        name: this.signatureAlgorithm,
+        padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
         saltLength: 64,
+        // @ts-expect-error
+        key: publicKey,
       },
-      publicKey,
-      signatureBuffer,
-      dataBuffer,
+      Buffer.from(signatureBuffer),
     )
+  }
+
+  static getDigest(data: string) {
+    const sha256 = crypto.createHash('sha256')
+    sha256.update(Buffer.from(data))
+    return sha256.digest('hex')
   }
 }

@@ -537,17 +537,17 @@ describe('User Service', () => {
 
       const user = { id: 'test', updated: new Date() } as any,
         encr = 'qwer',
-        socketId = 'test'
+        clientId = 'test'
 
       it('returns user if no client update provided, or data is stale', async () => {
         expect(
-          (await UserService.incrementalUserUpdate({ user, socketId })).id,
+          (await UserService.incrementalUserUpdate({ user, clientId })).id,
         ).toEqual(user.id)
         expect(
           (
             await UserService.incrementalUserUpdate({
               user,
-              socketId,
+              clientId,
               data: { clientUpdated: 12341, encr },
             })
           ).id,
@@ -560,7 +560,7 @@ describe('User Service', () => {
         await expect(
           UserService.incrementalUserUpdate({
             user,
-            socketId,
+            clientId,
             data: { clientUpdated: 'wer', encr: 1234 } as any,
           }),
         ).rejects.toThrow(FormValidationError)
@@ -569,7 +569,7 @@ describe('User Service', () => {
       it('updates user correctly', async () => {
         await UserService.incrementalUserUpdate({
           user,
-          socketId,
+          clientId,
           data: { clientUpdated: new Date().getTime(), encr },
         })
         expect(mockUserManager.update.mock.calls.length).toBe(1)
@@ -581,7 +581,7 @@ describe('User Service', () => {
       it('publishes user to redis', async () => {
         await UserService.incrementalUserUpdate({
           user,
-          socketId,
+          clientId,
           data: { clientUpdated: new Date().getTime(), encr },
         })
         expect(

@@ -1,6 +1,5 @@
 import * as yup from 'yup'
 import { decode } from 'base64-arraybuffer'
-import { Await } from '@/@types/helpers'
 
 import {
   runSchemaWithFormError,
@@ -95,11 +94,11 @@ export class InviteStringService {
 
     if (
       !inviterUser?.b64InvitePublicKey ||
-      !(await CryptoService.verify({
+      !CryptoService.verify({
         b64PublicKey: inviterUser.b64InvitePublicKey as string,
         dataBuffer,
         signatureBuffer,
-      }))
+      })
     )
       throw new Error()
 
@@ -132,7 +131,7 @@ type WalletInviteObject = ServiceInvitePayload & {
   inviteId: string
   walletId: string
 }
-type InvitePayload =
+export type InvitePayload =
   | {
       type: InviteStringTypes.service
       userInviter: User

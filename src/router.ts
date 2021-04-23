@@ -1,11 +1,13 @@
 import { Router } from 'express'
-import apiRouter from '@/controllers'
-import syncRouter from '@/controllers/sync'
-import { adminRouter } from '@/controllers/admin'
 
-const router = Router()
-  .use('/ws', syncRouter)
+import { apiRouter } from '@/controllers'
+import { adminRouter } from '@/controllers/admin'
+import { billingRouter } from '@/controllers/billing'
+import { errorHandler } from './middlewares/errorHandler'
+
+export const router = Router()
   .use('/api', apiRouter)
   .use('/admin', adminRouter)
-
-export default router
+  .use('/billing', billingRouter)
+  .use((_, res) => res.status(404).json({ error: 'No such path' }))
+  .use(errorHandler)
