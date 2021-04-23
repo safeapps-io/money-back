@@ -101,7 +101,10 @@ export class MessageService {
         {
           address: { email },
           context: {
-            url: this.getGotoUrl({ token: 'no', purpose: 'billing' }),
+            url: this.getGotoUrl({
+              token: 'billing',
+              purpose: 'user-settings',
+            }),
             isTrial,
           },
         },
