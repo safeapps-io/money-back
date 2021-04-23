@@ -15,12 +15,14 @@ import { decryptAes, encryptAes, signJwt, verifyJwt } from '@/utils/crypto'
 import { FormValidationError } from '@/services/errors'
 import { InviteService } from '@/services/invite/inviteService'
 import { WalletService } from '@/services/wallet/walletService'
+import { BillingJWTAddition } from '@/services/billing/types'
+import { InviteStringTypes } from '@/services/invite/inviteTypes'
+import { getFullPath } from '@/services/getPath'
 
 import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from './passwordService'
-import { UserUpdatesPubSubService } from './userUpdatesPubSubService'
-import { InviteStringTypes } from '@/services/invite/inviteTypes'
-import { getFullPath } from '../getPath'
+import { BillingService } from '../billing/billingService'
+import { publishUserUpdate } from './userEvents'
 
 export enum JWTSubjects {
   session = 'sess',
@@ -28,8 +30,18 @@ export enum JWTSubjects {
 }
 
 type JWTMessage = {
+  // user id
   id: string
+  // expires for Plans
+  planExp?: BillingJWTAddition
   exp?: number
+}
+
+export type Session = {
+  id: string
+  description: string
+  created: number
+  current: boolean
 }
 
 const usernameScheme = yup.string().required().min(5).max(50),
@@ -47,7 +59,7 @@ export class UserService {
     refreshToken,
     userId,
     withCheck = true,
-    expiresIn = '1m',
+    expiresIn = '15m',
     subject = JWTSubjects.session,
   }: {
     refreshToken: string
@@ -64,7 +76,10 @@ export class UserService {
       if (!tokenValid) throw new InvalidToken()
     }
 
-    const data: JWTMessage = { id: userId }
+    const data: JWTMessage = {
+      id: userId,
+      planExp: await BillingService.getJWTAddition(userId),
+    }
 
     return signJwt(data, {
       subject,
@@ -150,19 +165,24 @@ export class UserService {
       invite,
     })
 
-    const [passwordHashed, parsedInvite] = await Promise.all([
-        PasswordService.hashPassword(password),
-        invite ? InviteService.parseAndValidateInvite(invite) : null,
-        this.checkCredentialsAvailability({ username, email }),
-      ]),
-      isWalletInvite = parsedInvite?.type == InviteStringTypes.wallet
+    const { user, isWalletInvite } = await getTransaction(async () => {
+      const [passwordHashed, parsedInvite] = await Promise.all([
+          PasswordService.hashPassword(password),
+          invite ? InviteService.parseAndValidateInvite(invite) : null,
+          this.checkCredentialsAvailability({ username, email }),
+        ]),
+        isWalletInvite = parsedInvite?.type == InviteStringTypes.wallet
 
-    const user = await UserManager.create({
-      username,
-      password: passwordHashed,
-      isSubscribed,
-      ...parsedInvite?.payload,
+      const user = await UserManager.create({
+        username,
+        password: passwordHashed,
+        isSubscribed,
+        ...parsedInvite?.payload,
+      })
+
+      return { user, isWalletInvite }
     })
+
     await ValidateEmailService.triggerEmailValidation(user, email)
 
     return {
@@ -228,78 +248,127 @@ export class UserService {
     }
   }
 
-  static async getUserFromWsTicket(ticket: string, prevUser?: User | null) {
+  static async getUserDataFromWsTicket(ticket: string) {
     try {
-      const { id } = await verifyJwt<JWTMessage>(ticket, {
+      const res = await verifyJwt<JWTMessage>(ticket, {
         subject: JWTSubjects.wsTicket,
       })
-      // Avioiding extra query
-      if (prevUser?.id == id) return prevUser
-
-      const user = await UserManager.byId(id)
-      if (!user) throw new InvalidToken()
-
-      return user
+      return { userId: res.id, planExpirations: res.planExp }
     } catch (err) {
       throw new InvalidToken()
     }
   }
 
-  static async getUserFromTokens(accessToken: string, refreshToken: string) {
-    let decoded: JWTMessage
+  private static async getUserIdFromAccessToken(
+    accessToken: string,
+    refreshToken: string,
+    newToken: boolean = false,
+  ): Promise<{
+    userId: string
+    planExpirations: BillingJWTAddition
+    newToken?: string
+  }> {
     try {
-      decoded = await verifyJwt<JWTMessage>(accessToken, {
+      const {
+        exp: expires,
+        id: userId,
+        planExp: planExpirations,
+      } = await verifyJwt<JWTMessage>(accessToken, {
         ignoreExpiration: true,
         subject: JWTSubjects.session,
       })
-      if (!decoded.exp) throw new InvalidToken()
+      if (!expires) throw new InvalidToken()
+
+      // Issuing a new access token if the previous one is expired or if billing data is insufficient
+      if (
+        isBefore(expires * 1000, new Date()) ||
+        !BillingService.isJwtAdditionFull(planExpirations)
+      ) {
+        // Calling the same method stuff recursively with a new fresh access token
+        return this.getUserIdFromAccessToken(
+          await this.getNewAccessToken(accessToken, refreshToken),
+          refreshToken,
+          true,
+        )
+      }
+
+      return {
+        userId,
+        planExpirations: planExpirations!,
+        newToken: newToken ? accessToken : undefined,
+      }
     } catch (err) {
       throw new InvalidToken()
     }
+  }
 
-    let newToken: string | null = null
-    // Date constructor expects ms, but we get seconds here
-    if (isBefore(decoded.exp * 1000, new Date()))
-      newToken = await this.getNewAccessToken(accessToken, refreshToken)
-    const user = await UserManager.byId(decoded.id)
+  static async getUserDataFromTokens(
+    accessToken: string,
+    refreshToken: string,
+    fetchUser = true,
+  ) {
+    const {
+      userId,
+      planExpirations,
+      newToken,
+    } = await this.getUserIdFromAccessToken(accessToken, refreshToken)
 
-    if (!user) throw new InvalidToken()
-
-    return { user, newToken }
+    const res: {
+      user?: User
+      userId: string
+      newToken?: string
+      planExpirations?: BillingJWTAddition
+    } = {
+      userId,
+      newToken,
+      planExpirations,
+    }
+    if (fetchUser) {
+      const user = await UserManager.byId(userId)
+      if (!user) throw new InvalidToken()
+      res.user = user
+    }
+    return res
   }
 
   static async getAllSessions(userId: string, currentKey: string) {
-    const sessions = await RefreshTokenManager.byUserId(userId),
-      result = sessions.map((session) => {
-        const json = session.toJSON()
-        json.current = session.key == currentKey
-        return json as {
-          id: string
-          description: string
-          created: number
-          current: boolean
-        }
-      })
-    return result
+    const sessions = await RefreshTokenManager.byUserId(userId)
+    for (const session of sessions) {
+      if (session.key == currentKey) {
+        // @ts-expect-error
+        session.current = true
+        break
+      }
+    }
+
+    return sessions
   }
 
   static async dropSessions({
     userId,
-    toDeleteIds,
+    currentKey,
+    toDeleteId,
   }: {
     userId: string
-    toDeleteIds: string[]
+    currentKey: string
+    toDeleteId: string | null
   }) {
-    return RefreshTokenManager.destroyByIds({ userId, ids: toDeleteIds })
+    if (toDeleteId)
+      return RefreshTokenManager.destroyById({ userId, id: toDeleteId })
+    else
+      return RefreshTokenManager.destroyAllButOneKey({
+        userId,
+        key: currentKey,
+      })
   }
 
   static async updateUsername(
     user: User,
     {
-      socketId,
+      clientId,
       username,
     }: {
-      socketId?: string
+      clientId: string
       username: string
     },
   ) {
@@ -310,11 +379,7 @@ export class UserService {
 
     const res = await UserManager.update(user.id, { username })
 
-    // We plan to use this method outside of websocket connection, so no socket id here is ok
-    await UserUpdatesPubSubService.publishUserUpdates({
-      user: res,
-      socketId,
-    })
+    await publishUserUpdate({ user: res, clientId })
     return res
   }
 
@@ -336,11 +401,11 @@ export class UserService {
     .noUnknown()
   static async incrementalUserUpdate({
     user,
-    socketId,
+    clientId,
     data,
   }: {
     user: User
-    socketId?: string
+    clientId: string
     data?: { encr: string; clientUpdated: number }
   }) {
     // No client update
@@ -351,42 +416,51 @@ export class UserService {
     if (data.clientUpdated < user.updated.getTime()) return user
 
     const res = await UserManager.update(user.id, { encr: data.encr })
-    await UserUpdatesPubSubService.publishUserUpdates({ user: res, socketId })
+    await publishUserUpdate({ user: res, clientId })
     return res
   }
 
   private static updateMasterPasswordScheme = yup.object({
+    clientId: optionalString,
+    encr: optionalString,
     b64salt: requiredString,
     b64InvitePublicKey: requiredString,
     b64EncryptedInvitePrivateKey: requiredString,
   })
   static async updateMasterPassword({
-    user,
+    userId,
+    clientId,
     b64salt,
+    encr,
     b64InvitePublicKey,
     b64EncryptedInvitePrivateKey,
     chests,
   }: {
-    user: User
+    userId: string
+    clientId: string
     b64salt: string
+    encr: string | null
     b64InvitePublicKey: string
     b64EncryptedInvitePrivateKey: string
     chests: { walletId: string; chest: string }[]
   }) {
     runSchemaWithFormError(this.updateMasterPasswordScheme, {
+      clientId,
       b64salt,
       b64InvitePublicKey,
       b64EncryptedInvitePrivateKey,
+      encr,
     })
     return getTransaction(async () => {
-      const updatedUser = await UserManager.update(user.id, {
+      await UserManager.update(userId, {
         b64salt,
         b64InvitePublicKey,
         b64EncryptedInvitePrivateKey,
+        encr,
       })
-      await WalletService.updateChests({ userId: user.id, chests })
+      await WalletService.updateChests({ userId, chests, clientId })
 
-      return updatedUser
+      return (await UserManager.byIdWithDataIncluded(userId))!
     })
   }
 
@@ -409,7 +483,12 @@ export class UserService {
   static async useUnsubscribeLink(token: string) {
     try {
       const userId = this.parseUnsubscribeToken(token)
-      return this.updateIsSubscribedStatus({ userId, newStatus: false })
+      return this.updateIsSubscribedStatus({
+        userId,
+        // User can be unauthorized, so no clientId here is ok
+        clientId: '',
+        newStatus: false,
+      })
     } catch (error) {
       throw new FormValidationError(
         UserServiceFormErrors.invalidUnsubscribeToken,
@@ -417,14 +496,18 @@ export class UserService {
     }
   }
 
-  static updateIsSubscribedStatus({
+  static async updateIsSubscribedStatus({
+    clientId,
     userId,
     newStatus,
   }: {
+    clientId: string
     userId: string
     newStatus: boolean
   }) {
-    return UserManager.update(userId, { isSubscribed: newStatus })
+    const user = await UserManager.update(userId, { isSubscribed: newStatus })
+    publishUserUpdate({ user, clientId })
+    return user
   }
 
   static async dropUser({ user, password }: { user: User; password: string }) {
@@ -432,24 +515,32 @@ export class UserService {
 
     await PasswordService.verifyPassword(user.password, password)
 
-    const userId = user.id,
+    // The user is being dropped, so no `clientId` is ok
+    const clientId = '',
+      userId = user.id,
       wallets = await WalletService.getUserWallets(userId)
 
     // Deleting wallets that user owns and their presence in other wallets
     const promises: Promise<any>[] = wallets.map((wallet) =>
       WalletService.isUserOwner({ userId, wallet })
-        ? WalletService.destroy(userId, wallet.id)
-        : WalletService.removeUserWalletAccess(userId, wallet.id),
+        ? WalletService.destroy(userId, wallet.id, clientId)
+        : WalletService.removeUserWalletAccess(userId, wallet.id, clientId),
     )
 
     await Promise.all(promises)
     await UserManager.deleteUserById(userId)
   }
 
-  static logout({ user, refreshToken }: { user: User; refreshToken: string }) {
+  static logout({
+    userId,
+    refreshToken,
+  }: {
+    userId: string
+    refreshToken: string
+  }) {
     runSchemaWithFormError(requiredString, refreshToken)
 
-    return RefreshTokenManager.destroy({ userId: user.id, key: refreshToken })
+    return RefreshTokenManager.destroy({ userId, key: refreshToken })
   }
 }
 

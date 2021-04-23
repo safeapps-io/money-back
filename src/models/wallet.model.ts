@@ -1,4 +1,4 @@
-import { Table, BelongsToMany, HasMany } from 'sequelize-typescript'
+import { Table, BelongsToMany } from 'sequelize-typescript'
 import { Op } from 'sequelize'
 
 import { getTransaction } from '@/models/setup'
@@ -6,42 +6,27 @@ import { getTransaction } from '@/models/setup'
 import BaseModel from '@/models/base'
 import User from '@/models/user.model'
 import WalletAccess, { AccessLevels } from '@/models/walletAccess.model'
-import Entity from '@/models/entity.model'
+import Plan from '@/models/billing/plan.model'
+import Product from './billing/product.model'
 
 @Table
 export default class Wallet extends BaseModel<Wallet> {
   @BelongsToMany(() => User, () => WalletAccess)
   users!: Array<User & { WalletAccess: WalletAccess }>
 
-  @HasMany(() => Entity)
-  entities!: Entity[]
-
   public toJSON() {
     const curr = super.toJSON() as any,
-      users = this.users.map((user) => ({
+      users = this.users?.map((user) => ({
         ...user.toJSON(false),
         WalletAccess: user.WalletAccess.toJSON(),
       }))
 
-    curr.users = users
+    curr.users = users || []
     return curr
   }
 }
 
 export class WalletManager {
-  private static filterByUser = (userId: string) => ({
-    attributes: ['id'],
-    include: [
-      {
-        model: User,
-        required: true,
-        through: {
-          where: { accessLevel: { [Op.not]: AccessLevels.rejected }, userId },
-        },
-      },
-    ],
-  })
-
   static async byIdAndUserId({
     userId,
     walletId,
@@ -54,18 +39,27 @@ export class WalletManager {
   }
 
   static async byUserId(userId: string) {
-    /**
-     * TODO: make it one query
-     * Looks pretty ugly to me. It requires two queries, because I don't quite get joins.
-     */
-    const ids = (await Wallet.findAll(this.filterByUser(userId))).map(
-      (ent) => ent.id,
-    )
+    const userWalletIds = await Wallet.findAll({
+      attributes: ['id'],
+      include: [
+        {
+          model: User,
+          required: true,
+          through: {
+            where: { accessLevel: { [Op.not]: AccessLevels.rejected }, userId },
+          },
+          attributes: [],
+        },
+      ],
+    })
 
     return Wallet.findAll({
-      where: { id: { [Op.in]: ids } },
+      where: { id: { [Op.in]: userWalletIds.map((record) => record.id) } },
       include: [
-        { model: User, through: { where: { userId: { [Op.not]: null } } } },
+        {
+          model: User,
+          include: [{ model: Plan, include: [{ model: Product }] }],
+        },
       ],
     })
   }
@@ -73,7 +67,7 @@ export class WalletManager {
   static byId(id: string) {
     return Wallet.findOne({
       where: { id },
-      include: [User],
+      include: [{ model: User, include: [{ model: Plan }] }],
     })
   }
 
