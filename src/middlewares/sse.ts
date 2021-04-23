@@ -15,7 +15,10 @@ export const sse = (
     ) => Promise<() => Promise<void>>
   >,
 ) =>
-  ash(async (req: Request, res: Response, _: NextFunction) => {
+  ash(async (req: Request, res: Response, next: NextFunction) => {
+    const clientId = req.query.clientId
+    if (!clientId || typeof clientId != 'string') return next(new Error())
+
     const headers = {
       'Content-Type': 'text/event-stream',
       Connection: 'keep-alive',
@@ -33,7 +36,7 @@ export const sse = (
     res.write(`retry: ${random(3000, 10000)}\n\n`)
 
     const unsubs = await Promise.all(
-      senders.map((sender) => sender(req.userId, req.params.clientId, send)),
+      senders.map((sender) => sender(req.userId, clientId, send)),
     )
 
     req.on('close', () =>

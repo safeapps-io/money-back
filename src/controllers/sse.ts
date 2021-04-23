@@ -13,7 +13,7 @@ import { pingEventSender } from '@/services/pingSse'
 export const sseRouter = Router()
   .use(isRestAuth())
   .get<{ clientId: string }>(
-    '/:clientId',
+    '',
     sse([
       userEventSender,
       walletEventSender,
