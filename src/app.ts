@@ -34,9 +34,9 @@ const constructApp = async () => {
         credentials: true,
         maxAge: 86400,
         allowedHeaders: [
-          'authorization',
-          'accept-language',
           'content-type',
+          'cache-control',
+          'pragma',
           'sse-clientid',
         ],
       }),
