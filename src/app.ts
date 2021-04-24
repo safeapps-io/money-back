@@ -43,7 +43,7 @@ const constructApp = async () => {
       logger,
       helmet(),
       cookieParser(process.env.SECRET),
-      json(),
+      json({ limit: '2mb' }),
       urlencoded({ extended: true }),
       multer().none(),
       delayOnDevMiddleware,
