@@ -11,10 +11,10 @@ import MetaCategory from '@/models/metaCategory.model'
 
 export const directoryRouter = Router()
   .use(isRestAuth())
-  .get('/currency', (_, res) =>
+  .get('/currency', (req, res) =>
     res
       .set('Cache-Control', `public, max-age=${60 * 5}`)
-      .json(DirectoryService.getCurrencyList()),
+      .json(DirectoryService.getCurrencyList(req.ip)),
   )
   .get<{}, Scheme[], {}, { from: string }>(
     '/scheme',
