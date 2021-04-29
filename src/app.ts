@@ -8,7 +8,6 @@ import { urlencoded, json } from 'body-parser'
 import cookieParser from 'cookie-parser'
 import multer from 'multer'
 
-import pathJoin from '@/utils/pathJoin'
 import logger from '@/middlewares/logger'
 import sequelize from '@/models/setup'
 import { router } from '@/router'
@@ -16,6 +15,9 @@ import delayOnDevMiddleware from '@/middlewares/delayOnDev'
 import { initRedisConnection } from '@/services/redis/connection'
 import { redisPubSub } from '@/services/redis/pubSub'
 import { sseHeader } from '@/middlewares/sse'
+import { trackErrorsInit } from '@/services/trackErrors'
+
+trackErrorsInit()
 
 const app = express()
 
@@ -26,8 +28,6 @@ const constructApp = async () => {
 
   app
     .set('trust proxy', true)
-    .set('views', pathJoin('views'))
-    .set('view engine', 'pug')
     .use(
       cors({
         origin: process.env.ALLOWED_ORIGIN,
@@ -40,8 +40,10 @@ const constructApp = async () => {
           'sse-clientid',
         ],
       }),
-      logger,
       helmet(),
+    )
+    .use(
+      logger,
       cookieParser(process.env.SECRET),
       json({ limit: '2mb' }),
       urlencoded({ extended: true }),
