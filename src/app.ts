@@ -16,6 +16,9 @@ import delayOnDevMiddleware from '@/middlewares/delayOnDev'
 import { initRedisConnection } from '@/services/redis/connection'
 import { redisPubSub } from '@/services/redis/pubSub'
 import { sseHeader } from '@/middlewares/sse'
+import { trackErrorsInit } from '@/services/trackErrors'
+
+trackErrorsInit()
 
 const app = express()
 

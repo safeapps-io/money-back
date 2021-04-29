@@ -14,6 +14,7 @@
     "dev": "nodemon -q --watch src --ignore 'src/**/*.spec.ts' --exec 'TS_NODE_FILES=true ts-node -r tsconfig-paths/register' src/server.ts | pino-pretty"
   },
   "dependencies": {
+    "@sentry/node": "^6.3.4",
     "argon2": "^0.26.2",
     "array-move": "^3.0.1",
     "base64-arraybuffer": "^0.2.0",
