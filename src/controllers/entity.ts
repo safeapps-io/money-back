@@ -2,7 +2,6 @@ import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
-import { isPlanActive } from '@/middlewares/isPlanActive'
 
 import { SyncService } from '@/services/sync/syncService'
 import { ClientChangesData } from '@/services/sync/types'
@@ -13,7 +12,6 @@ export const entityRouter = Router()
   .use(isRestAuth())
   .post<{}, Entity[], ClientChangesData>(
     '',
-    isPlanActive(),
     ash(async (req, res) => {
       const items = await SyncService.handleClientUpdates({
         userId: req.userId,
