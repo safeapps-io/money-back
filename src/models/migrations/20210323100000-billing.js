@@ -1,9 +1,6 @@
 'use strict'
 
-const nanoid = require('nanoid').nanoid,
-  { addDays } = require('date-fns')
-
-// const argon2 = require('argon2')
+const nanoid = require('nanoid').nanoid
 
 const buildBase = () => {
   const now = new Date()
@@ -144,40 +141,6 @@ module.exports = {
       remoteChargeId: optionalString,
       rawData: { type: Sequelize.JSON },
     })
-
-    // await queryInterface.bulkInsert('Users', [
-    //   {
-    //     ...buildBase(),
-    //     username: '___test',
-    //     password: await argon2.hash('qwerty123456'),
-    //   },
-    // ])
-
-    const userIds = await queryInterface.sequelize.query(
-      'SELECT * FROM "Users"',
-      { type: queryInterface.sequelize.QueryTypes.SELECT },
-    )
-
-    const expires = addDays(new Date(), 15)
-    const planObjs = userIds.map(({ id }) => ({
-        ...buildBase(),
-        productId: earlyProductData.id,
-        expires,
-        userId: id,
-      })),
-      chargesObjs = planObjs.map((plan) => ({
-        ...buildBase(),
-        eventType: 'confirmed',
-        chargeType: 'trial',
-        expiredNew: expires,
-        productId: plan.productId,
-        planId: plan.id,
-        rawData: '{}',
-      }))
-
-    planObjs.length && (await queryInterface.bulkInsert('Plans', planObjs))
-    chargesObjs.length &&
-      (await queryInterface.bulkInsert('ChargeEvents', chargesObjs))
   },
 
   down: (queryInterface, Sequelize) => {},

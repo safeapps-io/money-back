@@ -16,6 +16,7 @@ import User, { UserManager } from '@/models/user.model'
 import Wallet from '@/models/wallet.model'
 import { ProductManager, ProductType } from '@/models/billing/product.model'
 import { getTransaction } from '@/models/setup'
+import { AccessLevels } from '@/models/walletAccess.model'
 
 import { MessageService } from '@/services/message/messageService'
 import { WalletService } from '@/services/wallet/walletService'
@@ -75,7 +76,7 @@ export class BillingService {
         user.created,
         new Date(process.env.PROD_BILLING_LAUNCH_TS as string),
       )
-        ? ProductManager.getBySlug('money:early_bird')
+        ? ProductManager.getBySlug('money:early_bird_no_trial')
         : ProductManager.getDefaultProduct())
 
       const _plan = await PlanManager.create(user.id, product!.id)
@@ -91,14 +92,13 @@ export class BillingService {
     })
   }
 
-  static isMoneySubscriptionActive(wallet: Wallet) {
-    return wallet?.users.some((user) =>
-      user?.plans.some(
-        (plan) =>
-          plan?.product.productType == ProductType.money &&
-          plan.expires &&
-          isAfter(plan.expires, new Date()),
-      ),
+  static isPlanActive(wallet: Wallet) {
+    return wallet?.users.some(
+      (user) =>
+        user.WalletAccess.accessLevel == AccessLevels.owner &&
+        user.plans.some(
+          (plan) => plan.expires && isAfter(plan.expires, new Date()),
+        ),
     )
   }
 

@@ -36,7 +36,7 @@ module.exports = {
         username: 'dkzlv',
         isAdmin: true,
         email: 'dkzlv@safeapps.io',
-        password: await argon2.hash('qwerty123456'),
+        password: await argon2.hash('qwertyqwerty'),
         inviteMonthlyLimit: 100000,
         b64InvitePublicKey: testData.users.dkzlv.b64InvitePublicKey,
       },
@@ -44,7 +44,7 @@ module.exports = {
         ...buildBase(),
         username: 'ama',
         email: 'ama@safeapps.io',
-        password: await argon2.hash('qwerty123456'),
+        password: await argon2.hash('qwertyqwerty'),
         inviteMonthlyLimit: 100000,
         b64InvitePublicKey: testData.users.dkzlv.b64InvitePublicKey,
       },
@@ -61,5 +61,31 @@ module.exports = {
         assignedMcc: '[]',
       })),
     )
+
+    const product = (
+      await queryInterface.sequelize.query('SELECT * FROM "Products"', {
+        type: queryInterface.sequelize.QueryTypes.SELECT,
+      })
+    )[0]
+
+    const expires = dateFns.addDays(new Date(), 7)
+    const plan = {
+        ...buildBase(),
+        productId: product.id,
+        expires,
+        userId: testData.users.dkzlv.id,
+      },
+      charge = {
+        ...buildBase(),
+        eventType: 'confirmed',
+        chargeType: 'trial',
+        expiredNew: expires,
+        productId: plan.productId,
+        planId: plan.id,
+        rawData: '{}',
+      }
+
+    await queryInterface.bulkInsert('Plans', [plan])
+    await queryInterface.bulkInsert('ChargeEvents', [charge])
   },
 }

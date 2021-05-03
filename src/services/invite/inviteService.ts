@@ -22,7 +22,7 @@ import {
   inviteReject,
   joiningError,
 } from './inviteEvents'
-import { BillingService } from '../billing/billingService'
+import { BillingService } from '@/services/billing/billingService'
 
 type EncryptedUserId = {
   userId: string
