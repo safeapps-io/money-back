@@ -7,7 +7,11 @@ import { request } from '@/services/request'
 import { EventTypes } from '@/models/billing/chargeEvent.model'
 import { ExchangeRateService } from './exchangeRate'
 
-export type TinkoffClientDataReturn = { link: string }
+export type TinkoffClientDataReturn = {
+  link: string
+  price: number
+  exchangeRate: number
+}
 
 class TinkoffProvider implements BillingProvider {
   private endpoint = 'https://securepay.tinkoff.ru/v2/'
@@ -70,7 +74,12 @@ class TinkoffProvider implements BillingProvider {
         remoteChargeId: json.PaymentId.toString(),
         rawData: JSON.stringify(json),
       },
-      sendToClient: TinkoffClientDataReturn = { link: json.PaymentURL }
+      sendToClient: TinkoffClientDataReturn = {
+        link: json.PaymentURL,
+        // Changing the price back to rubles instead of cents
+        price: price / 100,
+        exchangeRate: currentRate,
+      }
 
     return { chargeData, sendToClient }
   }

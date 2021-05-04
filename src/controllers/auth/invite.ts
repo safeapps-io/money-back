@@ -11,13 +11,14 @@ inviteRouter
     '/is-valid',
     ash(async (req, res) => {
       const parsedInvite = await InviteService.parseAndValidateInvite(
-        req.body.invite as string,
-      )
+          req.body.invite as string,
+        ),
+        serializedInvite = {
+          type: parsedInvite.type,
+          payload: parsedInvite.payload,
+        }
 
-      // @ts-ignore
-      if ('userInviter' in parsedInvite) delete parsedInvite.userInviter
-
-      res.json(parsedInvite)
+      res.json(serializedInvite)
     }),
   )
   .post<

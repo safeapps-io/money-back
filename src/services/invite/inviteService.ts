@@ -22,6 +22,7 @@ import {
   inviteReject,
   joiningError,
 } from './inviteEvents'
+import { BillingService } from '@/services/billing/billingService'
 
 type EncryptedUserId = {
   userId: string
@@ -42,8 +43,13 @@ export class InviteService {
         inviteId: res.payload.inviteId,
         walletId: res.payload.walletId,
       })
+
       if (wasDisposed)
         throw new FormValidationError(InviteServiceFormErrors.inviteAlreadyUsed)
+
+      const fullWalletData = await WalletManager.byId(res.payload.walletId)
+      if (!fullWalletData || !BillingService.isPlanActive(fullWalletData))
+        throw new FormValidationError(InviteServiceFormErrors.ownerHasNoPlan)
     }
 
     return res

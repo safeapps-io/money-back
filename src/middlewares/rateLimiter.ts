@@ -23,10 +23,10 @@ export const createLimiter = (
   const limiter = new RateLimiterRedis({
     storeClient: client,
     keyPrefix,
-    // Making it more real to test on dev env
-    points: isDev ? 2 : points,
-    duration: isDev ? 60 : duration,
-    blockDuration: isDev ? 60 : blockDuration,
+    // Disabling on dev
+    points: isDev ? 2 ^ 25 : points,
+    duration: isDev ? 2 ^ 25 : duration,
+    blockDuration: isDev ? 2 ^ 25 : blockDuration,
   })
 
   return {

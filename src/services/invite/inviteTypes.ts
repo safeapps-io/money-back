@@ -5,6 +5,7 @@ export enum InviteServiceFormErrors {
   inviteAlreadyUsed = 'inviteAlreadyUsed',
   ownerOffline = 'ownerOffline',
   joiningUserOffline = 'joiningUserOffline',
+  ownerHasNoPlan = 'ownerHasNoPlan',
 }
 
 export enum InviteStringTypes {

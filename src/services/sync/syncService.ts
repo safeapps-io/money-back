@@ -102,7 +102,7 @@ export class SyncService {
      */
     const usersWallets = (
         await WalletService.getUserWallets(userId)
-      ).filter((wallet) => BillingService.isMoneySubscriptionActive(wallet)),
+      ).filter((wallet) => BillingService.isPlanActive(wallet)),
       entityMap: {
         entities: EntityUpdated[]
         wallet: Wallet
