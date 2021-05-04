@@ -33,14 +33,14 @@ export class MetaCategoryManager {
   }
 
   static list() {
-    return MetaCategory.findAll()
+    return MetaCategory.findAll({ order: ['name'] })
   }
 
   static create(data: MetaCategory) {
     return MetaCategory.create(data)
   }
 
-  static update(id: string, data: MetaCategory) {
+  static update(id: string, data: Partial<MetaCategory>) {
     return MetaCategory.update(data, { where: { id } })
   }
 

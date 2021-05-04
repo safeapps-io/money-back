@@ -1,0 +1,47 @@
+extends main.pug
+
+block append content
+  style.
+    .wrapper {
+      display: flex;
+      max-height: 75vh;
+    }
+
+    .wrapper > * {
+      overflow-y: scroll;
+    }
+
+  +form
+    .wrapper.columns
+      .column.is-5
+        h2.subtitle Категории
+        each category in categories
+          .columns.is-size-7
+            .column.is-4
+              div= category.name
+            .column
+              textarea.textarea.is-small(name=category.id rows=1)= category.field
+      .column
+        h2.subtitle MCC-код
+        details.mb-5
+          summary Уже имеют ассоциации (#{assignedMcc.length} штук)
+          each mcc in assignedMcc
+            .mcc.mb-3.py-2.px-3.is-size-7.has-background-success-light(data-clipboard-text=mcc.mcc)
+              p.has-text-weight-bold= mcc.mcc
+              p= mcc.edited_description
+
+
+        each mcc in mccToAssign
+          .mcc.mb-3.py-2.px-3.is-size-7.has-background-warning-light(data-clipboard-text=mcc.mcc)
+            p.has-text-weight-bold= mcc.mcc
+            p= mcc.edited_description
+
+    button.button Сохранить!
+
+  script(src="https://unpkg.com/autosize@4.0.2/dist/autosize.min.js") 
+  script(src="https://unpkg.com/clipboard@2.0.8/dist/clipboard.min.js") 
+  script.
+    autosize(document.querySelectorAll('textarea'))
+    new ClipboardJS('.mcc');
+
+

@@ -1,0 +1,10 @@
+extends layout.pug
+
+block content 
+  nav.navbar.mb-5.is-light
+    .navbar-menu
+      .navbar-start
+        a.navbar-item(href="/dashboard") Дашборд
+        a.navbar-item(href="/mcc") MCC коды
+      .navbar-end.pr-3
+          a.navbar-item(href="https://money.safeapps.io")= username

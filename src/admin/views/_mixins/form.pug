@@ -1,0 +1,5 @@
+mixin form()
+  form(method='POST' autocomplete=false)
+    input(type="hidden" name="_csrf" value=csrfToken)
+
+    block

@@ -43,6 +43,10 @@ export class DirectoryService {
       .filter(Boolean)
   }
 
+  static _getAllCodes() {
+    return this.mccData
+  }
+
   static async getUpdatedSchemes(fromDate: number) {
     return serializeModel(
       await SchemeManager.getUpdatedSchemes(fromDate),
@@ -58,7 +62,7 @@ export class DirectoryService {
   }
 }
 
-type MCCInput = {
+export type MCCInput = {
   mcc: string
   edited_description: string
   combined_description: string
