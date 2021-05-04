@@ -25,6 +25,13 @@ export const sendAuthCookies = (
     res.cookie(CookieNames.refresh, refreshToken, secureCookieSettings)
 }
 
+export const getUserDataFromTokens = (req: Request, fetchUser: boolean) =>
+  UserService.getUserDataFromTokens(
+    req.signedCookies[CookieNames.access],
+    req.signedCookies[CookieNames.refresh],
+    fetchUser,
+  )
+
 export const resetCookies = (res: Response) => {
   res.clearCookie(CookieNames.access).clearCookie(CookieNames.refresh)
 }
@@ -45,11 +52,7 @@ export const isRestAuth = (fetchUser = false) => async (
       userId,
       planExpirations,
       newToken,
-    } = await UserService.getUserDataFromTokens(
-      req.signedCookies[CookieNames.access],
-      req.signedCookies[CookieNames.refresh],
-      fetchUser,
-    )
+    } = await getUserDataFromTokens(req, fetchUser)
 
     req.user = user
     req.userId = userId
@@ -65,9 +68,4 @@ export const isRestAuth = (fetchUser = false) => async (
       next(new RequestError('Invalid token', 403))
     else next(error)
   }
-}
-
-export const isAdmin = (req: Request, _: Response, next: NextFunction) => {
-  if (req.user?.isAdmin) next()
-  else next(new RequestError('Forbidden', 401))
 }
