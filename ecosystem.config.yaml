@@ -4,18 +4,18 @@
   exec_mode: cluster
   autorestart: true
   watch: false
-  max_memory_restart: 100M
+  max_memory_restart: 1G
 
 - name: 'worker'
   script: './prod/worker.js'
   instances: 1
   autorestart: true
   watch: false
-  max_memory_restart: 100M
+  max_memory_restart: 1G
 
 - name: 'admin'
   script: './prod/admin.js'
   instances: 1
   autorestart: true
   watch: false
-  max_memory_restart: 100M
+  max_memory_restart: 1G
