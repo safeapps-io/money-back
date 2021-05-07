@@ -1,7 +1,7 @@
 import { getFullPath } from '@/services/getPath'
 
 import { BaseEmail } from './types'
-import { emailQueue } from './queues'
+import { emailQueue, telegramQueue } from './queues'
 
 export class MessageService {
   private static async sendEmail(data: BaseEmail) {
@@ -9,6 +9,17 @@ export class MessageService {
       console.log(data.templateId, JSON.stringify(data.recepients, null, 2))
     else
       await emailQueue.add(data, { attempts: 3, timeout: 5000, backoff: 5000 })
+  }
+
+  private static async sendTelegramMessage(message: string) {
+    if (process.env.NODE_ENV == 'development')
+      console.log('[Telegram Message]', message)
+    else
+      await telegramQueue.add(message, {
+        attempts: 3,
+        timeout: 5000,
+        backoff: 5000,
+      })
   }
 
   private static getGotoUrl({
@@ -110,5 +121,29 @@ export class MessageService {
         },
       ],
     })
+  }
+
+  public static purchaseHappened({
+    userId,
+    username,
+    provider,
+  }: {
+    userId: string
+    username: string
+    provider: string
+  }) {
+    return this.sendTelegramMessage(
+      `Юзер ${username} (#${userId}) совершил покупку — ${provider}`,
+    )
+  }
+
+  public static dailySignupStats(signedUpUsernames: Array<string>) {
+    return this.sendTelegramMessage(
+      signedUpUsernames.length
+        ? `В прошедшие 24 часа зарегистрировалось ${
+            signedUpUsernames.length
+          } юзеров:\n\n${signedUpUsernames.join('\n')}`
+        : 'Регистраций в прошедшие 24 часа не было',
+    )
   }
 }

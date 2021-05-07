@@ -257,4 +257,10 @@ export class UserManager {
   static deleteUserById(userId: string) {
     return User.destroy({ where: { id: userId } })
   }
+
+  static createdBetweenDates(start: Date, end: Date) {
+    return User.findAll({
+      where: { created: { [Op.gt]: start, [Op.lt]: end } },
+    })
+  }
 }
