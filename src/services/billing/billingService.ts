@@ -236,8 +236,15 @@ export class BillingService {
     })
 
     if (res?.plan.userId) {
+      const user = (await UserManager.byId(res.plan.userId))!
+
       const promises: Promise<any>[] = [
-        this.informUserAboutCharge(res.plan.userId, res.charge),
+        this.informUserAboutCharge(user.id, res.charge),
+        MessageService.purchaseHappened({
+          userId: user.id,
+          username: user.username,
+          provider,
+        }),
       ]
 
       if (res.charge.eventType === EventTypes.confirmed && res.plan.user?.email)
