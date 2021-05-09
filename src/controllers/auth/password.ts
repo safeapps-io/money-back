@@ -4,10 +4,7 @@ import ash from 'express-async-handler'
 import { isRestAuth } from '@/middlewares/isAuth'
 
 import { PasswordService } from '@/services/user/passwordService'
-import {
-  constructSimplePostRouter,
-  createLimiter,
-} from '@/middlewares/rateLimiter'
+import { autoInvokeRateLimiter, createLimiter } from '@/middlewares/rateLimiter'
 import { UserService } from '@/services/user/userService'
 import User from '@/models/user.model'
 import { serializeModel, Serializers } from '@/models/serializers'
@@ -54,9 +51,9 @@ export const resetPasswordRouter = Router()
 
     res.json({})
   })
-  .use(
+  .post(
     '/request',
-    constructSimplePostRouter({
+    autoInvokeRateLimiter({
       // Block for 5 hour after 50 resets were performed in 1 hour
       limiter: createLimiter('requestPasswordReset', {
         points: 50,
@@ -71,9 +68,9 @@ export const resetPasswordRouter = Router()
       },
     }),
   )
-  .use(
+  .post(
     '/:token',
-    constructSimplePostRouter({
+    autoInvokeRateLimiter({
       // Block for 24 hours if 25 failed attempts were taken in a day
       limiter: createLimiter('usePasswordReset', {
         points: 25,
