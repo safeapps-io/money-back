@@ -74,4 +74,11 @@ export class ProductManager {
   static byId(id: string) {
     return Product.findOne({ where: { id } })
   }
+
+  static all() {
+    return Product.findAll({
+      where: { active: true },
+      order: [['slug', 'ASC']],
+    })
+  }
 }
