@@ -1,0 +1,137 @@
+extends /main.pug
+
+block append content
+  h1.title= user.username
+
+  .block
+    p
+      span.has-text-weight-bold ID: 
+      code= user.id
+    if user.email
+      p
+        span.has-text-weight-bold Почта: 
+        | #{user.email}
+
+    p
+      span.has-text-weight-bold Зарегистрирован: 
+      | #{dateFormat(user.created)}
+
+    p: span.has-text-weight-bold Ключи установлены: 
+      input(type="checkbox" disabled checked=!!user.b64salt)
+
+    .my-4
+      //- FUCKING ELITE, lol
+      if user.username == 'dkzlv'
+        p: span.has-text-weight-bold Админ: 
+          input(type="checkbox" disabled checked=user.isAdmin)
+      else
+        +form('POST', baseReqPath + '/toggleIsAdmin')
+          p: span.has-text-weight-bold Админ: 
+            input(type="checkbox" disabled checked=user.isAdmin)
+          button.button.is-small Передёрнуть
+
+    if user.inviterId
+      p
+        span.has-text-weight-bold Приглашён: 
+        | #{user.inviter.username} (инвайт <code>#{user.inviteId}</code>)
+
+  hr
+  h2.subtitle Биллинг
+
+  each plan in user.plans
+    .box
+      p: span.has-text-weight-bold ID: <code>#{plan.id}</code>
+      p
+        span.has-text-weight-bold Обновлено: 
+        | #{dateFormat(plan.updated)}
+      p
+        span.has-text-weight-bold Истекает: 
+        | #{dateFormat(plan.expires)}
+
+      +form('POST', baseReqPath + '/' + plan.id + '/setProduct')
+        .my-3
+          label.label Продукт
+          .field.has-addons
+            p.control: span.select.is-small: select(name="productId")
+              each product in products
+                option(value=product.id selected=product.id==plan.productId)= product.slug
+            p.control: button.button.is-small Изменить
+
+      .modal
+        .modal-background
+        .modal-content: pre: code#rawEvent
+        button.modal-close.is-large
+
+      .table-container.mt-5: table.table.is-striped.is-fullwidth
+        thead
+          tr
+            th ID
+            th Создано
+            th Провайдер
+            th ID в системе провайдера
+            th Продукт
+            th Тип события
+            th Тип чарджа
+            th Изменение срока истечения
+            th Сырой ивент
+            th
+        tbody
+          each event in plan.chargeEvents.sort((ch1, ch2) => ch1.created - ch2.created)
+            tr
+              td.is-size-7: code= event.id
+              td= dateFormat(event.created)
+              td= event.provider || '—'
+              td: if event.remoteChargeId
+                code= event.remoteChargeId
+              else
+                | —
+              td= event.productId || '—'
+              td= event.eventType
+              td= event.chargeType
+              td= dateFormat(event.expiredOld) + " → " +  dateFormat(event.expiredNew)
+              td: if event.rawData
+                button.button.is-ghost.is-small(onclick='openModal(' + event.rawData + ')')
+                  | Посмотреть
+              else
+                | —
+              td: +form('POST', baseReqPath + '/' + plan.id + '/charge/delete')
+                button.button.is-small.is-danger(type="submit", name="chargeId", value=event.id)
+                  | Удалить
+          else
+            tr: td(colspan=9) Ивентов нет
+
+      p.has-text-weight-bold.mt-4 Добавить срок
+
+      +form('POST', baseReqPath + '/' + plan.id + '/charge')
+        input(type="hidden", name="expiredOld", value=plan.expires.getTime())
+        
+        .control.my-3
+          label.radio
+            input(type="radio", name="from", value="now" checked=isBefore(plan.expires, new Date())) 
+            |  От текущего момента
+          label.radio
+            input(type="radio", name="from", value="prev" checked=!isBefore(plan.expires, new Date())) 
+            |  От прошлого истечения — #{dateFormat(plan.expires)}
+
+        p.buttons
+          - const btns = [['5m', '5 минут'], ['1d', '1 день'], ['14d', '14 дней']]
+          
+          each btn in btns
+            button.button.is-small(type="submit", name="time", value=btn[0])= btn[1]
+  else
+    p Никаких движений пока не было
+
+
+  script.
+    const $modal = document.querySelector('.modal'),
+      $modalContent = document.getElementById('rawEvent'),
+      $modalBack = document.querySelector('.modal-background'),
+      $close = document.querySelector('.modal-close'),
+      closeCb = () => $modal.classList.remove(activeClass)
+    
+    $modalBack.onclick = $close.onclick = closeCb
+
+    function openModal(text) {
+      $modalContent.innerText = JSON.stringify(text, null, 2)
+      $modal.classList.add(activeClass)
+    }

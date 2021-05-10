@@ -1,0 +1,30 @@
+extends /main.pug
+
+block append content
+  h1.title Пользователи
+    span.is-size-7.pl-4 (всего #{wholeCount})
+  form(method="GET" autocomplete=false)
+    .field.has-addons
+      .control
+        input.input(type="search" name="q" value=q)
+      .control
+        button.button.is-success Поиск
+
+  table.table.is-striped.is-fullwidth
+    thead
+      tr
+        th ID
+        th Username
+        th Email
+        th Ключи установлены
+        th Дата регистрации
+    tbody
+      each user in users
+        tr
+          td.is-size-7: a(href="/users/" + user.id)=user.id
+          td= user.username
+          td= user.email || '—'
+          td: input(type="checkbox" disabled checked=!!user.b64salt)
+          td= dateFormat(user.created)
+      else
+        tr: td(colspan=4) Юзеров нет
