@@ -2,7 +2,6 @@ import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
-import { isPlanActive } from '@/middlewares/isPlanActive'
 
 import { WalletService } from '@/services/wallet/walletService'
 import Wallet from '@/models/wallet.model'
@@ -13,7 +12,6 @@ export const walletRouter = Router().use(isRestAuth())
 walletRouter
   .post<{}, Wallet, { chest: string }>(
     '',
-    isPlanActive(),
     ash(async (req, res) => {
       const wallet = await WalletService.create(req.userId, req.body.chest)
 

@@ -45,16 +45,13 @@ export const isRestAuth: (a?: boolean) => Handler = (
   fetchUser = false,
 ) => async (req, res, next) => {
   try {
-    const {
-      user,
-      userId,
-      planExpirations,
-      newToken,
-    } = await getUserDataFromTokens(req, fetchUser)
+    const { user, userId, newToken } = await getUserDataFromTokens(
+      req,
+      fetchUser,
+    )
 
     req.user = user
     req.userId = userId
-    req.planExpirations = planExpirations
     req.tokens = {
       access: newToken || req.signedCookies[CookieNames.access],
       refresh: req.signedCookies[CookieNames.refresh],
