@@ -24,6 +24,10 @@ export default class Product extends BaseModel<Product> {
   @Column
   internalDescription!: string
 
+  @Default(false)
+  @Column
+  isTest!: boolean
+
   @Column
   title!: string
 
