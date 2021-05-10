@@ -11,6 +11,10 @@ block append content
       overflow-y: scroll;
     }
 
+    textarea {
+      max-height: 300px
+    }
+
   +form
     .wrapper.columns
       .column.is-5
@@ -18,7 +22,9 @@ block append content
         each category in categories
           .columns.is-size-7
             .column.is-4
-              div= category.name
+              div #{category.name} 
+                if category.isIncome
+                  span.tag.is-success доход
             .column
               textarea.textarea.is-small(name=category.id rows=1)= category.field
       .column

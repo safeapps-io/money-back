@@ -13,6 +13,7 @@ const getGetData = async () => {
     categories = metaCategories.map((cat) => ({
       id: cat.id,
       name: cat.name,
+      isIncome: cat.isIncome,
       field: cat.assignedMcc
         .map((val) => `${val.code}:${val.weight}`)
         .join('\n'),
