@@ -1,14 +1,8 @@
-import { Request, Response, NextFunction } from 'express'
-
 import { getUserDataFromTokens, sendAuthCookies } from '@/middlewares/isAuth'
 
 export class AdminUnknownUser extends Error {}
 export class AdminForbiddenError extends Error {}
-export const isAdmin = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+export const isAdmin: Handler = async (req, res, next) => {
   try {
     const {
       user,
@@ -22,7 +16,7 @@ export const isAdmin = async (
     req.planExpirations = planExpirations
     if (newToken) sendAuthCookies(res, newToken)
     if (req.user?.isAdmin) {
-      res.locals = { username: req.user.username }
+      res.locals.username = req.user.username
       return next()
     } else next(new AdminForbiddenError())
   } catch (error) {

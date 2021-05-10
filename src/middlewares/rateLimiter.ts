@@ -1,10 +1,4 @@
-import {
-  Request,
-  Response,
-  NextFunction,
-  Router,
-  RequestHandler,
-} from 'express'
+import { Request, RequestHandler } from 'express'
 import { RateLimiterRedis } from 'rate-limiter-flexible'
 import ash from 'express-async-handler'
 import { getRedisClient } from '@/services/redis/connection'
@@ -62,7 +56,7 @@ export const autoInvokeRateLimiter = ({
   keyGetter?: KeyGetter
   consumeMode?: 'onError' | 'always'
 }) =>
-  ash(async (req: Request, res: Response, next: NextFunction) => {
+  ash(async (req, res, next) => {
     const key = keyGetter(req),
       result = await limiter.shouldProceed(key)
 
