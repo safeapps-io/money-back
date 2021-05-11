@@ -114,7 +114,7 @@ block append content
             |  От прошлого истечения — #{dateFormat(plan.expires)}
 
         p.buttons
-          - const btns = [['5m', '5 минут'], ['1d', '1 день'], ['14d', '14 дней']]
+          - const btns = [['-5m', '-5 минут'], ['5m', '5 минут'], ['1d', '1 день'], ['14d', '14 дней']]
           
           each btn in btns
             button.button.is-small(type="submit", name="time", value=btn[0])= btn[1]
