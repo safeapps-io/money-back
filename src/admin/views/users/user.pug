@@ -103,15 +103,16 @@ block append content
       p.has-text-weight-bold.mt-4 Добавить срок
 
       +form('POST', baseReqPath + '/' + plan.id + '/charge')
-        input(type="hidden", name="expiredOld", value=plan.expires.getTime())
-        
-        .control.my-3
-          label.radio
-            input(type="radio", name="from", value="now" checked=isBefore(plan.expires, new Date())) 
-            |  От текущего момента
-          label.radio
-            input(type="radio", name="from", value="prev" checked=!isBefore(plan.expires, new Date())) 
-            |  От прошлого истечения — #{dateFormat(plan.expires)}
+        if plan.expires
+          input(type="hidden", name="expiredOld", value=plan.expires.getTime())
+          
+          .control.my-3
+            label.radio
+              input(type="radio", name="from", value="now" checked=isBefore(plan.expires, new Date())) 
+              |  От текущего момента
+            label.radio
+              input(type="radio", name="from", value="prev" checked=!isBefore(plan.expires, new Date())) 
+              |  От прошлого истечения — #{dateFormat(plan.expires)}
 
         p.buttons
           - const btns = [['-5m', '-5 минут'], ['5m', '5 минут'], ['1d', '1 день'], ['14d', '14 дней']]
