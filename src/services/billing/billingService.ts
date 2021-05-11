@@ -211,6 +211,8 @@ export class BillingService {
     rawRequestData: string
     headers: Request['headers']
   }) {
+    console.log({ type: '[billing][webhook]', provider, event })
+
     let remoteChargeData: ChargeEventData | null = null
     if (provider === ChargeProviders.coinbase)
       remoteChargeData = await coinbaseProvider.handleEvent(event, context)
