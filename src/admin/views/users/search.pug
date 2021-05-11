@@ -1,14 +1,16 @@
 extends /main.pug
 
 block append content
-  h1.title Пользователи
-    span.is-size-7.pl-4 (всего #{wholeCount})
-  form(method="GET" autocomplete=false)
-    .field.has-addons
-      .control
-        input.input(type="search" name="q" value=q)
-      .control
-        button.button.is-success Поиск
+  .level
+    .level-left
+      .level-item: h1.title Пользователи
+        span.is-size-7.pl-4 (всего #{wholeCount})
+      .level-item: form(method="GET" autocomplete=false)
+        .field.has-addons
+          .control
+            input.input(type="search" name="q" value=q)
+          .control
+            button.button.is-success Поиск
 
   table.table.is-striped.is-fullwidth
     thead
