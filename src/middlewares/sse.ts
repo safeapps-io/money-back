@@ -1,4 +1,3 @@
-import { Request, Response, NextFunction } from 'express'
 import { nanoid } from 'nanoid'
 import ash from 'express-async-handler'
 import { random } from 'lodash'
@@ -15,7 +14,7 @@ export const sse = (
     ) => Promise<() => Promise<void>>
   >,
 ) =>
-  ash(async (req: Request, res: Response, next: NextFunction) => {
+  ash(async (req, res, next) => {
     const clientId = req.query.clientId
     if (!clientId || typeof clientId != 'string') return next(new Error())
 
@@ -49,7 +48,7 @@ export const sse = (
 /**
  * Parses the special header and passes it into Request object
  */
-export const sseHeader = (req: Request, _: Response, next: NextFunction) => {
+export const sseHeader: Handler = (req, _, next) => {
   const clientId = req.get('sse-clientid')
   if (clientId) req.sse = { clientId }
   next()

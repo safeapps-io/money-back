@@ -24,5 +24,5 @@ export const adminAuthRouter = Router()
     sendAuthCookies(res, accessToken, refreshToken)
 
     if (user.isAdmin) return res.redirect('/dashboard')
-    else throw new Error('Not admin')
+    else return res.send('Forbidden')
   })

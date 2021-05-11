@@ -7,7 +7,7 @@ import { UserService } from '@/services/user/userService'
 import { getDeviceDescription } from '@/services/deviceDescription'
 import { ValidateEmailService } from '@/services/user/validateEmailService'
 import {
-  constructSimplePostRouter,
+  autoInvokeRateLimiter,
   createLimiter,
   ipKeyGetter,
   KeyGetter,
@@ -15,9 +15,9 @@ import {
 import { serializeModel, Serializers } from '@/models/serializers'
 
 export const newUserRouter = Router()
-  .use(
+  .post(
     '/signup',
-    constructSimplePostRouter({
+    autoInvokeRateLimiter({
       // Block for 1 hour after 25 signups were performed in 1 hour
       limiter: createLimiter('signup', {
         points: 25,

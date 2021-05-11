@@ -28,7 +28,3 @@ export interface BillingProvider {
     context: EventHandlerContext,
   ) => Promise<ChargeEventData | null>
 }
-
-export type BillingJWTAddition = {
-  [productType in ProductType]: number | undefined
-}

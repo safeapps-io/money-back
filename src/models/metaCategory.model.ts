@@ -33,7 +33,7 @@ export class MetaCategoryManager {
   }
 
   static list() {
-    return MetaCategory.findAll({ order: ['name'] })
+    return MetaCategory.findAll({ where: { published: true }, order: ['name'] })
   }
 
   static create(data: MetaCategory) {

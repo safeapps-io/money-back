@@ -263,4 +263,34 @@ export class UserManager {
       where: { created: { [Op.gt]: start, [Op.lt]: end } },
     })
   }
+
+  static count() {
+    return User.count()
+  }
+
+  static searchByQuery(query: string | null = null) {
+    return query
+      ? User.findAll({
+          where: {
+            [Op.or]: [
+              { id: query },
+              sequelize.where(
+                sequelize.fn('lower', sequelize.col('username')),
+                sequelize.fn('lower', query),
+              ),
+              sequelize.where(
+                sequelize.fn('lower', sequelize.col('email')),
+                sequelize.fn('lower', query),
+              ),
+            ],
+          },
+        })
+      : User.findAll({ limit: 20, order: [['created', 'DESC']] })
+  }
+
+  static byIdWithAdminDataIncluded(userId: string) {
+    return User.findByPk(userId, {
+      include: ({ all: true, nested: true } as unknown) as any[],
+    })
+  }
 }

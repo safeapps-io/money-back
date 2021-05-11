@@ -11,11 +11,14 @@ export type CoinbaseClientDataReturn = { link: string }
 
 class CoinbaseProvider implements BillingProvider {
   async createCharge(product: Product, userId: string, planId: string) {
+    // For test products we cut down the price to 1 cent, lowest possible
+    const amount = (product.isTest ? 0.01 : product.price / 100).toString()
+
     const res = await Charge.create({
       name: product.title,
       description: product.description,
       local_price: {
-        amount: (product.price / 100).toString(),
+        amount,
         currency: 'USD',
       },
       pricing_type: 'fixed_price',

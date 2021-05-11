@@ -94,39 +94,51 @@ export class SyncService {
     entityMap: ClientChangesData
   }) {
     /**
-     * Only allow access to:
+     * Only allow write-access to:
      * 1. this user's wallets;
      * 2. wallets which owner has an active subscription.
      *
      * Other data will be filtered out.
+     *
+     * Allow read-access to all of user's wallets.
      */
-    const usersWallets = (
-        await WalletService.getUserWallets(userId)
-      ).filter((wallet) => BillingService.isPlanActive(wallet)),
+    const usersWallets = await WalletService.getUserWallets(userId),
       entityMap: {
         entities: EntityUpdated[]
         wallet: Wallet
       }[] = [],
-      serverUpdatesMap: ServerUpdatesMap = []
+      serverUpdatesMap: ServerUpdatesMap = [],
+      writeAccessWallets: Wallet[] = [],
+      readAccessWallets: Wallet[] = []
+
+    for (const wallet of usersWallets) {
+      if (BillingService.isPlanActive(wallet)) writeAccessWallets.push(wallet)
+      else readAccessWallets.push(wallet)
+    }
 
     for (const [walletId, walletChanges] of Object.entries(
       unfilteredEntityMap,
     )) {
       const wallet = usersWallets.find((wallet) => wallet.id === walletId)
+      // Filtering our wallets user does not have access to
       if (!wallet) continue
 
+      // We always request new updates from backend
       serverUpdatesMap.push({
         walletId,
         latestUpdated: new Date(walletChanges.latestUpdated),
       })
-      entityMap.push({
-        wallet,
-        // It's a bit of a stretch. User can change wallet id for some other, and send it to backend.
-        // Will never happen in real life, but HACKERS ARE EVERYWHERE
-        entities: walletChanges.entities.filter(
-          (ent) => ent.walletId === wallet.id,
-        ),
-      })
+
+      // We only apply changes from a wallet that has an active plan
+      if (BillingService.isPlanActive(wallet))
+        entityMap.push({
+          wallet,
+          // It's a bit of a stretch. User can change wallet id for some other, and send it to backend.
+          // Will never happen in real life, but HACKERS ARE EVERYWHERE
+          entities: walletChanges.entities.filter(
+            (ent) => ent.walletId === wallet.id,
+          ),
+        })
     }
 
     await Promise.all(

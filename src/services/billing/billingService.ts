@@ -20,7 +20,7 @@ import { AccessLevels } from '@/models/walletAccess.model'
 
 import { MessageService } from '@/services/message/messageService'
 import { WalletService } from '@/services/wallet/walletService'
-import { BillingJWTAddition, ChargeEventData } from './types'
+import { ChargeEventData } from './types'
 import { coinbaseProvider } from './coinbaseProvider'
 import { tinkoffProvider } from './tinkoffProvider'
 import { publishChargeUpdate } from './billingEvents'
@@ -79,16 +79,20 @@ export class BillingService {
         ? ProductManager.getBySlug('money:early_bird_no_trial')
         : ProductManager.getDefaultProduct())
 
-      const _plan = await PlanManager.create(user.id, product!.id)
-
-      return (await this.updatePlanAccordingToCharge(
-        _plan,
-        await ChargeEventManager.create({
-          eventType: EventTypes.confirmed,
-          chargeType: ChargeTypes.trial,
-          planId: _plan.id,
-        }),
-      ))!.plan
+      const planBeforeSettingExpires = await PlanManager.create(
+        user.id,
+        product!.id,
+      )
+      return product!.trialDuration
+        ? (await this.updatePlanAccordingToCharge(
+            planBeforeSettingExpires,
+            await ChargeEventManager.create({
+              eventType: EventTypes.confirmed,
+              chargeType: ChargeTypes.trial,
+              planId: planBeforeSettingExpires.id,
+            }),
+          ))!.plan
+        : planBeforeSettingExpires
     })
   }
 
@@ -207,6 +211,8 @@ export class BillingService {
     rawRequestData: string
     headers: Request['headers']
   }) {
+    console.log({ type: '[billing][webhook]', provider, event })
+
     let remoteChargeData: ChargeEventData | null = null
     if (provider === ChargeProviders.coinbase)
       remoteChargeData = await coinbaseProvider.handleEvent(event, context)
@@ -254,15 +260,6 @@ export class BillingService {
 
       return Promise.all(promises)
     }
-  }
-
-  static async getJWTAddition(userId: string): Promise<BillingJWTAddition> {
-    const plan = await this.getPlanByUserId(userId)
-    return { [ProductType.money]: plan.expires?.getTime() }
-  }
-
-  static isJwtAdditionFull(addition?: BillingJWTAddition) {
-    return addition && !!addition[ProductType.money]
   }
 
   private static isPlanTrial(plan: Plan) {

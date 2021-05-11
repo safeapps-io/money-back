@@ -24,6 +24,10 @@ export default class Product extends BaseModel<Product> {
   @Column
   internalDescription!: string
 
+  @Default(false)
+  @Column
+  isTest!: boolean
+
   @Column
   title!: string
 
@@ -69,5 +73,12 @@ export class ProductManager {
 
   static byId(id: string) {
     return Product.findOne({ where: { id } })
+  }
+
+  static all() {
+    return Product.findAll({
+      where: { active: true },
+      order: [['slug', 'ASC']],
+    })
   }
 }

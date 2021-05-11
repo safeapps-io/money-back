@@ -74,4 +74,8 @@ export class ChargeEventManager {
   static create(charge: EventChargeData) {
     return ChargeEvent.create(charge)
   }
+
+  static deleteByPlanAndId(id: string, planId: string) {
+    return ChargeEvent.destroy({ where: { id, planId } })
+  }
 }

@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid'
 
-import productModel from '@/models/billing/product.model'
+import Product from '@/models/billing/product.model'
 import { BillingProvider, EventHandlerContext } from './types'
 import { CryptoService } from '@/services/crypto/cryptoService'
 import { request } from '@/services/request'
@@ -22,8 +22,8 @@ class TinkoffProvider implements BillingProvider {
    *
    * Detailed process is outlined here: https://oplata.tinkoff.ru/develop/api/request-sign/
    */
-  private getToken(data: Object): string {
-    const dataWithPass = { ...data, Password: process.env.TINKOFF_PASSWORD },
+  private getToken(data: Object, password: string): string {
+    const dataWithPass = { ...data, Password: password },
       valuesJoined = Object.entries(dataWithPass)
         .filter(([key]) => !['Receipt', 'DATA', 'Token'].includes(key))
         .sort(([key1], [key2]) => key1.localeCompare(key2))
@@ -33,7 +33,7 @@ class TinkoffProvider implements BillingProvider {
     return CryptoService.getDigest(valuesJoined)
   }
 
-  async createCharge(product: productModel, userId: string, planId: string) {
+  async createCharge(product: Product, userId: string, planId: string) {
     // Tinkoff requires each order to have a unique ID
     const currentRate = await ExchangeRateService.getExchangeRate()
     /**
@@ -43,6 +43,10 @@ class TinkoffProvider implements BillingProvider {
      */
     const price = Math.floor((product.price * currentRate) / 1000) * 1000
 
+    // For test products we switch to test terminal that do not initiate
+    // real purchases
+    const { TerminalKey, password } = this.getPrivateDataByProduct(product)
+
     const orderId = nanoid(),
       body: {
         TerminalKey: string
@@ -51,13 +55,13 @@ class TinkoffProvider implements BillingProvider {
         Language: 'ru' | 'en'
         DATA: { [key: string]: string }
       } = {
-        TerminalKey: process.env.TINKOFF_TERMINAL_KEY as string,
+        TerminalKey,
         Amount: price,
         OrderId: orderId,
         Language: 'en',
         DATA: { planId, userId },
       },
-      token = this.getToken(body)
+      token = this.getToken(body, password)
 
     const { json } = await request<InitResponse>({
       method: 'POST',
@@ -85,7 +89,8 @@ class TinkoffProvider implements BillingProvider {
   }
 
   async handleEvent(event: Event, _: EventHandlerContext) {
-    const checkToken = this.getToken(event)
+    const password = this.getPasswordByTerminalKey(event.TerminalKey),
+      checkToken = this.getToken(event, password)
     if (checkToken !== event.Token) return null
 
     let eventType: EventTypes
@@ -110,6 +115,30 @@ class TinkoffProvider implements BillingProvider {
       eventType,
       remoteChargeId: event.PaymentId.toString(),
       rawData: JSON.stringify(event),
+    }
+  }
+
+  private getPrivateDataByProduct(product: Product) {
+    return {
+      TerminalKey: (product.isTest
+        ? process.env.TINKOFF_TERMINAL_KEY_TEST
+        : process.env.TINKOFF_TERMINAL_KEY) as string,
+      password: (product.isTest
+        ? process.env.TINKOFF_PASSWORD_TEST
+        : process.env.TINKOFF_PASSWORD) as string,
+    }
+  }
+
+  private getPasswordByTerminalKey(termKey: string) {
+    switch (termKey) {
+      case process.env.TINKOFF_TERMINAL_KEY:
+        return process.env.TINKOFF_PASSWORD as string
+
+      case process.env.TINKOFF_TERMINAL_KEY_TEST:
+        return process.env.TINKOFF_PASSWORD_TEST as string
+
+      default:
+        throw new Error('Unknown terminal key')
     }
   }
 }

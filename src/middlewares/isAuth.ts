@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express'
+import { Request, Response } from 'express'
 
 import { UserService, InvalidToken } from '@/services/user/userService'
 import { RequestError } from '@/services/errors'
@@ -41,22 +41,17 @@ export const resetCookies = (res: Response) => {
  * If access token if expired, it tries to create a new one automatically out of refresh token.
  * If it is successful, it will send a new token with cookies automatically.
  */
-export const isRestAuth = (fetchUser = false) => async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+export const isRestAuth: (a?: boolean) => Handler = (
+  fetchUser = false,
+) => async (req, res, next) => {
   try {
-    const {
-      user,
-      userId,
-      planExpirations,
-      newToken,
-    } = await getUserDataFromTokens(req, fetchUser)
+    const { user, userId, newToken } = await getUserDataFromTokens(
+      req,
+      fetchUser,
+    )
 
     req.user = user
     req.userId = userId
-    req.planExpirations = planExpirations
     req.tokens = {
       access: newToken || req.signedCookies[CookieNames.access],
       refresh: req.signedCookies[CookieNames.refresh],

@@ -62,7 +62,7 @@ export class InviteStringService {
 
   private static inviteSchema = yup
     .object({
-      userInviterId: requiredString,
+      inviterId: requiredString,
       inviteId: requiredString,
       walletId: optionalString,
     })
@@ -90,7 +90,7 @@ export class InviteStringService {
     dataBuffer,
     signatureBuffer,
   }: Await<ReturnType<typeof InviteStringService.parseAsymmetricInvite>>) {
-    const inviterUser = await UserManager.byId(decodedInvite.userInviterId)
+    const inviterUser = await UserManager.byId(decodedInvite.inviterId)
 
     if (
       !inviterUser?.b64InvitePublicKey ||
@@ -126,9 +126,8 @@ export class InviteStringService {
   }
 }
 
-type ServiceInvitePayload = { userInviterId: string }
+type ServiceInvitePayload = { inviterId: string; inviteId: string }
 type WalletInviteObject = ServiceInvitePayload & {
-  inviteId: string
   walletId: string
 }
 export type InvitePayload =

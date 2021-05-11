@@ -15,13 +15,11 @@ import { decryptAes, encryptAes, signJwt, verifyJwt } from '@/utils/crypto'
 import { FormValidationError } from '@/services/errors'
 import { InviteService } from '@/services/invite/inviteService'
 import { WalletService } from '@/services/wallet/walletService'
-import { BillingJWTAddition } from '@/services/billing/types'
 import { InviteStringTypes } from '@/services/invite/inviteTypes'
 import { getFullPath } from '@/services/getPath'
 
 import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from './passwordService'
-import { BillingService } from '../billing/billingService'
 import { publishUserUpdate } from './userEvents'
 
 export enum JWTSubjects {
@@ -32,8 +30,6 @@ export enum JWTSubjects {
 type JWTMessage = {
   // user id
   id: string
-  // expires for Plans
-  planExp?: BillingJWTAddition
   exp?: number
 }
 
@@ -76,10 +72,7 @@ export class UserService {
       if (!tokenValid) throw new InvalidToken()
     }
 
-    const data: JWTMessage = {
-      id: userId,
-      planExp: await BillingService.getJWTAddition(userId),
-    }
+    const data: JWTMessage = { id: userId }
 
     return signJwt(data, {
       subject,
@@ -253,7 +246,7 @@ export class UserService {
       const res = await verifyJwt<JWTMessage>(ticket, {
         subject: JWTSubjects.wsTicket,
       })
-      return { userId: res.id, planExpirations: res.planExp }
+      return { userId: res.id }
     } catch (err) {
       throw new InvalidToken()
     }
@@ -265,36 +258,29 @@ export class UserService {
     newToken: boolean = false,
   ): Promise<{
     userId: string
-    planExpirations: BillingJWTAddition
     newToken?: string
   }> {
     try {
-      const {
-        exp: expires,
-        id: userId,
-        planExp: planExpirations,
-      } = await verifyJwt<JWTMessage>(accessToken, {
-        ignoreExpiration: true,
-        subject: JWTSubjects.session,
-      })
+      const { exp: expires, id: userId } = await verifyJwt<JWTMessage>(
+        accessToken,
+        {
+          ignoreExpiration: true,
+          subject: JWTSubjects.session,
+        },
+      )
       if (!expires) throw new InvalidToken()
 
-      // Issuing a new access token if the previous one is expired or if billing data is insufficient
-      if (
-        isBefore(expires * 1000, new Date()) ||
-        !BillingService.isJwtAdditionFull(planExpirations)
-      ) {
+      // Issuing a new access token if the previous one is expired
+      if (isBefore(expires * 1000, new Date()))
         // Calling the same method stuff recursively with a new fresh access token
         return this.getUserIdFromAccessToken(
           await this.getNewAccessToken(accessToken, refreshToken),
           refreshToken,
           true,
         )
-      }
 
       return {
         userId,
-        planExpirations: planExpirations!,
         newToken: newToken ? accessToken : undefined,
       }
     } catch (err) {
@@ -307,21 +293,18 @@ export class UserService {
     refreshToken: string,
     fetchUser = true,
   ) {
-    const {
-      userId,
-      planExpirations,
-      newToken,
-    } = await this.getUserIdFromAccessToken(accessToken, refreshToken)
+    const { userId, newToken } = await this.getUserIdFromAccessToken(
+      accessToken,
+      refreshToken,
+    )
 
     const res: {
       user?: User
       userId: string
       newToken?: string
-      planExpirations?: BillingJWTAddition
     } = {
       userId,
       newToken,
-      planExpirations,
     }
     if (fetchUser) {
       const user = await UserManager.byId(userId)

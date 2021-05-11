@@ -1,10 +1,4 @@
-import {
-  Request,
-  Response,
-  NextFunction,
-  Router,
-  RequestHandler,
-} from 'express'
+import { Request, RequestHandler } from 'express'
 import { RateLimiterRedis } from 'rate-limiter-flexible'
 import ash from 'express-async-handler'
 import { getRedisClient } from '@/services/redis/connection'
@@ -51,7 +45,7 @@ export const ipKeyGetter: KeyGetter = (req) => req.ip
  * Checks limiter right before passing it to the next middleware.
  * Has two modes of consuming: always (will always consume) and onError — if an error was raised.
  */
-export const constructSimplePostRouter = ({
+export const autoInvokeRateLimiter = ({
   handler,
   limiter,
   keyGetter = ipKeyGetter,
@@ -62,30 +56,26 @@ export const constructSimplePostRouter = ({
   keyGetter?: KeyGetter
   consumeMode?: 'onError' | 'always'
 }) =>
-  Router().use(
-    ash(async (req: Request, res: Response, next: NextFunction) => {
-      if (req.method !== 'POST') return next(new Error())
+  ash(async (req, res, next) => {
+    const key = keyGetter(req),
+      result = await limiter.shouldProceed(key)
 
-      const key = keyGetter(req),
-        result = await limiter.shouldProceed(key)
+    // Limit is exceeded
+    if (!result) return next(new Error())
 
-      // Limit is exceeded
-      if (!result) return next(new Error())
-
-      try {
-        await handler(req, res, next)
-      } catch (error) {
-        if (consumeMode == 'onError') {
-          const key = keyGetter(req)
-          await limiter.consume(key)
-        }
-        // Forwarding the error to the error handling middleware
-        return next(error)
-      } finally {
-        if (consumeMode == 'always') {
-          const key = keyGetter(req)
-          await limiter.consume(key)
-        }
+    try {
+      await handler(req, res, next)
+    } catch (error) {
+      if (consumeMode == 'onError') {
+        const key = keyGetter(req)
+        await limiter.consume(key)
       }
-    }),
-  )
+      // Forwarding the error to the error handling middleware
+      return next(error)
+    } finally {
+      if (consumeMode == 'always') {
+        const key = keyGetter(req)
+        await limiter.consume(key)
+      }
+    }
+  })

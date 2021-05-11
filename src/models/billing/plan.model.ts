@@ -104,4 +104,12 @@ export class PlanManager {
       include: [{ model: ChargeEvent }, { model: User }],
     })
   }
+
+  static byId(id: string) {
+    return Plan.findByPk(id)
+  }
+
+  static update(id: string, data: Partial<Plan>) {
+    return Plan.update(data, { where: { id } })
+  }
 }

@@ -20,9 +20,11 @@ const app = express()
 const constructApp = async () => {
   await sequelize.sync()
 
+  const viewsDir = join(__dirname, 'views')
+
   app
     .set('trust proxy', true)
-    .set('views', join(__dirname, 'views'))
+    .set('views', viewsDir)
     .set('view engine', 'pug')
     .use(
       logger,
@@ -31,6 +33,10 @@ const constructApp = async () => {
       multer().none(),
       helmet(),
     )
+    .use((_, res, next) => {
+      res.locals = { basedir: viewsDir }
+      return next()
+    })
     .use(adminRouter)
 
   return app
