@@ -30,51 +30,58 @@ export class BillingService {
     plan: Plan,
     charge: ChargeEvent,
   ) {
-    if (charge.eventType != EventTypes.confirmed) return
+    const now = new Date(),
+      expiredOld = plan.expires
+    let expiredNew: Date | null = null
 
-    /**
-     * If plan has already been expired for a while, we use now as the start of the new
-     * cycle.
-     * If it is still active, we add days to it.
-     */
-    const now = new Date()
-    let expiredOld = now
-    if (plan.expires && isAfter(plan.expires, now)) expiredOld = plan.expires
+    if (charge.eventType == EventTypes.confirmed) {
+      /**
+       * If plan has already been expired for a while, we use now as the start of the new
+       * cycle.
+       * If it is still active, we add days to it.
+       */
+      let addToThisDate: Date = now
+      if (expiredOld && isAfter(expiredOld, now)) addToThisDate = expiredOld
 
-    let expiredNew: Date
-    switch (charge.chargeType) {
-      case ChargeTypes.trial: {
-        const product = await ProductManager.byId(plan.productId)
-        expiredNew = addDays(expiredOld, product!.trialDuration || 0)
-        break
+      switch (charge.chargeType) {
+        case ChargeTypes.trial: {
+          const product = await ProductManager.byId(plan.productId)
+          expiredNew = addDays(addToThisDate, product!.trialDuration || 0)
+          break
+        }
+
+        case ChargeTypes.purchase: {
+          const product = await ProductManager.byId(plan.productId)
+          expiredNew = addDays(addToThisDate, product!.duration)
+          break
+        }
+
+        case ChargeTypes.manual:
+          expiredNew = charge.expiredNew!
+          break
+
+        case ChargeTypes.viral: {
+          const product = await ProductManager.byId(charge.productId!)
+          expiredNew = addDays(addToThisDate, product!.duration)
+          break
+        }
+
+        default:
+          throw new Error(`unknown charge type: ${charge.chargeType}`)
       }
-
-      case ChargeTypes.purchase: {
-        const product = await ProductManager.byId(plan.productId)
-        expiredNew = addDays(expiredOld, product!.duration)
-        break
-      }
-
-      case ChargeTypes.manual:
-        expiredNew = charge.expiredNew!
-        break
-
-      case ChargeTypes.viral: {
-        const product = await ProductManager.byId(charge.productId!)
-        expiredNew = addDays(expiredOld, product!.duration)
-        break
-      }
-
-      default:
-        throw new Error(`unknown charge type: ${charge.chargeType}`)
+    } else if (charge.eventType == EventTypes.refunded) {
+      // As simple as it is. Instead of backing off we shrink the subscription like it has expired right now
+      expiredNew = now
     }
 
-    plan.expires = expiredNew
-    charge.expiredNew = expiredNew
-    charge.expiredOld = expiredOld
+    if (expiredNew) {
+      plan.expires = expiredNew
+      charge.expiredNew = expiredNew
+      charge.expiredOld = expiredOld
 
-    await Promise.all([plan.save(), charge.save()])
-    return { plan, charge }
+      await Promise.all([plan.save(), charge.save()])
+      return { plan, charge }
+    }
   }
 
   private static async createPlan(user: User) {
@@ -141,6 +148,12 @@ export class BillingService {
 
   private static createChargeEvent(event: EventChargeData, plan: Plan) {
     return getTransaction(async () => {
+      const exists = await ChargeEventManager.isRemoteIdAndEventTypeExists(
+        event.remoteChargeId!,
+        event.eventType,
+      )
+      if (exists) return
+
       const charge = await ChargeEventManager.create(event)
       return this.updatePlanAccordingToCharge(plan, charge)
     })
@@ -229,30 +242,33 @@ export class BillingService {
 
     if (!remoteChargeData) return
 
-    const res = await getTransaction(async () => {
-      const plan = await PlanManager.byRemoteChargeId(
-        remoteChargeData!.remoteChargeId,
-      )
+    const plan = await PlanManager.byRemoteChargeId(
+      remoteChargeData!.remoteChargeId,
+    )
 
-      if (!plan) return
+    if (!plan)
+      return console.log({
+        type: '[billing][webhook]',
+        message: 'No plan found for ID',
+        remoteChargeId: remoteChargeData!.remoteChargeId,
+      })
 
-      return this.createChargeEvent(
-        {
-          provider,
-          planId: plan.id,
-          productId: plan.product.id,
-          chargeType: ChargeTypes.purchase,
-          ...remoteChargeData!,
-        },
-        plan,
-      )
-    })
+    const newChargeEvent = await this.createChargeEvent(
+      {
+        provider,
+        planId: plan.id,
+        productId: plan.product.id,
+        chargeType: ChargeTypes.purchase,
+        ...remoteChargeData!,
+      },
+      plan,
+    )
 
-    if (res?.plan.userId) {
-      const user = (await UserManager.byId(res.plan.userId))!
+    if (newChargeEvent?.plan.userId) {
+      const user = (await UserManager.byId(newChargeEvent.plan.userId))!
 
       const promises: Promise<any>[] = [
-        this.informUserAboutCharge(user.id, res.charge),
+        this.informUserAboutCharge(user.id, newChargeEvent.charge),
         MessageService.purchaseHappened({
           userId: user.id,
           username: user.username,
@@ -260,9 +276,14 @@ export class BillingService {
         }),
       ]
 
-      if (res.charge.eventType === EventTypes.confirmed && res.plan.user?.email)
+      if (
+        newChargeEvent.charge.eventType === EventTypes.confirmed &&
+        newChargeEvent.plan.user?.email
+      )
         promises.push(
-          MessageService.sendSuccessfulPurchaseEmail(res.plan.user.email),
+          MessageService.sendSuccessfulPurchaseEmail(
+            newChargeEvent.plan.user.email,
+          ),
         )
 
       return Promise.all(promises)

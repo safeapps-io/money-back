@@ -77,6 +77,10 @@ export class ChargeEventManager {
     return ChargeEvent.create(charge)
   }
 
+  static isRemoteIdAndEventTypeExists(remoteId: string, eventType: EventTypes) {
+    return ChargeEvent.count({ where: { eventType, remoteChargeId: remoteId } })
+  }
+
   static deleteByPlanAndId(id: string, planId: string) {
     return ChargeEvent.destroy({ where: { id, planId } })
   }
