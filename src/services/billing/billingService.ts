@@ -32,7 +32,14 @@ export class BillingService {
   ) {
     if (charge.eventType != EventTypes.confirmed) return
 
-    const expiredOld = plan.expires || new Date()
+    /**
+     * If plan has already been expired for a while, we use now as the start of the new
+     * cycle.
+     * If it is still active, we add days to it.
+     */
+    const now = new Date()
+    let expiredOld = now
+    if (plan.expires && isAfter(plan.expires, now)) expiredOld = plan.expires
 
     let expiredNew: Date
     switch (charge.chargeType) {

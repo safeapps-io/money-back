@@ -7,6 +7,7 @@ import {
   Default,
   HasMany,
   BelongsTo,
+  Index,
 } from 'sequelize-typescript'
 import { Op } from 'sequelize'
 import { Includeable } from 'sequelize/types'
@@ -41,6 +42,7 @@ export default class Plan extends BaseModel<Plan> {
   productId!: string
 
   @AllowNull
+  @Index
   @ForeignKey(() => User)
   @Column(DataType.STRING)
   userId!: string | null

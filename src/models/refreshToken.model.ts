@@ -1,4 +1,10 @@
-import { Table, Column, ForeignKey, BelongsTo } from 'sequelize-typescript'
+import {
+  Table,
+  Column,
+  ForeignKey,
+  BelongsTo,
+  Index,
+} from 'sequelize-typescript'
 import { Op } from 'sequelize'
 import { nanoid } from 'nanoid'
 
@@ -11,6 +17,7 @@ export default class RefreshToken extends BaseModel<RefreshToken> {
   key!: string
 
   @ForeignKey(() => User)
+  @Index
   @Column
   userId!: string
 
