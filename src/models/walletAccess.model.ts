@@ -4,6 +4,7 @@ import {
   ForeignKey,
   DataType,
   AllowNull,
+  Index,
 } from 'sequelize-typescript'
 
 import { getValue, setValue } from '@/utils/blobAsBase64'
@@ -23,10 +24,12 @@ export enum AccessLevels {
 export default class WalletAccess extends BaseModel<WalletAccess> {
   @AllowNull
   @ForeignKey(() => User)
+  @Index
   @Column(DataType.STRING)
   userId!: string | null
 
   @ForeignKey(() => Wallet)
+  @Index
   @Column
   walletId!: string
 

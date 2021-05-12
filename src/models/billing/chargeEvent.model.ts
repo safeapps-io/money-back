@@ -4,6 +4,7 @@ import {
   DataType,
   AllowNull,
   ForeignKey,
+  Index,
 } from 'sequelize-typescript'
 import BaseModel from '@/models/base'
 import Plan from './plan.model'
@@ -55,6 +56,7 @@ export default class ChargeEvent extends BaseModel<ChargeEvent> {
   productId!: string | null
 
   @ForeignKey(() => Plan)
+  @Index
   @Column
   planId!: string
 
@@ -73,6 +75,10 @@ export type EventChargeData = Partial<ChargeEvent> &
 export class ChargeEventManager {
   static create(charge: EventChargeData) {
     return ChargeEvent.create(charge)
+  }
+
+  static isRemoteIdAndEventTypeExists(remoteId: string, eventType: EventTypes) {
+    return ChargeEvent.count({ where: { eventType, remoteChargeId: remoteId } })
   }
 
   static deleteByPlanAndId(id: string, planId: string) {

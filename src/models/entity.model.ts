@@ -4,6 +4,7 @@ import {
   ForeignKey,
   BelongsTo,
   DataType,
+  Index,
 } from 'sequelize-typescript'
 import { Op } from 'sequelize'
 
@@ -26,6 +27,7 @@ export default class Entity extends BaseModel<Entity> {
   encr!: Buffer | string
 
   @ForeignKey(() => Wallet)
+  @Index
   @Column
   walletId!: string
 

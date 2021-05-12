@@ -100,6 +100,8 @@ class TinkoffProvider implements BillingProvider {
         break
 
       case TinkoffEventTypes.refund:
+      case TinkoffEventTypes.partialRefund:
+      case TinkoffEventTypes.reversed:
         eventType = EventTypes.refunded
         break
 
@@ -148,6 +150,8 @@ export const tinkoffProvider = new TinkoffProvider()
 enum TinkoffEventTypes {
   confirm = 'CONFIRMED',
   refund = 'REFUNDED',
+  partialRefund = 'PARTIAL_REFUNDED',
+  reversed = 'PARTIAL_REVERSED',
   reject = 'REJECTED',
 }
 
