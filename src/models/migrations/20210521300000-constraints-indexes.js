@@ -2,19 +2,15 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    queryInterface.addIndex('Entities', ['walletId']).catch(console.error)
-    queryInterface.addIndex('RefreshTokens', ['userId']).catch(console.error)
-    queryInterface
-      .addIndex('WalletAccesses', ['userId', 'walletId'])
-      .catch(console.error)
-    queryInterface.addIndex('Plans', ['userId']).catch(console.error)
-    queryInterface.addIndex('ChargeEvents', ['planId']).catch(console.error)
-    return queryInterface
-      .addConstraint('ChargeEvents', {
-        type: 'UNIQUE',
-        fields: ['remoteChargeId', 'eventType'],
-      })
-      .catch(console.error)
+    await queryInterface.addIndex('Entities', ['walletId'])
+    await queryInterface.addIndex('RefreshTokens', ['userId'])
+    await queryInterface.addIndex('WalletAccesses', ['userId', 'walletId'])
+    await queryInterface.addIndex('Plans', ['userId'])
+    await queryInterface.addIndex('ChargeEvents', ['planId'])
+    await queryInterface.addConstraint('ChargeEvents', {
+      type: 'UNIQUE',
+      fields: ['remoteChargeId', 'eventType'],
+    })
   },
 
   down: (queryInterface, Sequelize) => {},
