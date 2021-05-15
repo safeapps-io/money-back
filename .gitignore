@@ -70,3 +70,6 @@ build/
 
 # Sqlite
 **/*.sqlite
+
+# Ignoring ecosystem file
+ecosystem.config.yaml
