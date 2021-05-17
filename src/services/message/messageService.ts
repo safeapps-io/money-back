@@ -1,7 +1,7 @@
 import { getFullPath } from '@/services/getPath'
+import { emailQueue, telegramQueue } from '@/tasks/queue'
 
 import { BaseEmail } from './types'
-import { emailQueue, telegramQueue } from './queues'
 
 export class MessageService {
   private static async sendEmail(data: BaseEmail) {

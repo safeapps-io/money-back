@@ -1,11 +1,11 @@
 extends main.pug
 
 block append content
-    +form
-      h2.subtitle Обменный курс по рублю
+  +form
+    h2.subtitle Обменный курс по рублю
 
-      .my-4 
-        p 1$ = #{rateData.rate}₽
-        p Последнее обновление: #{dateFormat(new Date(rateData.ts))}
-        
-      button.button Обновить
+    .my-4 
+      p 1$ = #{rateData.rate}₽
+      p Последнее обновление: #{dateFormat(new Date(rateData.ts))}
+      
+    button.button Обновить

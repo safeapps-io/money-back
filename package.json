@@ -1,6 +1,6 @@
 {
   "name": "money-back",
-  "version": "17.05.2021v1",
+  "version": "17.05.2021v2",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
@@ -21,6 +21,7 @@
     "base64-arraybuffer": "^0.2.0",
     "body-parser": "^1.19.0",
     "bull": "^3.18.0",
+    "bull-board": "^2.0.3",
     "cls-hooked": "^4.2.2",
     "coinbase-commerce-node": "^1.0.4",
     "cookie-parser": "^1.4.5",
