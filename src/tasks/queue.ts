@@ -10,7 +10,7 @@ export const exchangeRateQueue = new Bull(
     props,
   ),
   emailQueue = new Bull<BaseEmail>('send email', props),
-  telegramQueue = new Bull<string>('send telegram message', props),
+  telegramQueue = new Bull<{ message: string }>('send telegram message', props),
   userCounterNotificationQueue = new Bull(
     'Sending notification about sign ups',
     props,
