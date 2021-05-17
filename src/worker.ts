@@ -5,11 +5,13 @@ import sequelize from '@/models/setup'
 
 import { trackError, trackErrorsInit } from '@/services/trackErrors'
 import { setupWorkers } from '@/tasks/workers'
+import { initRedisConnection } from '@/services/redis/connection'
 
 trackErrorsInit()
 
 const main = async () => {
   await sequelize.sync()
+  initRedisConnection()
   await setupWorkers()
 }
 
