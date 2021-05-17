@@ -15,11 +15,14 @@ export class MessageService {
     if (process.env.NODE_ENV == 'development')
       console.log('[Telegram Message]', message)
     else
-      await telegramQueue.add(message, {
-        attempts: 3,
-        timeout: 5000,
-        backoff: 5000,
-      })
+      await telegramQueue.add(
+        { message },
+        {
+          attempts: 3,
+          timeout: 5000,
+          backoff: 5000,
+        },
+      )
   }
 
   private static getGotoUrl({

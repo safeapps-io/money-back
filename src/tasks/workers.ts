@@ -21,7 +21,7 @@ const setupBillingWorker = async () =>
   setupEmailWorker = async () =>
     emailQueue.process(1000, async (job) => createTransmission(job.data)),
   setupTelegramWorket = async () =>
-    telegramQueue.process(1000, (job) => sendTelegramMessage(job.data)),
+    telegramQueue.process(1000, (job) => sendTelegramMessage(job.data.message)),
   setupUserCounterNotificationWorker = async () =>
     Promise.all([
       userCounterNotificationQueue.add(null, {
