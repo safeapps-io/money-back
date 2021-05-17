@@ -8,6 +8,7 @@ import { adminDashboardRouter } from './dashboard'
 import { adminMccRouter } from './mcc'
 import { adminUserRouter } from './users'
 import { adminRatesRouter } from './rates'
+import { adminBullRouter } from './bull'
 
 export const adminRouter = Router()
 
@@ -19,4 +20,5 @@ adminRouter
   .use('/mcc', adminMccRouter)
   .use('/users', adminUserRouter)
   .use('/rates', adminRatesRouter)
+  .use('/bull', adminBullRouter)
   .use(adminErrorHandler)

@@ -1,0 +1,13 @@
+extends main.pug
+
+block append content
+  style.
+    iframe {
+      display: block;
+      background: #000;
+      border: none;
+      height: 90vh;
+      width: 100%;
+    }
+
+  iframe(src="/bull/_bull", frameborder="0") 
