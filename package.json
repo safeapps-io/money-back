@@ -50,7 +50,7 @@
     "sparkpost": "^2.1.4",
     "ts-node": "^9.0.0",
     "tsconfig-paths": "^3.9.0",
-    "ua-parser-js": "^0.7.21",
+    "ua-parser-js": "^0.7.24",
     "yup": "^0.29.1"
   },
   "devDependencies": {
