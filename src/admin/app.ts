@@ -8,10 +8,13 @@ import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
 import multer from 'multer'
 
+import { dateFormat } from '@/utils/date'
+
 import sequelize from '@/models/setup'
 import { trackErrorsInit } from '@/services/trackErrors'
 import logger from '@/middlewares/logger'
 import { adminRouter } from '@/admin/controllers/router'
+import { initRedisConnection } from '@/services/redis/connection'
 
 trackErrorsInit()
 
@@ -19,6 +22,7 @@ const app = express()
 
 const constructApp = async () => {
   await sequelize.sync()
+  initRedisConnection()
 
   const viewsDir = join(__dirname, 'views')
 
@@ -34,7 +38,7 @@ const constructApp = async () => {
       helmet(),
     )
     .use((_, res, next) => {
-      res.locals = { basedir: viewsDir }
+      res.locals = { basedir: viewsDir, dateFormat }
       return next()
     })
     .use(adminRouter)

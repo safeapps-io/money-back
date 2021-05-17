@@ -35,13 +35,13 @@ class TinkoffProvider implements BillingProvider {
 
   async createCharge(product: Product, userId: string, planId: string) {
     // Tinkoff requires each order to have a unique ID
-    const currentRate = await ExchangeRateService.getExchangeRate()
+    const { rate } = await ExchangeRateService.getExchangeRate()
     /**
      * Making the price round to 10 rubles for the beauty of it.
      * `product.price` is cents, and we need to pass the price in kopeykas, so
      * multiply/divide by 1000.
      */
-    const price = Math.floor((product.price * currentRate) / 1000) * 1000
+    const price = Math.floor((product.price * rate) / 1000) * 1000
 
     // For test products we switch to test terminal that do not initiate
     // real purchases
@@ -82,7 +82,7 @@ class TinkoffProvider implements BillingProvider {
         link: json.PaymentURL,
         // Changing the price back to rubles instead of cents
         price: price / 100,
-        exchangeRate: currentRate,
+        exchangeRate: rate,
       }
 
     return { chargeData, sendToClient }
