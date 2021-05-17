@@ -4,7 +4,7 @@ import csurf from 'csurf'
 import ms from 'ms'
 
 import { UserManager } from '@/models/user.model'
-import { differenceInMilliseconds, format, isBefore } from 'date-fns'
+import { isBefore } from 'date-fns'
 import { ProductManager } from '@/models/billing/product.model'
 import { PlanManager } from '@/models/billing/plan.model'
 import ChargeEvent, {
@@ -13,15 +13,7 @@ import ChargeEvent, {
   EventTypes,
 } from '@/models/billing/chargeEvent.model'
 
-const dateFormat = (date: Date | null) => {
-    if (!date) return '—'
-
-    return (
-      format(date, 'dd.MM.yyyy') +
-      ` (${ms(-differenceInMilliseconds(new Date(), date))})`
-    )
-  },
-  getUserData: Handler = async (req, res) => {
+const getUserData: Handler = async (req, res) => {
     const [user, products] = await Promise.all([
       await UserManager.byIdWithAdminDataIncluded(req.params.id),
       ProductManager.all(),
@@ -37,7 +29,6 @@ const dateFormat = (date: Date | null) => {
 
 export const adminUserRouter = Router()
   .use((_, res, next) => {
-    res.locals.dateFormat = dateFormat
     res.locals.isBefore = isBefore
     return next()
   })
