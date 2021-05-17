@@ -15,3 +15,10 @@ export const exchangeRateQueue = new Bull(
     'Sending notification about sign ups',
     props,
   )
+
+export const queues = [
+  exchangeRateQueue,
+  emailQueue,
+  telegramQueue,
+  userCounterNotificationQueue,
+]
