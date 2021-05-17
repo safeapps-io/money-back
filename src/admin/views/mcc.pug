@@ -28,12 +28,13 @@ block append content
           each mcc in assignedMcc
             .mcc.mb-3.py-2.px-3.is-size-7.has-background-success-light(data-copy=mcc.mcc)
               p.has-text-weight-bold= mcc.mcc
-              p= mcc.edited_description
+              p: a(href='https://mcc-codes.ru/code/' + mcc.mcc, target='_blank', rel='noreferrer noopener')= mcc.edited_description
 
         each mcc in mccToAssign
+          - const link = `https://mcc-codes.ru/code/${mcc.mcc}`;
           .mcc.mb-3.py-2.px-3.is-size-7.has-background-warning-light(data-copy=mcc.mcc)
             p.has-text-weight-bold= mcc.mcc
-            p= mcc.edited_description
+            p: a(href='https://mcc-codes.ru/code/' + mcc.mcc, target='_blank', rel='noreferrer noopener')= mcc.edited_description
       .column
         h2.subtitle Категории
         each category in categories
