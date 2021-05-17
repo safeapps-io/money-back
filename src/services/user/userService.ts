@@ -1,5 +1,5 @@
 import * as yup from 'yup'
-import { isBefore } from 'date-fns'
+import { addHours, isBefore } from 'date-fns'
 
 import { getTransaction } from '@/models/setup'
 import User, { UserManager } from '@/models/user.model'
@@ -17,6 +17,7 @@ import { InviteService } from '@/services/invite/inviteService'
 import { WalletService } from '@/services/wallet/walletService'
 import { InviteStringTypes } from '@/services/invite/inviteTypes'
 import { getFullPath } from '@/services/getPath'
+import { MessageService } from '@/services/message/messageService'
 
 import { ValidateEmailService } from './validateEmailService'
 import { PasswordService, passwordScheme } from './passwordService'
@@ -524,6 +525,13 @@ export class UserService {
     runSchemaWithFormError(requiredString, refreshToken)
 
     return RefreshTokenManager.destroy({ userId, key: refreshToken })
+  }
+
+  static async notifySignupCount() {
+    const end = new Date(),
+      start = addHours(end, -24)
+    const users = await UserManager.createdBetweenDates(start, end)
+    return MessageService.dailySignupStats(users.map((user) => user.username))
   }
 }
 

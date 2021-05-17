@@ -3,23 +3,14 @@ dotenv.config()
 
 import sequelize from '@/models/setup'
 
-import { setupEmailTransportWorker } from '@/services/message/emailTransport'
-import { setupBillingWorker } from '@/services/billing/queues'
 import { trackError, trackErrorsInit } from '@/services/trackErrors'
-import { setupTelegramTransportWorker } from '@/services/message/telegramTransport'
-import { setupUserCounterNotificationWorker } from '@/services/user/queues'
+import { setupWorkers } from '@/tasks/workers'
 
 trackErrorsInit()
 
 const main = async () => {
   await sequelize.sync()
-
-  Promise.all([
-    setupEmailTransportWorker(),
-    setupTelegramTransportWorker(),
-    setupBillingWorker(),
-    setupUserCounterNotificationWorker(),
-  ])
+  await setupWorkers()
 }
 
 main()
