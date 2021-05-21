@@ -12,7 +12,7 @@ export class MessageService {
   }
 
   private static async sendTelegramMessage(message: string) {
-    if (process.env.NODE_ENV == 'development')
+    if (process.env.NODE_ENV == 'development' || process.env.STAGE)
       console.log('[Telegram Message]', message)
     else
       await telegramQueue.add(
