@@ -27,18 +27,15 @@ export class DirectoryService {
       : arrayMove(currencyDb, currentIndexForCurrency, 0)
   }
 
-  static mccData = (rawMccData as MCCInput[]).reduce<{
-    [code: string]: MCCInput
-  }>((acc, item) => {
-    acc[parseInt(item.mcc)] = item
-    return acc
-  }, {})
+  static mccData = new Map(
+    (rawMccData as MCCInput[]).map((val) => [val.mcc, val]),
+  )
 
   static getCodeDescription(codeList: string[]): MCCOutput {
     return codeList
       .map((code) => ({
         code,
-        description: this.mccData[code]?.edited_description,
+        description: this.mccData.get(code)?.edited_description || null,
       }))
       .filter(Boolean)
   }
