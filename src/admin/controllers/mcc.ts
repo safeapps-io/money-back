@@ -27,9 +27,10 @@ const getGetData = async () => {
     mccToAssign: MCCInput[] = [],
     assignedMcc: MCCInput[] = []
 
-  Object.values(DirectoryService._getAllCodes()).forEach((mccCode) =>
-    (assignedCodes.has(mccCode.mcc) ? assignedMcc : mccToAssign).push(mccCode),
-  )
+  for (const mccCode of DirectoryService._getAllCodes().values()) {
+    if (assignedCodes.has(mccCode.mcc)) assignedMcc.push(mccCode)
+    else mccToAssign.push(mccCode)
+  }
 
   return { categories, mccToAssign, assignedMcc }
 }
