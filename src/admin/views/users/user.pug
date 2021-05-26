@@ -114,11 +114,14 @@ block append content
               input(type="radio", name="from", value="prev" checked=!isBefore(plan.expires, new Date())) 
               |  От прошлого истечения — #{dateFormat(plan.expires)}
 
-        p.buttons
+        .field.is-grouped.mt-3
           - const btns = [['-5m', '-5 минут'], ['5m', '5 минут'], ['1d', '1 день'], ['14d', '14 дней']]
           
           each btn in btns
-            button.button.is-small(type="submit", name="time", value=btn[0])= btn[1]
+            .control: button.button.is-small(name="time", value=btn[0])= btn[1]
+          .control.pl-4: input.input.is-small(type="text" placeholder="В формате MS" name="timeInput")
+          button.button.is-small.is-outlined.is-success() Отправить
+
   else
     p Никаких движений пока не было
 
