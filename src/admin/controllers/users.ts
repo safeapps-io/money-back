@@ -76,16 +76,20 @@ export const adminUserRouter = Router()
     '/:id/:planId/charge',
     ash(async (req, res, _) => {
       const body = req.body as {
-        time: string
-        expiredOld?: string
-        from?: 'now' | 'prev'
-      }
+          expiredOld?: string
+          from?: 'now' | 'prev'
+          time: string
+          timeInput: string
+        },
+        time = ms(body.timeInput || body.time)
+
+      console.log(body.time, body.timeInput, time)
 
       const expiredNew =
         (body.from == 'prev' && body.expiredOld
           ? new Date(parseInt(body.expiredOld))
           : new Date()
-        ).getTime() + ms(body.time as string)
+        ).getTime() + time
 
       await Promise.all([
         PlanManager.update(req.params.planId, {
