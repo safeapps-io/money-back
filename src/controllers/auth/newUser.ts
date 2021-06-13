@@ -13,10 +13,12 @@ import {
   KeyGetter,
 } from '@/middlewares/rateLimiter'
 import { serializeModel, Serializers } from '@/models/serializers'
+import { sourceMiddleware } from '@/middlewares/sourceMiddleware'
 
 export const newUserRouter = Router()
   .post(
     '/signup',
+    sourceMiddleware,
     autoInvokeRateLimiter({
       // Block for 1 hour after 25 signups were performed in 1 hour
       limiter: createLimiter('signup', {
@@ -41,6 +43,7 @@ export const newUserRouter = Router()
             password: string
           }),
           description: getDeviceDescription(req.get('User-Agent') || ''),
+          source: req.userSource,
         })
 
         sendAuthCookies(res, accessToken, refreshToken)

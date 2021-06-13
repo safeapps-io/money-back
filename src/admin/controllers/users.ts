@@ -83,8 +83,6 @@ export const adminUserRouter = Router()
         },
         time = ms(body.timeInput || body.time)
 
-      console.log(body.time, body.timeInput, time)
-
       const expiredNew =
         (body.from == 'prev' && body.expiredOld
           ? new Date(parseInt(body.expiredOld))
