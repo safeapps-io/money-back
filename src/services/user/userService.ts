@@ -136,6 +136,10 @@ export class UserService {
       invite: optionalString,
     })
     .noUnknown()
+  private static sourceSchema = yup
+    .array(yup.array().of(requiredString).max(2))
+    .max(10)
+    .nullable()
   static async signup({
     username,
     email,
@@ -143,6 +147,7 @@ export class UserService {
     description,
     isSubscribed,
     invite,
+    source,
   }: {
     username: string
     email?: string
@@ -150,6 +155,7 @@ export class UserService {
     isSubscribed: boolean
     description: string
     invite?: string
+    source: { [param: string]: string } | null
   }) {
     runSchemaWithFormError(this.signupSchema, {
       username,
@@ -158,6 +164,12 @@ export class UserService {
       password,
       invite,
     })
+    let _source: typeof source = null
+
+    try {
+      runSchemaWithFormError(this.sourceSchema, source)
+      _source = source
+    } catch (error) {}
 
     const { user, isWalletInvite } = await getTransaction(async () => {
       const [passwordHashed, parsedInvite] = await Promise.all([
@@ -171,6 +183,7 @@ export class UserService {
         username,
         password: passwordHashed,
         isSubscribed,
+        source: _source,
         ...parsedInvite?.payload,
       })
 

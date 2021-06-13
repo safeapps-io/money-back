@@ -11,6 +11,18 @@ block append content
       p
         span.has-text-weight-bold Почта: 
         | #{user.email}
+    if user.source
+      .my-4
+        p.has-text-weight-bold Источник установки
+        table.table
+          thead: tr
+            th Ключ
+            th Значение
+          tbody 
+            each e in Object.entries(user.source)
+              tr 
+                td: code=e[0]
+                td: code=e[1]
 
     p
       span.has-text-weight-bold Зарегистрирован: 
