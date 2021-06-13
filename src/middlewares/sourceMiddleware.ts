@@ -8,5 +8,6 @@ export const sourceMiddleware: Handler = (req, res, next) => {
   req.userSource = source
   next()
 
-  res.cookie(cookieKey, '', { maxAge: 0 })
+  // It is practically useless as subdomain cannot unset cookies from root
+  // res.cookie(cookieKey, '', { maxAge: 0 })
 }
