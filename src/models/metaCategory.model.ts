@@ -32,8 +32,11 @@ export class MetaCategoryManager {
     return MetaCategory.findByPk(id)
   }
 
-  static list() {
-    return MetaCategory.findAll({ where: { published: true }, order: ['name'] })
+  static list(publishedOnly = true) {
+    return MetaCategory.findAll({
+      where: publishedOnly ? { published: true } : {},
+      order: ['name'],
+    })
   }
 
   static create(data: MetaCategory) {
