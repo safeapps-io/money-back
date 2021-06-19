@@ -1,4 +1,5 @@
 import * as yup from 'yup'
+import _ from 'lodash'
 
 import { runSchemaWithFormError, requiredString } from '@/utils/yupHelpers'
 
@@ -107,19 +108,20 @@ export class SyncService {
         entities: EntityUpdated[]
         wallet: Wallet
       }[] = [],
-      serverUpdatesMap: ServerUpdatesMap = [],
-      writeAccessWallets: Wallet[] = [],
-      readAccessWallets: Wallet[] = []
+      serverUpdatesMap: ServerUpdatesMap = []
 
-    for (const wallet of usersWallets) {
-      if (BillingService.isPlanActive(wallet)) writeAccessWallets.push(wallet)
-      else readAccessWallets.push(wallet)
-    }
+    const _remainingCounts = await Promise.all(
+        usersWallets.map((w) => BillingService.getRemainingCountForWallet(w)),
+      ),
+      remainsByWalletId = Object.fromEntries(
+        _remainingCounts.map((count, i) => [usersWallets[i].id, count]),
+      )
 
-    for (const [walletId, walletChanges] of Object.entries(
-      unfilteredEntityMap,
-    )) {
-      const wallet = usersWallets.find((wallet) => wallet.id === walletId)
+    const entries = Object.entries(unfilteredEntityMap)
+    for (let i = 0; i < entries.length; i++) {
+      const [walletId, walletChanges] = entries[i],
+        wallet = usersWallets.find((wallet) => wallet.id === walletId)
+
       // Filtering our wallets user does not have access to
       if (!wallet) continue
 
@@ -129,16 +131,21 @@ export class SyncService {
         latestUpdated: new Date(walletChanges.latestUpdated),
       })
 
-      // We only apply changes from a wallet that has an active plan
-      if (BillingService.isPlanActive(wallet))
-        entityMap.push({
-          wallet,
+      const remaindForThisWallet = remainsByWalletId[walletId],
+        entitiesToSave = _.sortBy(walletChanges.entities, ['clientUpdated'])
           // It's a bit of a stretch. User can change wallet id for some other, and send it to backend.
           // Will never happen in real life, but HACKERS ARE EVERYWHERE
-          entities: walletChanges.entities.filter(
-            (ent) => ent.walletId === wallet.id,
-          ),
-        })
+          .filter((ent) => ent.walletId === walletId)
+          // Making sure we only save entities that do no exceed the limit for this wallet
+          .slice(
+            0,
+            remaindForThisWallet === null ? Infinity : remaindForThisWallet,
+          )
+
+      entityMap.push({
+        wallet,
+        entities: entitiesToSave,
+      })
     }
 
     await Promise.all(

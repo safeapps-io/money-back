@@ -5,19 +5,28 @@ import { isRestAuth, resetCookies } from '@/middlewares/isAuth'
 import { UserService } from '@/services/user/userService'
 import { UserManager } from '@/models/user.model'
 import { serializeModel, Serializers } from '@/models/serializers'
+import * as LimitService from '@/services/billing/limitService'
 
 export const userRouter = Router()
 
+userRouter.get(
+  '/init',
+  isRestAuth(),
+  ash(async (req, res) => {
+    const [user, limit] = await Promise.all([
+      UserManager.byIdWithDataIncluded(req.userId),
+      LimitService.getRealLimit(),
+    ])
+
+    res.json({
+      user: serializeModel(user!, Serializers.userFull),
+      settings: { limit },
+    })
+  }),
+)
+
 userRouter
   .route('')
-  .get(
-    isRestAuth(),
-    ash(async (req, res) => {
-      const user = (await UserManager.byIdWithDataIncluded(req.userId))!
-
-      res.json(serializeModel(user, Serializers.userFull))
-    }),
-  )
   .patch(
     isRestAuth(true),
     ash(async (req, res) => {

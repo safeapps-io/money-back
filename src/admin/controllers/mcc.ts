@@ -15,14 +15,12 @@ const getGetData = async () => {
       name: cat.name,
       isIncome: cat.isIncome,
       field: cat.assignedMcc
-        .map((val) => `${val.code}:${val.weight}`)
+        ?.map((val) => `${val.code}:${val.weight}`)
         .join('\n'),
     }))
 
   const assignedCodes = new Set<string>(
-      metaCategories.flatMap(({ assignedMcc }) =>
-        assignedMcc.map(({ code }) => code),
-      ),
+      metaCategories.flatMap((c) => (c.assignedMcc || []).map((a) => a.code)),
     ),
     mccToAssign: MCCInput[] = [],
     assignedMcc: MCCInput[] = []
