@@ -51,7 +51,7 @@ export const adminMccRouter = Router()
     ash(async (req, res) => {
       const { _csrf, ...toSave } = req.body as { [id: string]: string }
 
-      const promises: Promise<any>[] = []
+      const promises: any[] = []
       for (const [id, newVal] of Object.entries(toSave)) {
         if (!newVal) {
           promises.push(MetaCategoryManager.update(id, { assignedMcc: [] }))
