@@ -15,14 +15,12 @@ const getGetData = async () => {
       name: cat.name,
       isIncome: cat.isIncome,
       field: cat.assignedMcc
-        .map((val) => `${val.code}:${val.weight}`)
+        ?.map((val) => `${val.code}:${val.weight}`)
         .join('\n'),
     }))
 
   const assignedCodes = new Set<string>(
-      metaCategories.flatMap(({ assignedMcc }) =>
-        assignedMcc.map(({ code }) => code),
-      ),
+      metaCategories.flatMap((c) => (c.assignedMcc || []).map((a) => a.code)),
     ),
     mccToAssign: MCCInput[] = [],
     assignedMcc: MCCInput[] = []
@@ -51,7 +49,7 @@ export const adminMccRouter = Router()
     ash(async (req, res) => {
       const { _csrf, ...toSave } = req.body as { [id: string]: string }
 
-      const promises: Promise<any>[] = []
+      const promises: any[] = []
       for (const [id, newVal] of Object.entries(toSave)) {
         if (!newVal) {
           promises.push(MetaCategoryManager.update(id, { assignedMcc: [] }))

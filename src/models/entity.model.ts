@@ -53,6 +53,10 @@ export class EntityManager {
     )[1][0]
   }
 
+  static countByWalletId(walletId: string) {
+    return Entity.count({ where: { walletId } })
+  }
+
   static getUpdates(
     idToUpdatedMap: {
       walletId: string

@@ -17,6 +17,7 @@ import Wallet from '@/models/wallet.model'
 import { ProductManager, ProductType } from '@/models/billing/product.model'
 import { getTransaction } from '@/models/setup'
 import { AccessLevels } from '@/models/walletAccess.model'
+import { EntityManager } from '@/models/entity.model'
 
 import { MessageService } from '@/services/message/messageService'
 import { WalletService } from '@/services/wallet/walletService'
@@ -24,6 +25,7 @@ import { ChargeEventData } from './types'
 import { coinbaseProvider } from './coinbaseProvider'
 import { tinkoffProvider } from './tinkoffProvider'
 import { publishChargeUpdate } from './billingEvents'
+import * as LimitService from './limitService'
 
 export class BillingService {
   private static async updatePlanAccordingToCharge(
@@ -110,14 +112,23 @@ export class BillingService {
     })
   }
 
-  static isPlanActive(wallet: Wallet) {
-    return wallet?.users.some(
+  static async getRemainingCountForWallet(wallet: Wallet) {
+    const isPlanActive = wallet?.users.some(
       (user) =>
         user.WalletAccess.accessLevel == AccessLevels.owner &&
         user.plans.some(
           (plan) => plan.expires && isAfter(plan.expires, new Date()),
         ),
     )
+    if (isPlanActive) return null
+
+    const [currentCount, limit] = await Promise.all([
+        EntityManager.countByWalletId(wallet.id),
+        LimitService.getRealLimit(),
+      ]),
+      remaining = limit - currentCount
+
+    return remaining < 0 ? 0 : remaining
   }
 
   static async getPlanByUserId(

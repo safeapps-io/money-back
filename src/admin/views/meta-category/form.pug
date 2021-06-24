@@ -1,0 +1,36 @@
+extends /main.pug
+
+block append content
+  h1.title
+    if category 
+      | Категория #{category.name}
+    else
+      | Добавление категории
+
+  +form
+    .field
+      label.label Название 
+      .control
+        input.input(type="text" name='name' value=category.name)
+
+    .field
+      .control
+        label.checkbox
+          input(type="checkbox", name="isIncome", checked=category.isIncome)
+          |  Доходная
+    
+    .field
+      .control
+        label.checkbox
+          input(type="checkbox", name="published", checked=category.published)
+          |  Опубликована
+
+    .field
+      label.label Цвет
+      .control
+        input.input(type="color" name='color' value=category.color)
+
+    .field.is-grouped
+      .control: button.button.is-success Сохранить
+      if category.id
+        .control: button.button.is-danger(formaction='/meta-category/delete/' + category.id) Удалить

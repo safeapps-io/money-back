@@ -9,6 +9,7 @@ import { TinkoffClientDataReturn } from '@/services/billing/tinkoffProvider'
 import { CoinbaseClientDataReturn } from '@/services/billing/coinbaseProvider'
 import Plan from '@/models/billing/plan.model'
 import { serializeModel, Serializers } from '@/models/serializers'
+import { getRawLimit } from '@/services/billing/limitService'
 
 export const billingRouter = Router()
 
@@ -58,3 +59,10 @@ billingRouter
       return res.status(200).end()
     }),
   )
+
+export const publicBillingRouter = Router().get(
+  '/currentLimit',
+  ash(async (_, res) => {
+    return res.json({ limit: await getRawLimit() })
+  }),
+)

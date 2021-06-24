@@ -1,0 +1,47 @@
+extends /main.pug
+
+block append content
+  style.
+    .swatch {
+      display: inline-block;
+      width: 35px;
+      height: 20px;
+      margin-right: 10px;
+
+      border-radius: 5px;
+      background-color: var(--accent);
+    }
+
+    .income {
+      background-color: #f0fff0;
+    }
+    .expense {
+      background-color: #fff1f1;
+    }
+    .not-published {
+      background-color: #f7f7f7;
+    }
+
+  .level
+    .level-left
+      .level-item: h1.title #{categories.length} мета-категорий
+      .level-item: a.button(href='/meta-category/add') Добавить
+
+  table.table.is-fullwidth
+    thead
+      tr
+        th Название
+        th Сколько MCC-кодов
+        th Доходная
+        th Опубликовано
+    tbody
+      each category in categories
+        tr(class={income: category.isIncome, expense: !category.isIncome, 'not-published': !category.published})
+          td: a(href="/meta-category/" + category.id)
+            span.swatch(style='--accent: ' + category.color)
+            | #{category.name}
+          td= (category.assignedMcc || {}).length || 0
+          td: input(type="checkbox" disabled checked=!!category.isIncome)
+          td: input(type="checkbox" disabled checked=!!category.published)
+      else
+        tr: td(colspan=5) Категорий нет

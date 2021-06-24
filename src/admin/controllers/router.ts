@@ -7,8 +7,9 @@ import { adminAuthRouter } from './auth'
 import { adminDashboardRouter } from './dashboard'
 import { adminMccRouter } from './mcc'
 import { adminUserRouter } from './users'
-import { adminRatesRouter } from './rates'
+import { adminMiscRouter } from './misc'
 import { adminBullRouter } from './bull'
+import { adminMetaCategoryRouter } from './metaCategory'
 
 export const adminRouter = Router()
 
@@ -19,6 +20,7 @@ adminRouter
   .use('/dashboard', adminDashboardRouter)
   .use('/mcc', adminMccRouter)
   .use('/users', adminUserRouter)
-  .use('/rates', adminRatesRouter)
+  .use('/misc', adminMiscRouter)
+  .use('/meta-category', adminMetaCategoryRouter)
   .use('/bull', adminBullRouter)
   .use(adminErrorHandler)

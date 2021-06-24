@@ -18,7 +18,7 @@ export default class MetaCategory extends BaseModel<MetaCategory> {
   color!: string
 
   @Column(DataType.JSON)
-  assignedMcc!: { code: string; weight: number }[]
+  assignedMcc!: { code: string; weight: number }[] | null
 }
 
 export class MetaCategoryManager {
@@ -32,8 +32,15 @@ export class MetaCategoryManager {
     return MetaCategory.findByPk(id)
   }
 
-  static list() {
-    return MetaCategory.findAll({ where: { published: true }, order: ['name'] })
+  static count() {
+    return MetaCategory.count({ where: { published: true } })
+  }
+
+  static list(publishedOnly = true) {
+    return MetaCategory.findAll({
+      where: publishedOnly ? { published: true } : {},
+      order: ['name'],
+    })
   }
 
   static create(data: MetaCategory) {
