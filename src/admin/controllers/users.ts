@@ -2,9 +2,11 @@ import { Router, Request } from 'express'
 import ash from 'express-async-handler'
 import csurf from 'csurf'
 import ms from 'ms'
+import { isBefore } from 'date-fns'
 
 import { UserManager } from '@/models/user.model'
-import { isBefore } from 'date-fns'
+import { WalletManager } from '@/models/wallet.model'
+import { EntityManager } from '@/models/entity.model'
 import { ProductManager } from '@/models/billing/product.model'
 import { PlanManager } from '@/models/billing/plan.model'
 import ChargeEvent, {
@@ -12,20 +14,9 @@ import ChargeEvent, {
   ChargeTypes,
   EventTypes,
 } from '@/models/billing/chargeEvent.model'
+import * as LimitService from '@/services/billing/limitService'
 
-const getUserData: Handler = async (req, res) => {
-    const [user, products] = await Promise.all([
-      await UserManager.byIdWithAdminDataIncluded(req.params.id),
-      ProductManager.all(),
-    ])
-    res.render('users/user', {
-      csrfToken: req.csrfToken(),
-      baseReqPath: req.originalUrl,
-      user,
-      products,
-    })
-  },
-  getUserPath = (req: Request) => `/users/${req.params.id}`
+const getUserPath = (req: Request) => `/users/${req.params.id}`
 
 export const adminUserRouter = Router()
   .use((_, res, next) => {
@@ -45,7 +36,31 @@ export const adminUserRouter = Router()
     }),
   )
   .use(csurf({ cookie: true }))
-  .get('/:id', ash(getUserData))
+  .get(
+    '/:id',
+    ash(async (req, res) => {
+      const userId = req.params.id,
+        [user, products, wallets, limit] = await Promise.all([
+          UserManager.byIdWithAdminDataIncluded(userId),
+          ProductManager.all(),
+          WalletManager.byUserId(userId),
+          LimitService.getRealLimit(),
+        ]),
+        entityCountByWallet = await Promise.all(
+          wallets.map((w) => EntityManager.countByWalletId(w.id)),
+        )
+
+      res.render('users/user', {
+        csrfToken: req.csrfToken(),
+        baseReqPath: req.originalUrl,
+        user,
+        products,
+        wallets,
+        entityCountByWallet,
+        limit,
+      })
+    }),
+  )
   .post(
     '/:id/toggleIsAdmin',
     ash(async (req, res, _) => {

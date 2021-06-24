@@ -23,6 +23,19 @@ block append content
               tr 
                 td: code=e[0]
                 td: code=e[1]
+    
+    if wallets.length
+      .my-4
+        p.has-text-weight-bold Кошельки
+        table.table
+          thead: tr
+            th ID
+            th Количество сущностей
+          tbody 
+            each w, index in wallets
+              tr 
+                td: code=w.id
+                td #{entityCountByWallet[index]}/#{limit}
 
     p
       span.has-text-weight-bold Зарегистрирован: 
