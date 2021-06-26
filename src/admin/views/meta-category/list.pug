@@ -27,13 +27,12 @@ block append content
       .level-item: h1.title #{categories.length} мета-категорий
       .level-item: a.button(href='/meta-category/add') Добавить
 
-  table.table.is-fullwidth
-    thead
-      tr
-        th Название
-        th Сколько MCC-кодов
-        th Доходная
-        th Опубликовано
+  .table-container: table.table.is-fullwidth
+    thead: tr
+      th Название
+      th Сколько MCC-кодов
+      th Доходная
+      th Опубликовано
     tbody
       each category in categories
         tr(class={income: category.isIncome, expense: !category.isIncome, 'not-published': !category.published})
