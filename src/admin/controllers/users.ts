@@ -2,7 +2,7 @@ import { Router, Request } from 'express'
 import ash from 'express-async-handler'
 import csurf from 'csurf'
 import ms from 'ms'
-import { isBefore } from 'date-fns'
+import { isBefore, parse } from 'date-fns'
 
 import { UserManager } from '@/models/user.model'
 import { WalletManager } from '@/models/wallet.model'
@@ -23,16 +23,19 @@ export const adminUserRouter = Router()
     res.locals.isBefore = isBefore
     return next()
   })
-  .get<{}, {}, {}, { q?: string }>(
+  .get<{}, {}, {}, { q?: string; date?: string }>(
     '',
     ash(async (req, res) => {
-      const { q = null } = req.query,
+      const { q = null, date = null } = req.query,
         [wholeCount, users] = await Promise.all([
           UserManager.count(),
-          UserManager.searchByQuery(q),
+          UserManager.searchByQuery({
+            query: q,
+            date: date ? parse(date, 'yyyy-MM-dd', new Date()) : null,
+          }),
         ])
 
-      res.render('users/search', { users, wholeCount, q })
+      res.render('users/search', { users, wholeCount, q, date })
     }),
   )
   .use(csurf({ cookie: true }))

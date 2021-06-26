@@ -8,11 +8,13 @@ block append content
       .level-item: form(method="GET" autocomplete=false)
         .field.has-addons
           .control
-            input.input(type="search" name="q" value=q)
+            input.input(type="search" name="q" placeholder='Запрос' value=q)
+          .control
+            input.input(type="date" name="date" placeholder='Дата реги' value=date)
           .control
             button.button.is-success Поиск
 
-  table.table.is-striped.is-fullwidth
+  .table-container: table.table.is-striped.is-fullwidth
     thead
       tr
         th ID

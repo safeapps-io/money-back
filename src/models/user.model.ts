@@ -20,6 +20,7 @@ import WalletAccess from '@/models/walletAccess.model'
 import Plan from './billing/plan.model'
 import Product from './billing/product.model'
 import ChargeEvent from './billing/chargeEvent.model'
+import { endOfDay, startOfDay } from 'date-fns'
 
 @Table
 export default class User extends BaseModel<User> {
@@ -273,24 +274,37 @@ export class UserManager {
     return User.count()
   }
 
-  static searchByQuery(query: string | null = null) {
-    return query
-      ? User.findAll({
-          where: {
-            [Op.or]: [
-              { id: query },
-              sequelize.where(
-                sequelize.fn('lower', sequelize.col('username')),
-                sequelize.fn('lower', query),
-              ),
-              sequelize.where(
-                sequelize.fn('lower', sequelize.col('email')),
-                sequelize.fn('lower', query),
-              ),
-            ],
-          },
-        })
-      : User.findAll({ limit: 20, order: [['created', 'DESC']] })
+  static searchByQuery({
+    query = null,
+    date = null,
+  }: {
+    query?: string | null
+    date?: Date | null
+  }) {
+    const where: any = {}
+    let limit: number | undefined = 50
+    if (query) {
+      where[Op.or] = [
+        { id: query },
+        sequelize.where(
+          sequelize.fn('lower', sequelize.col('username')),
+          sequelize.fn('lower', query),
+        ),
+        sequelize.where(
+          sequelize.fn('lower', sequelize.col('email')),
+          sequelize.fn('lower', query),
+        ),
+      ]
+      limit = undefined
+    }
+    if (date) {
+      where.created = {
+        [Op.between]: [startOfDay(date), endOfDay(date)],
+      }
+      limit = undefined
+    }
+
+    return User.findAll({ where, order: [['created', 'DESC']], limit })
   }
 
   static byIdWithAdminDataIncluded(userId: string) {
