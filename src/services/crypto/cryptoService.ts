@@ -23,7 +23,6 @@ export class CryptoService {
       {
         padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
         saltLength: 64,
-        // @ts-expect-error
         key: publicKey,
       },
       Buffer.from(signatureBuffer),

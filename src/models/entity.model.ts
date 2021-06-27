@@ -14,7 +14,7 @@ import BaseModel from '@/models/base'
 import Wallet from '@/models/wallet.model'
 
 @Table
-export default class Entity extends BaseModel<Entity> {
+export default class Entity extends BaseModel {
   @Column({
     type: DataType.BLOB,
     get(this: Entity) {

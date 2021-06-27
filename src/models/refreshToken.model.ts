@@ -12,7 +12,7 @@ import BaseModel from '@/models/base'
 import User from '@/models/user.model'
 
 @Table
-export default class RefreshToken extends BaseModel<RefreshToken> {
+export default class RefreshToken extends BaseModel {
   @Column({ defaultValue: () => nanoid(50) })
   key!: string
 

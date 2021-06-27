@@ -21,7 +21,7 @@ export enum AccessLevels {
 }
 
 @Table
-export default class WalletAccess extends BaseModel<WalletAccess> {
+export default class WalletAccess extends BaseModel {
   @AllowNull
   @ForeignKey(() => User)
   @Index
