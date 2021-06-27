@@ -4,7 +4,7 @@ import { Op } from 'sequelize'
 import BaseModel from '@/models/base'
 
 @Table
-export default class MetaCategory extends BaseModel<MetaCategory> {
+export default class MetaCategory extends BaseModel {
   @Column
   published!: boolean
 

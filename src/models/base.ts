@@ -8,7 +8,7 @@ import {
 } from 'sequelize-typescript'
 import { nanoid } from 'nanoid'
 
-export default class BaseModel<T> extends Model<T> {
+export default class BaseModel extends Model {
   @PrimaryKey
   @Column({ defaultValue: nanoid })
   id!: string

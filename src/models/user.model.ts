@@ -23,7 +23,7 @@ import ChargeEvent from './billing/chargeEvent.model'
 import { endOfDay, startOfDay } from 'date-fns'
 
 @Table
-export default class User extends BaseModel<User> {
+export default class User extends BaseModel {
   @Unique
   @Column
   username!: string

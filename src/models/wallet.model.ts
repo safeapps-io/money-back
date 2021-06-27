@@ -10,7 +10,7 @@ import Plan from '@/models/billing/plan.model'
 import Product from './billing/product.model'
 
 @Table
-export default class Wallet extends BaseModel<Wallet> {
+export default class Wallet extends BaseModel {
   @BelongsToMany(() => User, () => WalletAccess)
   users!: Array<User & { WalletAccess: WalletAccess }>
 
@@ -113,7 +113,7 @@ export class WalletManager {
         accessLevel: AccessLevels.owner,
       })
 
-      return this.byId(wallet.id)
+      return this.byId(wallet.id) as Promise<Wallet>
     })
   }
 

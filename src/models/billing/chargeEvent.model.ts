@@ -31,7 +31,7 @@ export enum ChargeProviders {
 }
 
 @Table
-export default class ChargeEvent extends BaseModel<ChargeEvent> {
+export default class ChargeEvent extends BaseModel {
   @Column(DataType.ENUM(...Object.values(EventTypes)))
   eventType!: EventTypes
 

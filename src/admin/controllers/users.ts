@@ -2,7 +2,7 @@ import { Router, Request } from 'express'
 import ash from 'express-async-handler'
 import csurf from 'csurf'
 import ms from 'ms'
-import { isBefore, parse } from 'date-fns'
+import { addMilliseconds, isBefore, parse } from 'date-fns'
 
 import { UserManager } from '@/models/user.model'
 import { WalletManager } from '@/models/wallet.model'
@@ -101,11 +101,12 @@ export const adminUserRouter = Router()
         },
         time = ms(body.timeInput || body.time)
 
-      const expiredNew =
-        (body.from == 'prev' && body.expiredOld
+      const expiredNew = addMilliseconds(
+        body.from == 'prev' && body.expiredOld
           ? new Date(parseInt(body.expiredOld))
-          : new Date()
-        ).getTime() + time
+          : new Date(),
+        time,
+      )
 
       await Promise.all([
         PlanManager.update(req.params.planId, {
@@ -115,7 +116,7 @@ export const adminUserRouter = Router()
           eventType: EventTypes.confirmed,
           chargeType: ChargeTypes.manual,
           expiredNew,
-          expiredOld: parseInt(req.body.expiredOld),
+          expiredOld: new Date(parseInt(req.body.expiredOld)),
           planId: req.params.planId,
         }).save(),
       ])

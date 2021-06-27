@@ -4,7 +4,7 @@ import { Op } from 'sequelize'
 import BaseModel from '@/models/base'
 
 @Table
-export default class Scheme extends BaseModel<Scheme> {
+export default class Scheme extends BaseModel {
   @Column
   title!: string
   @Column

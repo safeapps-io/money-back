@@ -104,12 +104,12 @@ const serializerNameToConfig: {
   },
 }
 
-export const serializeModel = <T>(
-  model: BaseModel<T> | Array<BaseModel<T>>,
+export const serializeModel = (
+  model: BaseModel | Array<BaseModel>,
   serializerName: keyof typeof serializerNameToConfig,
 ) => {
   const serializer = serializerNameToConfig[serializerName],
-    getResult = (model: BaseModel<T>) => {
+    getResult = (model: BaseModel) => {
       const result: any = {}
       for (const fieldname of serializer.attrs) {
         const value = (model as any)[fieldname]

@@ -14,7 +14,7 @@ export enum ProductType {
 }
 
 @Table
-export default class Product extends BaseModel<Product> {
+export default class Product extends BaseModel {
   @Column
   slug!: string
 

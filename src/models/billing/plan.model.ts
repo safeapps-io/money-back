@@ -31,7 +31,7 @@ import ChargeEvent from './chargeEvent.model'
  */
 
 @Table
-export default class Plan extends BaseModel<Plan> {
+export default class Plan extends BaseModel {
   // productId and userId are UNIQUE together, so one user can only have one subscription
   // for one product
   @BelongsTo(() => Product, { onDelete: 'CASCADE' })
