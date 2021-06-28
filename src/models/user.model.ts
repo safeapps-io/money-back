@@ -71,10 +71,7 @@ export default class User extends BaseModel {
     },
     set(this: User, val: string) {
       setValue(val, (newVal) =>
-        this.setDataValue(
-          'b64EncryptedInvitePrivateKey',
-          newVal as string | null,
-        ),
+        this.setDataValue('b64EncryptedInvitePrivateKey', newVal as string | null),
       )
     },
   })
@@ -178,9 +175,7 @@ export class UserManager {
 
   static byIdWithDataIncluded(userId: string) {
     return User.findByPk(userId, {
-      include: [
-        { model: Plan, include: [{ model: Product }, { model: ChargeEvent }] },
-      ],
+      include: [{ model: Plan, include: [{ model: Product }, { model: ChargeEvent }] }],
     })
   }
 
@@ -247,13 +242,7 @@ export class UserManager {
     )[1][0]
   }
 
-  static getUpdates({
-    id,
-    latestUpdated,
-  }: {
-    id: string
-    latestUpdated: Date
-  }) {
+  static getUpdates({ id, latestUpdated }: { id: string; latestUpdated: Date }) {
     return User.findOne({
       where: { id, updated: { [Op.gt]: latestUpdated } },
     })

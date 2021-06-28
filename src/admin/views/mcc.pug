@@ -12,79 +12,89 @@ block append content
     }
 
     textarea {
-      max-height: 300px
+      max-height: 300px;
     }
 
     .prev-selected {
       outline: 2px dashed green;
     }
-
+  
   +form
     .wrapper.columns
       .column.is-5
         h2.subtitle MCC-код
         details.mb-5
-          summary Уже имеют ассоциации (#{assignedMcc.length} штук)
+          summary Уже имеют ассоциации (#{ assignedMcc.length } штук)
           each mcc in assignedMcc
             .mcc.mb-3.py-2.px-3.is-size-7.has-background-success-light(data-copy=mcc.mcc)
               p.has-text-weight-bold= mcc.mcc
-              p: a(href='https://mcc-codes.ru/code/' + mcc.mcc, target='_blank', rel='noreferrer noopener')= mcc.edited_description
+              p: a(
+                href="https://mcc-codes.ru/code/" + mcc.mcc,
+                target='_blank',
+                rel='noreferrer noopener'
+              )= mcc.edited_description
 
         each mcc in mccToAssign
-          - const link = `https://mcc-codes.ru/code/${mcc.mcc}`;
+          - const link = `https://mcc-codes.ru/code/${mcc.mcc}`
           .mcc.mb-3.py-2.px-3.is-size-7.has-background-warning-light(data-copy=mcc.mcc)
             p.has-text-weight-bold= mcc.mcc
-            p: a(href='https://mcc-codes.ru/code/' + mcc.mcc, target='_blank', rel='noreferrer noopener')= mcc.edited_description
+            p: a(
+              href="https://mcc-codes.ru/code/" + mcc.mcc,
+              target='_blank',
+              rel='noreferrer noopener'
+            )= mcc.edited_description
       .column
         h2.subtitle Категории
         each category in categories
           .columns.is-size-7.target-column
             .column.is-4
-              div #{category.name} 
+              div #{ category.name }
                 if category.isIncome
                   span.tag.is-success доход
             .column
-              textarea.textarea.is-small(name=category.id rows=1)= category.field
+              textarea.textarea.is-small(name=category.id, rows=1)= category.field
 
     button.button Сохранить!
 
-  script(src="https://unpkg.com/autosize@4.0.2/dist/autosize.min.js") 
+  script(src='https://unpkg.com/autosize@4.0.2/dist/autosize.min.js') 
   script.
-    autosize(document.querySelectorAll('textarea'))
-    const prevSelected = 'prev-selected'
+    autosize(document.querySelectorAll("textarea"));
+    const prevSelected = "prev-selected";
 
-    Promise.all([
-      navigator.permissions.query({name: "clipboard-read"}),
-      navigator.permissions.query({name: "clipboard-write"})
-    ]).then(() => {
-      document.querySelectorAll(".mcc").forEach(el => 
-        el.onclick = e => {
-          navigator.clipboard.writeText(el.dataset.copy).catch(console.error)
-          document.querySelectorAll(`.${prevSelected}`).forEach($el => $el.classList.remove(prevSelected))
-          el.classList.add(prevSelected)
-        }
-      )
+    Promise.all([navigator.permissions.query({ name: "clipboard-read" }), navigator.permissions.query({ name: "clipboard-write" })]).then(() => {
+      document.querySelectorAll(".mcc").forEach(
+        (el) =>
+          (el.onclick = (e) => {
+            navigator.clipboard.writeText(el.dataset.copy).catch(console.error);
+            document.querySelectorAll(`.${prevSelected}`).forEach(($el) => $el.classList.remove(prevSelected));
+            el.classList.add(prevSelected);
+          })
+      );
 
-      document.querySelectorAll(".target-column").forEach(el => {
-        el.onclick = e => {
-          if(e.target.tagName == 'TEXTAREA') return 
-          const $textarea = e.currentTarget.querySelector('textarea')
-          navigator.clipboard.readText()
-            .then(res => {
-              if(!res) return
-              try { parseInt(res) } catch(e) { return console.error('not number, pass') }
+      document.querySelectorAll(".target-column").forEach((el) => {
+        el.onclick = (e) => {
+          if (e.target.tagName == "TEXTAREA") return;
+          const $textarea = e.currentTarget.querySelector("textarea");
+          navigator.clipboard
+            .readText()
+            .then((res) => {
+              if (!res) return;
+              try {
+                parseInt(res);
+              } catch (e) {
+                return console.error("not number, pass");
+              }
 
-              $textarea.value = $textarea.value ? $textarea.value + `\n${res}` : res
-              autosize.update($textarea)
-              navigator.clipboard.writeText('').catch(console.error)
-              document.querySelectorAll(`.${prevSelected}`).forEach($el => {
-                $el.classList.remove(prevSelected)
-                $el.classList.remove('has-background-warning-light')
-                $el.classList.add('has-background-success-light')
-              })
+              $textarea.value = $textarea.value ? $textarea.value + `\n${res}` : res;
+              autosize.update($textarea);
+              navigator.clipboard.writeText("").catch(console.error);
+              document.querySelectorAll(`.${prevSelected}`).forEach(($el) => {
+                $el.classList.remove(prevSelected);
+                $el.classList.remove("has-background-warning-light");
+                $el.classList.add("has-background-success-light");
+              });
             })
-            .catch(console.error)
-        }
-      })
-    })
-
+            .catch(console.error);
+        };
+      });
+    });

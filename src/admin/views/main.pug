@@ -1,32 +1,37 @@
 extends layout.pug
 
-block content 
+block content
   nav.navbar.mb-5.is-light
     .navbar-brand
       .navbar-item.pl-4
-        a(href="/dashboard") [safe] admin
-      
-      a(role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample")
-        span(aria-hidden="true")
-        span(aria-hidden="true")
-        span(aria-hidden="true")
+        a(href='/dashboard') [safe] admin
+
+      a.navbar-burger(
+        role='button',
+        aria-label='menu',
+        aria-expanded='false',
+        data-target='navbarBasicExample'
+      )
+        span(aria-hidden='true')
+        span(aria-hidden='true')
+        span(aria-hidden='true')
 
     .navbar-menu
       .navbar-start
-        a.navbar-item(href="/users") Юзеры
-        a.navbar-item(href="/mcc") MCC коды
-        a.navbar-item(href="/meta-category") Мета-категории
-        a.navbar-item(href="/misc") Разное
-        a.navbar-item(href="/bull/main") Очереди
+        a.navbar-item(href='/users') Юзеры
+        a.navbar-item(href='/mcc') MCC коды
+        a.navbar-item(href='/meta-category') Мета-категории
+        a.navbar-item(href='/misc') Разное
+        a.navbar-item(href='/bull/main') Очереди
       .navbar-end.pr-3
-          a.navbar-item(href="https://money.safeapps.io")= username
+        a.navbar-item(href='https://money.safeapps.io')= username
 
   script.
-    const burger = document.querySelector('.navbar-burger'),
-      menu = document.querySelector('.navbar-menu'),
-      activeClass = 'is-active';
-    
+    const burger = document.querySelector(".navbar-burger"),
+      menu = document.querySelector(".navbar-menu"),
+      activeClass = "is-active";
+
     burger.onclick = () => {
-      burger.classList.toggle(activeClass)
-      menu.classList.toggle(activeClass)
-    }
+      burger.classList.toggle(activeClass);
+      menu.classList.toggle(activeClass);
+    };

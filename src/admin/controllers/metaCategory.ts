@@ -12,11 +12,7 @@ export const adminMetaCategoryRouter = Router()
     ash(async (_, res) => {
       const categories = await MetaCategoryManager.list(false)
       return res.render('meta-category/list', {
-        categories: sortBy(categories, [
-          'isIncome',
-          (cat) => !cat.published,
-          'name',
-        ]),
+        categories: sortBy(categories, ['isIncome', (cat) => !cat.published, 'name']),
       })
     }),
   )

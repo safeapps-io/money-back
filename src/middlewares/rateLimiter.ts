@@ -8,11 +8,7 @@ const client = getRedisClient({ enableOfflineQueue: true }),
 
 export const createLimiter = (
   keyPrefix: string,
-  {
-    points,
-    duration,
-    blockDuration,
-  }: { points: number; duration: number; blockDuration: number },
+  { points, duration, blockDuration }: { points: number; duration: number; blockDuration: number },
 ) => {
   const limiter = new RateLimiterRedis({
     storeClient: client,
@@ -28,9 +24,7 @@ export const createLimiter = (
     shouldProceed: async (key: string) => {
       const res = await limiter.get(key)
       if (!res) return true
-      const remainingPoints = Number.isNaN(res.remainingPoints)
-        ? points
-        : res.remainingPoints
+      const remainingPoints = Number.isNaN(res.remainingPoints) ? points : res.remainingPoints
 
       return remainingPoints > 0
     },

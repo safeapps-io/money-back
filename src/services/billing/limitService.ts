@@ -3,8 +3,7 @@ import { redisConnection } from '@/services/redis/connection'
 import { differenceInMinutes } from 'date-fns'
 
 const redisKey = 'billing:currentLimit'
-export const setLimit = (newLimit: number) =>
-  redisConnection.set(redisKey, newLimit)
+export const setLimit = (newLimit: number) => redisConnection.set(redisKey, newLimit)
 
 const fallbackDefault = 100
 export const getRawLimit = async () => {

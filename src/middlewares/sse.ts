@@ -7,11 +7,7 @@ import { random } from 'lodash'
  */
 export const sse = (
   senders: Array<
-    (
-      userId: string,
-      clientId: string,
-      send: SSESender,
-    ) => Promise<() => Promise<void>>
+    (userId: string, clientId: string, send: SSESender) => Promise<() => Promise<void>>
   >,
 ) =>
   ash(async (req, res, next) => {
@@ -27,16 +23,13 @@ export const sse = (
 
     const send: SSESender = ({ type, data }) => {
       let dataToSend = `event: ${type}\n`
-      if (typeof data !== 'undefined')
-        dataToSend += `data: ${JSON.stringify(data)}\n`
+      if (typeof data !== 'undefined') dataToSend += `data: ${JSON.stringify(data)}\n`
       dataToSend += `id: ${nanoid()}\n\n`
       res.write(dataToSend)
     }
     res.write(`retry: ${random(3000, 10000)}\n\n`)
 
-    const unsubs = await Promise.all(
-      senders.map((sender) => sender(req.userId, clientId, send)),
-    )
+    const unsubs = await Promise.all(senders.map((sender) => sender(req.userId, clientId, send)))
 
     req.on('close', () =>
       Promise.all(unsubs.map((unsub) => unsub()))

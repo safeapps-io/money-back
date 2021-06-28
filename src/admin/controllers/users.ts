@@ -83,10 +83,7 @@ export const adminUserRouter = Router()
   .post(
     '/:id/:planId/charge/delete',
     ash(async (req, res) => {
-      await ChargeEventManager.deleteByPlanAndId(
-        req.body.chargeId,
-        req.params.planId,
-      )
+      await ChargeEventManager.deleteByPlanAndId(req.body.chargeId, req.params.planId)
       return res.redirect(getUserPath(req))
     }),
   )
@@ -102,9 +99,7 @@ export const adminUserRouter = Router()
         time = ms(body.timeInput || body.time)
 
       const expiredNew = addMilliseconds(
-        body.from == 'prev' && body.expiredOld
-          ? new Date(parseInt(body.expiredOld))
-          : new Date(),
+        body.from == 'prev' && body.expiredOld ? new Date(parseInt(body.expiredOld)) : new Date(),
         time,
       )
 

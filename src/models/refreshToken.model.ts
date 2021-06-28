@@ -1,10 +1,4 @@
-import {
-  Table,
-  Column,
-  ForeignKey,
-  BelongsTo,
-  Index,
-} from 'sequelize-typescript'
+import { Table, Column, ForeignKey, BelongsTo, Index } from 'sequelize-typescript'
 import { Op } from 'sequelize'
 import { nanoid } from 'nanoid'
 
@@ -29,10 +23,7 @@ export default class RefreshToken extends BaseModel {
 }
 
 export class RefreshTokenManager {
-  static create(data: {
-    userId: string
-    description?: string
-  }): Promise<RefreshToken> {
+  static create(data: { userId: string; description?: string }): Promise<RefreshToken> {
     return RefreshToken.create(data)
   }
 
@@ -40,13 +31,7 @@ export class RefreshTokenManager {
     return RefreshToken.destroy({ where: data })
   }
 
-  static async exists({
-    token,
-    userId,
-  }: {
-    token: string
-    userId: string
-  }): Promise<boolean> {
+  static async exists({ token, userId }: { token: string; userId: string }): Promise<boolean> {
     const count = await RefreshToken.count({
       where: { key: token, userId },
     })
@@ -62,13 +47,7 @@ export class RefreshTokenManager {
     return RefreshToken.destroy({ where: { id, userId } })
   }
 
-  static async destroyAllButOneKey({
-    key,
-    userId,
-  }: {
-    key: string
-    userId: string
-  }) {
+  static async destroyAllButOneKey({ key, userId }: { key: string; userId: string }) {
     return RefreshToken.destroy({ where: { key: { [Op.not]: key }, userId } })
   }
 }

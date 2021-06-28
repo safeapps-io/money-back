@@ -17,11 +17,7 @@ type WalletDestroyEvent = {
 
 const callbackKey = 'wallet'
 
-export const walletEventSender = async (
-  userId: string,
-  clientId: string,
-  send: SSESender,
-) => {
+export const walletEventSender = async (userId: string, clientId: string, send: SSESender) => {
   const wallets = await WalletService.getUserWallets(userId)
   send({
     type: MessageTypes.all,
@@ -42,15 +38,8 @@ export const walletEventSender = async (
   return () => redisPubSub.unsubscribe(props)
 }
 
-export const publishWalletUpdate = ({
-    clientId,
-    wallet,
-  }: {
-    clientId: string
-    wallet: Wallet
-  }) => {
-    if (!wallet.users)
-      throw new Error('You need to prefetch User model for WalletPubSubService')
+export const publishWalletUpdate = ({ clientId, wallet }: { clientId: string; wallet: Wallet }) => {
+    if (!wallet.users) throw new Error('You need to prefetch User model for WalletPubSubService')
 
     const userIds = wallet.users.map((data) => data.id),
       data: WalletDataEvent = {

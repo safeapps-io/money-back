@@ -104,13 +104,7 @@ module.exports = {
       ...baseModel,
       eventType: {
         allowNull: false,
-        type: Sequelize.ENUM(
-          'created',
-          'pending',
-          'confirmed',
-          'failed',
-          'refunded',
-        ),
+        type: Sequelize.ENUM('created', 'pending', 'confirmed', 'failed', 'refunded'),
       },
       chargeType: {
         allowNull: false,

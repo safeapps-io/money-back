@@ -7,10 +7,7 @@ export class RequestError extends Error {
 export class FormValidationError extends Error {
   public code = 400
 
-  constructor(
-    message: string,
-    public fieldErrors?: { [field: string]: string[] },
-  ) {
+  constructor(message: string, public fieldErrors?: { [field: string]: string[] }) {
     super(message)
   }
 }

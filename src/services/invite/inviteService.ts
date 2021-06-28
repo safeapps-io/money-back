@@ -1,10 +1,6 @@
 import * as yup from 'yup'
 
-import {
-  runSchemaWithFormError,
-  requiredString,
-  optionalString,
-} from '@/utils/yupHelpers'
+import { runSchemaWithFormError, requiredString, optionalString } from '@/utils/yupHelpers'
 import { encryptAes } from '@/utils/crypto'
 
 import User, { UserManager } from '@/models/user.model'
@@ -33,9 +29,7 @@ export class InviteService {
   }
 
   static async parseAndValidateInvite(b64InviteString: string) {
-    const res = await InviteStringService.parseAndVerifySignature(
-      b64InviteString,
-    )
+    const res = await InviteStringService.parseAndVerifySignature(b64InviteString)
 
     if (res.type == InviteStringTypes.wallet) {
       const wasDisposed = await WalletManager.isWalletInviteDisposed({
@@ -43,8 +37,7 @@ export class InviteService {
         walletId: res.payload.walletId,
       })
 
-      if (wasDisposed)
-        throw new FormValidationError(InviteServiceFormErrors.inviteAlreadyUsed)
+      if (wasDisposed) throw new FormValidationError(InviteServiceFormErrors.inviteAlreadyUsed)
     }
 
     return res
@@ -89,17 +82,13 @@ export class InviteService {
 
     const wallet = await WalletManager.byId(payload.walletId)
 
-    if (!wallet)
-      throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
+    if (!wallet) throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
 
     for (const user of wallet.users) {
       if (user.id === joiningUser.id)
         throw new FormValidationError(InviteServiceFormErrors.alreadyMember)
 
-      if (
-        user.WalletAccess.accessLevel === AccessLevels.owner &&
-        user.id != userInviter.id
-      )
+      if (user.WalletAccess.accessLevel === AccessLevels.owner && user.id != userInviter.id)
         throw new FormValidationError(InviteServiceFormErrors.unknownError)
     }
 
@@ -111,8 +100,7 @@ export class InviteService {
       b64InviteSignatureByJoiningUser,
       b64InviteString,
     })
-    if (devicesReached === 0)
-      throw new FormValidationError(InviteServiceFormErrors.ownerOffline)
+    if (devicesReached === 0) throw new FormValidationError(InviteServiceFormErrors.ownerOffline)
   }
 
   private static checkOwnerInvitationMessageSchema = yup
@@ -142,9 +130,7 @@ export class InviteService {
       b64InviteSignatureByJoiningUser,
       b64InviteString,
     })
-    const parsed = await InviteStringService.parseAndVerifySignature(
-      b64InviteString,
-    )
+    const parsed = await InviteStringService.parseAndVerifySignature(b64InviteString)
     if (parsed.type != InviteStringTypes.wallet)
       throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
 
@@ -163,13 +149,11 @@ export class InviteService {
     if (!dbWalletOwner || dbWalletOwner.id !== walletOwnerId)
       throw new FormValidationError(InviteServiceFormErrors.unknownError)
 
-    const hasJoiningUserAskedToJoin = InviteStringService.verifyJoiningUserInviteSignature(
-      {
-        inviteString: b64InviteString,
-        joiningUserInvitePublicKey: joiningUser.b64InvitePublicKey as string,
-        joiningUserSignature: b64InviteSignatureByJoiningUser,
-      },
-    )
+    const hasJoiningUserAskedToJoin = InviteStringService.verifyJoiningUserInviteSignature({
+      inviteString: b64InviteString,
+      joiningUserInvitePublicKey: joiningUser.b64InvitePublicKey as string,
+      joiningUserSignature: b64InviteSignatureByJoiningUser,
+    })
     if (!hasJoiningUserAskedToJoin)
       throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
 
@@ -261,11 +245,7 @@ export class InviteService {
       encryptedSecretKey,
     })
 
-    const {
-      payload,
-      joiningUser,
-      wallet,
-    } = await this.checkOwnerInvitationMessage({
+    const { payload, joiningUser, wallet } = await this.checkOwnerInvitationMessage({
       walletOwnerId,
       joiningUserId,
       b64InviteString,
@@ -334,9 +314,7 @@ export class InviteService {
 
     // We don't do any checks, because one can only remove user using this method by
     // impersonating the user and if he has no chest attached to the WA.
-    const parsed = await InviteStringService.parseAndVerifySignature(
-      b64InviteString,
-    )
+    const parsed = await InviteStringService.parseAndVerifySignature(b64InviteString)
     if (parsed.type != InviteStringTypes.wallet)
       throw new FormValidationError(InviteServiceFormErrors.invalidInvite)
 
@@ -348,13 +326,9 @@ export class InviteService {
       }),
       wallet = await WalletManager.byId(payload.walletId),
       owner =
-        wallet &&
-        wallet.users.find(
-          (user) => user.WalletAccess.accessLevel === AccessLevels.owner,
-        )
+        wallet && wallet.users.find((user) => user.WalletAccess.accessLevel === AccessLevels.owner)
 
-    if (!owner || typeof result !== 'number' || result === 0 || !wallet)
-      throw new Error()
+    if (!owner || typeof result !== 'number' || result === 0 || !wallet) throw new Error()
 
     if (result > 0)
       return Promise.all([

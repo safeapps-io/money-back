@@ -10,7 +10,6 @@ const namespace = createNamespace('dbTransaction')
 const sequelize = new Sequelize(config[process.env.NODE_ENV as string])
 sequelize.addModels([join(__dirname, '**', '*.model.ts')])
 
-export const getTransaction = <T>(cb: () => Promise<T>) =>
-  sequelize.transaction(cb)
+export const getTransaction = <T>(cb: () => Promise<T>) => sequelize.transaction(cb)
 
 export default sequelize

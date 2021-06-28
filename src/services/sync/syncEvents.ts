@@ -11,11 +11,7 @@ type SyncDataEvent = { type: MessageTypes.data; data: Entity[] }
 
 const callbackKey = 'sync'
 
-export const syncEventSender = async (
-  userId: string,
-  clientId: string,
-  send: SSESender,
-) => {
+export const syncEventSender = async (userId: string, clientId: string, send: SSESender) => {
   const props = {
     channels: [redisPubSub.getUserChannel(userId)],
     clientId,

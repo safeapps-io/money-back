@@ -27,9 +27,7 @@ export class DirectoryService {
       : arrayMove(currencyDb, currentIndexForCurrency, 0)
   }
 
-  static mccData = new Map(
-    (rawMccData as MCCInput[]).map((val) => [val.mcc, val]),
-  )
+  static mccData = new Map((rawMccData as MCCInput[]).map((val) => [val.mcc, val]))
 
   static getCodeDescription(codeList: string[]): MCCOutput {
     return codeList
@@ -45,10 +43,7 @@ export class DirectoryService {
   }
 
   static async getUpdatedSchemes(fromDate: number) {
-    return serializeModel(
-      await SchemeManager.getUpdatedSchemes(fromDate),
-      Serializers.scheme,
-    )
+    return serializeModel(await SchemeManager.getUpdatedSchemes(fromDate), Serializers.scheme)
   }
 
   static async getUpdatedMetaCategories(fromDate: number) {

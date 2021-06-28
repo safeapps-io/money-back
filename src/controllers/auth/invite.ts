@@ -10,9 +10,7 @@ inviteRouter
   .post(
     '/is-valid',
     ash(async (req, res) => {
-      const parsedInvite = await InviteService.parseAndValidateInvite(
-          req.body.invite as string,
-        ),
+      const parsedInvite = await InviteService.parseAndValidateInvite(req.body.invite as string),
         serializedInvite = {
           type: parsedInvite.type,
           payload: parsedInvite.payload,

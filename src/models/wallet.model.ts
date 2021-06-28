@@ -27,13 +27,7 @@ export default class Wallet extends BaseModel {
 }
 
 export class WalletManager {
-  static async byIdAndUserId({
-    userId,
-    walletId,
-  }: {
-    userId: string
-    walletId: string
-  }) {
+  static async byIdAndUserId({ userId, walletId }: { userId: string; walletId: string }) {
     const res = await this.byUserId(userId)
     return res.find((wallet) => wallet.id === walletId)
   }
@@ -84,25 +78,13 @@ export class WalletManager {
     )[1][0]
   }
 
-  static getUpdates({
-    id,
-    latestUpdated,
-  }: {
-    id: string
-    latestUpdated: Date
-  }) {
+  static getUpdates({ id, latestUpdated }: { id: string; latestUpdated: Date }) {
     return Wallet.findOne({
       where: { id, updated: { [Op.gt]: latestUpdated } },
     })
   }
 
-  static create({
-    userId,
-    chest,
-  }: {
-    userId: string
-    chest: string
-  }): Promise<Wallet> {
+  static create({ userId, chest }: { userId: string; chest: string }): Promise<Wallet> {
     return getTransaction(async () => {
       const wallet = await Wallet.create()
 
@@ -138,13 +120,7 @@ export class WalletManager {
     })
   }
 
-  static removeUser({
-    walletId,
-    userId,
-  }: {
-    walletId: string
-    userId: string
-  }) {
+  static removeUser({ walletId, userId }: { walletId: string; userId: string }) {
     return WalletAccess.update(
       { chest: null, userId: null, accessLevel: AccessLevels.deleted },
       { where: { walletId, userId }, returning: true },
@@ -155,11 +131,7 @@ export class WalletManager {
     return WalletAccess.destroy({ where: { id: waId } })
   }
 
-  static removeWithJoiningError(data: {
-    userId: string
-    walletId: string
-    inviteId: string
-  }) {
+  static removeWithJoiningError(data: { userId: string; walletId: string; inviteId: string }) {
     return WalletAccess.destroy({ where: { ...data, chest: null } })
   }
 

@@ -30,17 +30,11 @@ billingRouter
       },
     }),
   )
-  .post<
-    { provider: ChargeProviders },
-    TinkoffClientDataReturn | CoinbaseClientDataReturn
-  >(
+  .post<{ provider: ChargeProviders }, TinkoffClientDataReturn | CoinbaseClientDataReturn>(
     '/charge/:provider',
     isRestAuth(),
     ash(async (req, res) => {
-      const result = await BillingService.createCharge(
-        req.userId,
-        req.params.provider,
-      )
+      const result = await BillingService.createCharge(req.userId, req.params.provider)
 
       return res.json(result)
     }),

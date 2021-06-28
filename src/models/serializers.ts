@@ -65,14 +65,7 @@ const serializerNameToConfig: {
     attrs: ['id', 'slug', 'price', 'duration', 'trialDuration'],
   },
   chargeEvent: {
-    attrs: [
-      ...baseModelFields,
-      'eventType',
-      'chargeType',
-      'provider',
-      'expiredOld',
-      'expiredNew',
-    ],
+    attrs: [...baseModelFields, 'eventType', 'chargeType', 'provider', 'expiredOld', 'expiredNew'],
   },
   planFull: {
     attrs: [...baseModelFields, 'expires'],
@@ -144,7 +137,5 @@ export const serializeModel = (
       return result
     }
 
-  return Array.isArray(model)
-    ? model.map((innerMode) => getResult(innerMode))
-    : getResult(model)
+  return Array.isArray(model) ? model.map((innerMode) => getResult(innerMode)) : getResult(model)
 }

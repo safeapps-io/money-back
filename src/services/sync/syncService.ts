@@ -36,8 +36,7 @@ export class SyncService {
     const results: Entity[] = [],
       promises = []
 
-    if (createEntities.length)
-      results.push(...(await EntityManager.bulkCreate(createEntities)))
+    if (createEntities.length) results.push(...(await EntityManager.bulkCreate(createEntities)))
 
     if (updateEntities.length) {
       const fetchedEntities = await EntityManager.byIds({
@@ -53,8 +52,7 @@ export class SyncService {
         const fetchedEntity = fetchedEntitiesById[entityToUpdate.id]
 
         if (!entityToUpdate.clientUpdated || !fetchedEntity) continue
-        if (entityToUpdate.clientUpdated < fetchedEntity.updated.getTime())
-          continue
+        if (entityToUpdate.clientUpdated < fetchedEntity.updated.getTime()) continue
 
         // We don't want it to be updated from client side, but we need it to decide if the entity is to
         // be created or updated
@@ -137,10 +135,7 @@ export class SyncService {
           // Will never happen in real life, but HACKERS ARE EVERYWHERE
           .filter((ent) => ent.walletId === walletId)
           // Making sure we only save entities that do no exceed the limit for this wallet
-          .slice(
-            0,
-            remaindForThisWallet === null ? Infinity : remaindForThisWallet,
-          )
+          .slice(0, remaindForThisWallet === null ? Infinity : remaindForThisWallet)
 
       entityMap.push({
         wallet,
@@ -176,13 +171,10 @@ export class SyncService {
   }) {
     runSchemaWithFormError(this.entitiesDeleteSchema, Object.values(deleteMap))
 
-    const usersWalletIds = (await WalletService.getUserWallets(userId)).map(
-      (wallet) => wallet.id,
-    )
+    const usersWalletIds = (await WalletService.getUserWallets(userId)).map((wallet) => wallet.id)
 
     Object.keys(deleteMap).forEach(
-      (walletId) =>
-        !usersWalletIds.includes(walletId) && delete deleteMap[walletId],
+      (walletId) => !usersWalletIds.includes(walletId) && delete deleteMap[walletId],
     )
 
     return EntityManager.bulkDelete(deleteMap)

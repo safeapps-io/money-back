@@ -32,13 +32,9 @@ export class ValidateEmailService {
     })
   }
 
-  private static async isEmailTaken(
-    email: string,
-    excludeId?: string,
-  ): Promise<void> {
+  private static async isEmailTaken(email: string, excludeId?: string): Promise<void> {
     const emailTaken = await UserManager.isEmailTaken(email, excludeId)
-    if (emailTaken)
-      throw new FormValidationError(ValidateEmailServiceErrors.emailTaken)
+    if (emailTaken) throw new FormValidationError(ValidateEmailServiceErrors.emailTaken)
   }
 
   public static async validateToken(token: string): Promise<UserData> {
@@ -52,10 +48,7 @@ export class ValidateEmailService {
     }
   }
 
-  public static async triggerWaitlistEmailValidation(
-    user: User,
-    email: string,
-  ) {
+  public static async triggerWaitlistEmailValidation(user: User, email: string) {
     const token = await this.generateToken({
       email,
       userId: user.id,
@@ -64,10 +57,7 @@ export class ValidateEmailService {
     return MessageService.sendWaitlistValidationEmail({ email, token })
   }
 
-  public static async triggerEmailValidation(
-    user: User,
-    newEmail?: string,
-  ): Promise<void> {
+  public static async triggerEmailValidation(user: User, newEmail?: string): Promise<void> {
     if (!newEmail || user.email === newEmail) return
     await this.isEmailTaken(newEmail)
 

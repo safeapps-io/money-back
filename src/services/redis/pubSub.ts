@@ -42,9 +42,7 @@ class RedisPubSubService {
     const channelSubs = this.log.get(channel)
     if (!channelSubs) return
 
-    const { clientId: messageClientId, callbackKey, data } = JSON.parse(
-      message,
-    ) as BaseMessage
+    const { clientId: messageClientId, callbackKey, data } = JSON.parse(message) as BaseMessage
 
     for (const [clientId, fns] of Object.entries(channelSubs)) {
       // Preventing users from getting their own updates
@@ -96,9 +94,7 @@ class RedisPubSubService {
     callback: (data: T) => void
     callbackKey: string
   }) {
-    const subscribeToChannels = channels.filter(
-      (channel) => !this.log.has(channel),
-    )
+    const subscribeToChannels = channels.filter((channel) => !this.log.has(channel))
 
     if (subscribeToChannels.length)
       // Only subscribe to those which we haven't subscribed to yet
@@ -121,13 +117,7 @@ class RedisPubSubService {
     }
   }
 
-  async unsubscribe({
-    channels,
-    clientId,
-  }: {
-    channels: string[]
-    clientId: string
-  }) {
+  async unsubscribe({ channels, clientId }: { channels: string[]; clientId: string }) {
     for (const channel of channels) {
       const channelSubs = this.log.get(channel)
       if (channelSubs) delete channelSubs[clientId]

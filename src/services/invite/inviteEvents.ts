@@ -10,11 +10,7 @@ const enum MessageTypes {
 
 const callbackKey = 'invite'
 
-export const inviteEventSender = async (
-  userId: string,
-  clientId: string,
-  send: SSESender,
-) => {
+export const inviteEventSender = async (userId: string, clientId: string, send: SSESender) => {
   const props = {
     channels: [redisPubSub.getUserChannel(userId)],
     clientId,
