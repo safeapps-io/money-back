@@ -18,7 +18,7 @@ export class ExchangeRateService {
         ts: new Date().getTime(),
       }
 
-    return redisConnection.set(this.exchangeRateKey, JSON.stringify(res))
+    redisConnection.set(this.exchangeRateKey, JSON.stringify(res))
   }
 
   static fallbackValue = 76
