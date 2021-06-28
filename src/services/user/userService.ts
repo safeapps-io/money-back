@@ -183,7 +183,7 @@ export class UserService {
         username,
         password: passwordHashed,
         isSubscribed,
-        source: _source,
+        meta: { source: _source },
         ...parsedInvite?.payload,
       })
 

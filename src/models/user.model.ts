@@ -46,7 +46,10 @@ export default class User extends BaseModel {
 
   @AllowNull
   @Column(DataType.JSON)
-  source!: { [param: string]: string } | null
+  meta!: {
+    source?: { [param: string]: string } | null
+    tags?: string[] | null
+  } | null
 
   @AllowNull
   @Column({
@@ -159,7 +162,7 @@ export class UserManager {
     username: string
     password: string
     isSubscribed: boolean
-    source: { [param: string]: string } | null
+    meta: User['meta']
     inviterId?: string
     inviteId?: string
     isWaitlist?: boolean
@@ -309,7 +312,7 @@ export class UserManager {
 
   static byIdWithAdminDataIncluded(userId: string) {
     return User.findByPk(userId, {
-      include: ({ all: true, nested: true } as unknown) as any[],
+      include: { all: true, nested: true },
     })
   }
 }
