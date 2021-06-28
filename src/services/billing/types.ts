@@ -23,8 +23,5 @@ export interface BillingProvider {
     chargeData: Omit<ChargeEventData, 'eventType'>
     sendToClient: any
   }>
-  handleEvent: (
-    event: any,
-    context: EventHandlerContext,
-  ) => Promise<ChargeEventData | null>
+  handleEvent: (event: any, context: EventHandlerContext) => Promise<ChargeEventData | null>
 }

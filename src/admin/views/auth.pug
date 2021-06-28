@@ -1,14 +1,14 @@
 extends layout.pug
 
 block content
-  +form()
+  +form
     .field
       label.label Представься, мразь
       .control
-        input.input(type="text" name="usernameOrEmail")
+        input.input(type='text', name='usernameOrEmail')
     .field
       label.label Секретное слово скажи
       .control
-        input.input(type="password" name="password")
-    
+        input.input(type='password', name='password')
+
     .field: .control: button.button.is-dark(type='submit') Проверить своё право

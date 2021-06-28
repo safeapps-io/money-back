@@ -18,24 +18,35 @@ import * as LimitService from '@/services/billing/limitService'
 
 const getUserPath = (req: Request) => `/users/${req.params.id}`
 
+const normalizeTags = (data?: string | null) => {
+  const cleaned = new Set(
+    data
+      ?.split(',')
+      .map((val) => val.trim())
+      .filter(Boolean),
+  )
+  return [...cleaned].sort((a, b) => a.localeCompare(b))
+}
+
 export const adminUserRouter = Router()
   .use((_, res, next) => {
     res.locals.isBefore = isBefore
     return next()
   })
-  .get<{}, {}, {}, { q?: string; date?: string }>(
+  .get<{}, {}, {}, { q?: string; date?: string; tags?: string }>(
     '',
     ash(async (req, res) => {
-      const { q = null, date = null } = req.query,
+      const { q = null, date = null, tags: _tags } = req.query,
         [wholeCount, users] = await Promise.all([
           UserManager.count(),
           UserManager.searchByQuery({
             query: q,
             date: date ? parse(date, 'yyyy-MM-dd', new Date()) : null,
+            tags: normalizeTags(_tags),
           }),
         ])
 
-      res.render('users/search', { users, wholeCount, q, date })
+      res.render('users/search', { users, wholeCount, q, date, tags: _tags })
     }),
   )
   .use(csurf({ cookie: true }))
@@ -73,6 +84,17 @@ export const adminUserRouter = Router()
     }),
   )
   .post(
+    '/:id/tags',
+    ash(async (req, res, _) => {
+      const user = (await UserManager.byId(req.params.id))!,
+        tags = normalizeTags(req.body.tags),
+        oldMeta = user.meta || {}
+
+      await UserManager.update(user.id, { meta: { ...oldMeta, tags } })
+      return res.redirect(getUserPath(req))
+    }),
+  )
+  .post(
     '/:id/:planId/setProduct',
     ash(async (req, res, _) => {
       const plan = (await PlanManager.byId(req.params.planId))!
@@ -83,10 +105,7 @@ export const adminUserRouter = Router()
   .post(
     '/:id/:planId/charge/delete',
     ash(async (req, res) => {
-      await ChargeEventManager.deleteByPlanAndId(
-        req.body.chargeId,
-        req.params.planId,
-      )
+      await ChargeEventManager.deleteByPlanAndId(req.body.chargeId, req.params.planId)
       return res.redirect(getUserPath(req))
     }),
   )
@@ -102,9 +121,7 @@ export const adminUserRouter = Router()
         time = ms(body.timeInput || body.time)
 
       const expiredNew = addMilliseconds(
-        body.from == 'prev' && body.expiredOld
-          ? new Date(parseInt(body.expiredOld))
-          : new Date(),
+        body.from == 'prev' && body.expiredOld ? new Date(parseInt(body.expiredOld)) : new Date(),
         time,
       )
 

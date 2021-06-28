@@ -10,36 +10,19 @@ export const initCurrencyDb = () => {
       countryCode: string
       currency: string
       currencyCode: string
-    }>(
-      readFileSync(join(__dirname, 'dataSources', 'currencyDb.csv'), 'utf-8'),
-      {
-        header: true,
-      },
-    ).data
+    }>(readFileSync(join(__dirname, 'dataSources', 'currencyDb.csv'), 'utf-8'), {
+      header: true,
+    }).data
 
-  const currencyDb = _.uniqBy(
-    currencyToCountryDb,
-    ({ currencyCode }) => currencyCode,
-  )
+  const currencyDb = _.uniqBy(currencyToCountryDb, ({ currencyCode }) => currencyCode)
     .map((val) => ({ code: val.currencyCode, label: val.currency }))
     .sort(({ code: code1 }, { code: code2 }) => code1.localeCompare(code2))
     .sort(({ code: code1 }, { code: code2 }) => {
-      if (
-        mostPopularCurrencies.includes(code1) &&
-        !mostPopularCurrencies.includes(code2)
-      )
-        return -1
+      if (mostPopularCurrencies.includes(code1) && !mostPopularCurrencies.includes(code2)) return -1
 
-      if (
-        !mostPopularCurrencies.includes(code1) &&
-        mostPopularCurrencies.includes(code2)
-      )
-        return 1
+      if (!mostPopularCurrencies.includes(code1) && mostPopularCurrencies.includes(code2)) return 1
 
-      return (
-        mostPopularCurrencies.indexOf(code1) -
-        mostPopularCurrencies.indexOf(code2)
-      )
+      return mostPopularCurrencies.indexOf(code1) - mostPopularCurrencies.indexOf(code2)
     })
 
   return { currencyToCountryDb, currencyDb }

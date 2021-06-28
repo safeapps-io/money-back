@@ -2,10 +2,7 @@ import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { isRestAuth } from '@/middlewares/isAuth'
-import {
-  DirectoryService,
-  MCCOutput,
-} from '@/services/directory/directoryService'
+import { DirectoryService, MCCOutput } from '@/services/directory/directoryService'
 import Scheme from '@/models/scheme.model'
 import MetaCategory from '@/models/metaCategory.model'
 
@@ -20,9 +17,7 @@ export const directoryRouter = Router()
     '/scheme',
     ash(async (req, res) => {
       res.json(
-        await DirectoryService.getUpdatedSchemes(
-          parseInt((req.query.from as string) || '0'),
-        ),
+        await DirectoryService.getUpdatedSchemes(parseInt((req.query.from as string) || '0')),
       )
     }),
   )

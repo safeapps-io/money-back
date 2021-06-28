@@ -23,10 +23,9 @@ export class PasswordService {
       const isValid = await argon2.verify(hashedPassword, password)
       if (!isValid) throw new Error()
     } catch (error) {
-      throw new FormValidationError(
-        PasswordServiceFormErrors.incorrectPassword,
-        { password: [PasswordServiceFormErrors.incorrectPassword] },
-      )
+      throw new FormValidationError(PasswordServiceFormErrors.incorrectPassword, {
+        password: [PasswordServiceFormErrors.incorrectPassword],
+      })
     }
   }
 
@@ -60,16 +59,11 @@ export class PasswordService {
         email: [PasswordServiceFormErrors.resetNoEmail],
       })
 
-    const token = await signJwt(
-      { id: user.id },
-      { expiresIn: '2h', subject: jwtSubject },
-    )
+    const token = await signJwt({ id: user.id }, { expiresIn: '2h', subject: jwtSubject })
     return MessageService.sendPasswordResetEmail({ email: user.email, token })
   }
 
-  public static async getUserIdFromPasswordResetToken(
-    token: string,
-  ): Promise<string> {
+  public static async getUserIdFromPasswordResetToken(token: string): Promise<string> {
     try {
       const { id } = await verifyJwt<JWTMessage>(token, { subject: jwtSubject })
       return id

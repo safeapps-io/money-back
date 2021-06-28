@@ -34,11 +34,7 @@ walletRouter
   .delete<{ walletId: string }>(
     '/:walletId',
     ash(async (req, res) => {
-      await WalletService.destroy(
-        req.userId,
-        req.params.walletId,
-        req.sse.clientId,
-      )
+      await WalletService.destroy(req.userId, req.params.walletId, req.sse.clientId)
 
       res.json({})
     }),

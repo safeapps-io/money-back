@@ -15,10 +15,7 @@ const endDate = new Date(),
   startDate = dateFns.sub(endDate, { months: 12 })
 
 const buildBase = () => {
-  const created = randomDateBetween(
-      startDate,
-      dateFns.sub(endDate, { days: 1 }),
-    ),
+  const created = randomDateBetween(startDate, dateFns.sub(endDate, { days: 1 })),
     updated = randomDateBetween(created, endDate)
   return {
     id: nanoid(),

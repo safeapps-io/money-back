@@ -1,11 +1,7 @@
 import * as yup from 'yup'
 import { decode } from 'base64-arraybuffer'
 
-import {
-  runSchemaWithFormError,
-  requiredString,
-  optionalString,
-} from '@/utils/yupHelpers'
+import { runSchemaWithFormError, requiredString, optionalString } from '@/utils/yupHelpers'
 import { FormValidationError } from '@/services/errors'
 import { InviteServiceFormErrors, InviteStringTypes } from './inviteTypes'
 import User, { UserManager } from '@/models/user.model'
@@ -24,9 +20,7 @@ import { CryptoService } from '@/services/crypto/cryptoService'
  * types of invites with a simple outgoing interface.
  */
 export class InviteStringService {
-  public static async parseAndVerifySignature(
-    inviteString: string,
-  ): Promise<InvitePayload> {
+  public static async parseAndVerifySignature(inviteString: string): Promise<InvitePayload> {
     try {
       runSchemaWithFormError(requiredString, inviteString)
     } catch (error) {
@@ -34,9 +28,7 @@ export class InviteStringService {
     }
 
     // Then we try to work it out as a production invite.
-    let parsed: Await<ReturnType<
-        typeof InviteStringService.parseAsymmetricInvite
-      >>,
+    let parsed: Await<ReturnType<typeof InviteStringService.parseAsymmetricInvite>>,
       userInviter: User
     try {
       parsed = await this.parseAsymmetricInvite(inviteString)
@@ -68,13 +60,11 @@ export class InviteStringService {
     })
     .noUnknown()
   private static async parseAsymmetricInvite(inviteString: string) {
-    const [dataBuffer, signatureBuffer] = inviteString
-      .split(this.inviteDelimiter)
-      .map(decode)
+    const [dataBuffer, signatureBuffer] = inviteString.split(this.inviteDelimiter).map(decode)
 
-    const decodedInvite = JSON.parse(
-      Buffer.from(dataBuffer).toString('utf-8'),
-    ) as ServiceInvitePayload | WalletInviteObject
+    const decodedInvite = JSON.parse(Buffer.from(dataBuffer).toString('utf-8')) as
+      | ServiceInvitePayload
+      | WalletInviteObject
 
     runSchemaWithFormError(this.inviteSchema, decodedInvite)
 
@@ -114,9 +104,7 @@ export class InviteStringService {
     joiningUserSignature: string
     joiningUserInvitePublicKey: string
   }) {
-    const signatureBuffer = decode(
-      joiningUserSignature.split(this.inviteDelimiter)[1],
-    )
+    const signatureBuffer = decode(joiningUserSignature.split(this.inviteDelimiter)[1])
 
     return CryptoService.verify({
       b64PublicKey: joiningUserInvitePublicKey,

@@ -5,13 +5,13 @@ block append content
 
   .block
     p
-      span.has-text-weight-bold ID: 
+      span.has-text-weight-bold ID:
       code= user.id
     if user.email
       p
-        span.has-text-weight-bold Почта: 
-        | #{user.email}
-    if user.source
+        span.has-text-weight-bold Почта:
+        | #{ user.email }
+    if user.meta && user.meta.source
       .my-4
         p.has-text-weight-bold Источник установки
         table.table
@@ -19,11 +19,23 @@ block append content
             th Ключ
             th Значение
           tbody 
-            each e in Object.entries(user.source)
+            each e in Object.entries(user.meta.source)
               tr 
-                td: code=e[0]
-                td: code=e[1]
-    
+                td: code= e[0]
+                td: code= e[1]
+
+    .my-4: +form('POST', baseReqPath + '/tags')
+      label.label Теги
+      .field.has-addons
+        .control.is-expanded
+          input.input(
+            type='text',
+            name='tags',
+            value=user.meta && user.meta.tags ? user.meta.tags.join(", ") : ""
+          )
+        .control
+          button.button Сохранить
+
     if wallets.length
       .my-4
         p.has-text-weight-bold Кошельки
@@ -34,52 +46,52 @@ block append content
           tbody 
             each w, index in wallets
               tr 
-                td: code=w.id
-                td #{entityCountByWallet[index]}/#{limit}
+                td: code= w.id
+                td #{ entityCountByWallet[index] }/#{ limit }
 
     p
-      span.has-text-weight-bold Зарегистрирован: 
-      | #{dateFormat(user.created)}
+      span.has-text-weight-bold Зарегистрирован:
+      | #{ dateFormat(user.created) }
 
-    p: span.has-text-weight-bold Ключи установлены: 
-      input(type="checkbox" disabled checked=!!user.b64salt)
+    p: span.has-text-weight-bold Ключи установлены:
+      input(type='checkbox', disabled, checked=!!user.b64salt)
 
     .my-4
       //- FUCKING ELITE, lol
       if user.username == 'dkzlv'
-        p: span.has-text-weight-bold Админ: 
-          input(type="checkbox" disabled checked=user.isAdmin)
+        p: span.has-text-weight-bold Админ:
+          input(type='checkbox', disabled, checked=user.isAdmin)
       else
         +form('POST', baseReqPath + '/toggleIsAdmin')
-          p: span.has-text-weight-bold Админ: 
-            input(type="checkbox" disabled checked=user.isAdmin)
+          p: span.has-text-weight-bold Админ:
+            input(type='checkbox', disabled, checked=user.isAdmin)
           button.button.is-small Передёрнуть
 
     if user.inviterId
       p
-        span.has-text-weight-bold Приглашён: 
-        | #{user.inviter.username} (инвайт <code>#{user.inviteId}</code>)
+        span.has-text-weight-bold Приглашён:
+        | #{ user.inviter.username } (инвайт <code>#{ user.inviteId }</code>)
 
   hr
   h2.subtitle Биллинг
 
   each plan in user.plans
     .box
-      p: span.has-text-weight-bold ID: <code>#{plan.id}</code>
+      p: span.has-text-weight-bold ID: <code>#{ plan.id }</code>
       p
-        span.has-text-weight-bold Обновлено: 
-        | #{dateFormat(plan.updated)}
+        span.has-text-weight-bold Обновлено:
+        | #{ dateFormat(plan.updated) }
       p
-        span.has-text-weight-bold Истекает: 
-        | #{dateFormat(plan.expires)}
+        span.has-text-weight-bold Истекает:
+        | #{ dateFormat(plan.expires) }
 
       +form('POST', baseReqPath + '/' + plan.id + '/setProduct')
         .my-3
           label.label Продукт
           .field.has-addons
-            p.control: span.select.is-small: select(name="productId")
+            p.control: span.select.is-small: select(name='productId')
               each product in products
-                option(value=product.id selected=product.id==plan.productId)= product.slug
+                option(value=product.id, selected=product.id == plan.productId)= product.slug
             p.control: button.button.is-small Изменить
 
       .modal
@@ -105,22 +117,22 @@ block append content
             tr
               td.is-size-7: code= event.id
               td= dateFormat(event.created)
-              td= event.provider || '—'
+              td= event.provider || "—"
               td: if event.remoteChargeId
                 code= event.remoteChargeId
               else
                 | —
-              td= event.productId || '—'
+              td= event.productId || "—"
               td= event.eventType
               td= event.chargeType
-              td= dateFormat(event.expiredOld) + " → " +  dateFormat(event.expiredNew)
+              td= dateFormat(event.expiredOld) + " → " + dateFormat(event.expiredNew)
               td: if event.rawData
-                button.button.is-ghost.is-small(onclick='openModal(' + event.rawData + ')')
+                button.button.is-ghost.is-small(onclick="openModal(" + event.rawData + ")")
                   | Посмотреть
               else
                 | —
               td: +form('POST', baseReqPath + '/' + plan.id + '/charge/delete')
-                button.button.is-small.is-danger(type="submit", name="chargeId", value=event.id)
+                button.button.is-small.is-danger(type='submit', name='chargeId', value=event.id)
                   | Удалить
           else
             tr: td(colspan=9) Ивентов нет
@@ -129,38 +141,53 @@ block append content
 
       +form('POST', baseReqPath + '/' + plan.id + '/charge')
         if plan.expires
-          input(type="hidden", name="expiredOld", value=plan.expires.getTime())
-          
+          input(type='hidden', name='expiredOld', value=plan.expires.getTime())
+
           .control.my-3
             label.radio
-              input(type="radio", name="from", value="now" checked=isBefore(plan.expires, new Date())) 
-              |  От текущего момента
+              input(
+                type='radio',
+                name='from',
+                value='now',
+                checked=isBefore(plan.expires, new Date())
+              ) 
+              |
+              | От текущего момента
             label.radio
-              input(type="radio", name="from", value="prev" checked=!isBefore(plan.expires, new Date())) 
-              |  От прошлого истечения — #{dateFormat(plan.expires)}
+              input(
+                type='radio',
+                name='from',
+                value='prev',
+                checked=!isBefore(plan.expires, new Date())
+              ) 
+              |
+              | От прошлого истечения — #{ dateFormat(plan.expires) }
 
         .field.is-grouped.mt-3
           - const btns = [['-5m', '-5 минут'], ['5m', '5 минут'], ['1d', '1 день'], ['14d', '14 дней']]
-          
+
           each btn in btns
-            .control: button.button.is-small(name="time", value=btn[0])= btn[1]
-          .control.pl-4: input.input.is-small(type="text" placeholder="В формате MS" name="timeInput")
-          button.button.is-small.is-outlined.is-success() Отправить
+            .control: button.button.is-small(name='time', value=btn[0])= btn[1]
+          .control.pl-4: input.input.is-small(
+            type='text',
+            placeholder='В формате MS',
+            name='timeInput'
+          )
+          button.button.is-small.is-outlined.is-success Отправить
 
   else
     p Никаких движений пока не было
 
-
   script.
-    const $modal = document.querySelector('.modal'),
-      $modalContent = document.getElementById('rawEvent'),
-      $modalBack = document.querySelector('.modal-background'),
-      $close = document.querySelector('.modal-close'),
-      closeCb = () => $modal.classList.remove(activeClass)
-    
-    $modalBack.onclick = $close.onclick = closeCb
+    const $modal = document.querySelector(".modal"),
+      $modalContent = document.getElementById("rawEvent"),
+      $modalBack = document.querySelector(".modal-background"),
+      $close = document.querySelector(".modal-close"),
+      closeCb = () => $modal.classList.remove(activeClass);
+
+    $modalBack.onclick = $close.onclick = closeCb;
 
     function openModal(text) {
-      $modalContent.innerText = JSON.stringify(text, null, 2)
-      $modal.classList.add(activeClass)
+      $modalContent.innerText = JSON.stringify(text, null, 2);
+      $modal.classList.add(activeClass);
     }

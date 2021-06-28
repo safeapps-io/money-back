@@ -1,11 +1,4 @@
-import {
-  Table,
-  Column,
-  DataType,
-  Default,
-  AllowNull,
-  HasMany,
-} from 'sequelize-typescript'
+import { Table, Column, DataType, Default, AllowNull, HasMany } from 'sequelize-typescript'
 import BaseModel from '@/models/base'
 import Plan from './plan.model'
 

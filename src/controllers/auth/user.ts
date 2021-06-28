@@ -42,8 +42,7 @@ userRouter
           ...body,
           clientId: req.sse.clientId,
         })
-      else if ('email' in body)
-        user = await UserService.updateEmail(user, body.email)
+      else if ('email' in body) user = await UserService.updateEmail(user, body.email)
       else if ('isSubscribed' in body)
         user = await UserService.updateIsSubscribedStatus({
           userId: user.id,

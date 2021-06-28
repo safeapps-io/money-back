@@ -67,11 +67,7 @@ export class PlanManager {
     return Plan.create({ userId, productId }, { include: [{ model: Product }] })
   }
 
-  static byUserId(
-    userId: string,
-    productType: ProductType,
-    includeCharges = false,
-  ) {
+  static byUserId(userId: string, productType: ProductType, includeCharges = false) {
     const include: Includeable[] = [{ model: Product, where: { productType } }]
     if (includeCharges) include.push({ model: ChargeEvent })
 
@@ -87,10 +83,7 @@ export class PlanManager {
 
   static byRemoteChargeId(chargeId: string) {
     return Plan.findOne({
-      include: [
-        { model: ChargeEvent, where: { remoteChargeId: chargeId } },
-        { model: Product },
-      ],
+      include: [{ model: ChargeEvent, where: { remoteChargeId: chargeId } }, { model: Product }],
     })
   }
 

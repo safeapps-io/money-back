@@ -5,21 +5,20 @@ block append content
     h2.subtitle Обменный курс по рублю
 
     .my-4 
-      p 1$ = #{rateData.rate}₽
-      p Последнее обновление: #{dateFormat(new Date(rateData.ts))}
-      
+      p 1$ = #{ rateData.rate }₽
+      p Последнее обновление: #{ dateFormat(new Date(rateData.ts)) }
+
     button.button Обновить
 
   hr
 
   +form('POST', '/misc/limit')
     h2.subtitle Лимит для создания сущностей
-      
+
     .field
       label.label 
       .control
-        input.input(type="number" name='newLimit' value=limit)
-      p.help Реальный лимит (с учётом технических сущностей и мета-категорий): #{realLimit}.
-
+        input.input(type='number', name='newLimit', value=limit)
+      p.help Реальный лимит (с учётом технических сущностей и мета-категорий): #{ realLimit }.
 
     button.button Обновить

@@ -20,10 +20,7 @@ export const requiredString = yup.string().required()
 export const transformValidationErrorToObject = (err: yup.ValidationError) =>
   Object.fromEntries(err.inner.map((e) => [e.path!, e.errors]))
 
-export function runSchemaWithFormError<T>(
-  schema: yup.SchemaOf<any>,
-  data: T,
-): T {
+export function runSchemaWithFormError<T>(schema: yup.SchemaOf<any>, data: T): T {
   try {
     return schema.validateSync(data, { abortEarly: false, stripUnknown: true })
   } catch (err) {

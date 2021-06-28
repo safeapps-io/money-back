@@ -2,12 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import { RequestError, FormValidationError } from '@/services/errors'
 import { trackError } from '@/services/trackErrors'
 
-export const errorHandler = (
-  err: Error,
-  req: Request,
-  res: Response,
-  __: NextFunction,
-) => {
+export const errorHandler = (err: Error, req: Request, res: Response, __: NextFunction) => {
   if (err instanceof RequestError) {
     res.status(err.code).json({ message: err.message })
   } else if (err instanceof FormValidationError) {

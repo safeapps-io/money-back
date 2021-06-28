@@ -3,10 +3,7 @@ import { Router } from 'express'
 import ash from 'express-async-handler'
 
 import { MetaCategoryManager } from '@/models/metaCategory.model'
-import {
-  DirectoryService,
-  MCCInput,
-} from '@/services/directory/directoryService'
+import { DirectoryService, MCCInput } from '@/services/directory/directoryService'
 
 const getGetData = async () => {
   const metaCategories = await MetaCategoryManager.list(),
@@ -14,9 +11,7 @@ const getGetData = async () => {
       id: cat.id,
       name: cat.name,
       isIncome: cat.isIncome,
-      field: cat.assignedMcc
-        ?.map((val) => `${val.code}:${val.weight}`)
-        .join('\n'),
+      field: cat.assignedMcc?.map((val) => `${val.code}:${val.weight}`).join('\n'),
     }))
 
   const assignedCodes = new Set<string>(
@@ -63,9 +58,7 @@ export const adminMccRouter = Router()
           }
           return { code: val, weight: 50 }
         })
-        promises.push(
-          MetaCategoryManager.update(id, { assignedMcc: cleanedValue }),
-        )
+        promises.push(MetaCategoryManager.update(id, { assignedMcc: cleanedValue }))
       }
 
       await Promise.all(promises)

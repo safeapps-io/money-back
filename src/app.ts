@@ -33,12 +33,7 @@ const constructApp = async () => {
         origin: process.env.ALLOWED_ORIGIN,
         credentials: true,
         maxAge: 86400,
-        allowedHeaders: [
-          'content-type',
-          'cache-control',
-          'pragma',
-          'sse-clientid',
-        ],
+        allowedHeaders: ['content-type', 'cache-control', 'pragma', 'sse-clientid'],
       }),
       helmet(),
     )

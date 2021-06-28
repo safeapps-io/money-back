@@ -10,10 +10,7 @@ export const sessionsRouter = Router()
   .get<{}, Session[]>(
     '',
     ash(async (req, res) => {
-      const sessions = await UserService.getAllSessions(
-        req.userId,
-        req.tokens.refresh,
-      )
+      const sessions = await UserService.getAllSessions(req.userId, req.tokens.refresh)
       res.json(serializeModel(sessions, Serializers.session))
     }),
   )
@@ -23,10 +20,7 @@ export const sessionsRouter = Router()
       toDeleteId: req.body.id,
       currentKey: req.tokens.refresh,
     })
-    const sessions = await UserService.getAllSessions(
-      req.userId,
-      req.tokens.refresh,
-    )
+    const sessions = await UserService.getAllSessions(req.userId, req.tokens.refresh)
     res.json(serializeModel(sessions, Serializers.session))
   })
   .post<{}, {}, {}>(

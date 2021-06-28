@@ -5,10 +5,7 @@ export const getDeviceDescription = (userAgent: string) => {
     os = parsed.getOS(),
     browser = parsed.getBrowser()
 
-  return (
-    `${getNameAndVersion(os)} ${getNameAndVersion(browser)}`.trim() ||
-    'Unknown device'
-  )
+  return `${getNameAndVersion(os)} ${getNameAndVersion(browser)}`.trim() || 'Unknown device'
 }
 
 const getNameAndVersion = (obj: { name?: string; version?: string }) =>

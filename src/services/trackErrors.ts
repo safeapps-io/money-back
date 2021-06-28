@@ -11,5 +11,4 @@ export const trackErrorsInit = () =>
     release: pkg.version,
   })
 
-export const trackError = (e: Error) =>
-  shouldTrack && Sentry.captureException(e)
+export const trackError = (e: Error) => shouldTrack && Sentry.captureException(e)

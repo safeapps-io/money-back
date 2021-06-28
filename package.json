@@ -1,6 +1,6 @@
 {
   "name": "money-back",
-  "version": "27.06.2021v1",
+  "version": "28.06.2021v1",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
@@ -97,21 +97,9 @@
   },
   "prettier": {
     "trailingComma": "all",
+    "printWidth": 100,
     "tabWidth": 2,
     "semi": false,
     "singleQuote": true
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node",
-    "coveragePathIgnorePatterns": [
-      "/node_modules/"
-    ],
-    "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/$1"
-    },
-    "setupFiles": [
-      "dotenv/config"
-    ]
   }
 }

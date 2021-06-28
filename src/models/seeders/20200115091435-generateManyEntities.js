@@ -54,10 +54,7 @@ const tagsChoices = ['Отпуск', 'MetPet', 'Семья', 'CleverPay', 'Priva
   mccChoices = ['0742', '0763', '0780', '1740', '1761', '1799', '3000', '3193', '3423', '3733', '5912', '7941', '9402']
 
 const buildBase = () => {
-    const created = randomDateBetween(
-        startDate,
-        dateFns.sub(endDate, { days: 1 }),
-      ),
+    const created = randomDateBetween(startDate, dateFns.sub(endDate, { days: 1 })),
       updated = randomDateBetween(created, endDate)
     return {
       id: nanoid(),
@@ -88,9 +85,7 @@ module.exports = {
         b64EncryptedInvitePrivateKey: Buffer.from(
           decode(testData.users.dkzlv.b64EncryptedInvitePrivateKey),
         ),
-        b64InvitePublicKey: Buffer.from(
-          decode(testData.users.dkzlv.b64InvitePublicKey),
-        ),
+        b64InvitePublicKey: Buffer.from(decode(testData.users.dkzlv.b64InvitePublicKey)),
         inviteMonthlyLimit: 100000,
       },
       dkzlvChest = Buffer.from(decode(testData.users.dkzlv.chest)),
@@ -103,9 +98,7 @@ module.exports = {
         b64EncryptedInvitePrivateKey: Buffer.from(
           decode(testData.users.ama.b64EncryptedInvitePrivateKey),
         ),
-        b64InvitePublicKey: Buffer.from(
-          decode(testData.users.ama.b64InvitePublicKey),
-        ),
+        b64InvitePublicKey: Buffer.from(decode(testData.users.ama.b64InvitePublicKey)),
       },
       amaChest = Buffer.from(decode(testData.users.ama.chest)),
       users = [dkzlvData, amaData]
@@ -147,12 +140,8 @@ module.exports = {
             isIncome: Math.random() < 0.1,
           },
         })),
-        incomeCategoryId = categories
-          .filter((cat) => cat.decr.isIncome)
-          .map((cat) => cat.id),
-        expenseCategoryId = categories
-          .filter((cat) => !cat.decr.isIncome)
-          .map((cat) => cat.id)
+        incomeCategoryId = categories.filter((cat) => cat.decr.isIncome).map((cat) => cat.id),
+        expenseCategoryId = categories.filter((cat) => !cat.decr.isIncome).map((cat) => cat.id)
 
       const walletData = {
         ...buildBaseEntity(walletId),
@@ -250,12 +239,8 @@ module.exports = {
           isIncome: Math.random() < 0.05,
           walletUserId: _.sample(userIdChoices),
           assetId: asset.id,
-          datetime: randomDateBetween(
-            dateFns.sub(new Date(), { years: 1 }),
-            new Date(),
-          ).getTime(),
-          description:
-            Math.random() < 0.1 ? faker.commerce.productName() : null,
+          datetime: randomDateBetween(dateFns.sub(new Date(), { years: 1 }), new Date()).getTime(),
+          description: Math.random() < 0.1 ? faker.commerce.productName() : null,
           autocomplete: {},
         }
 
@@ -268,8 +253,7 @@ module.exports = {
           if (Math.random() < 0.1) {
             decr.originalAmount = _.random(-100, -1)
             let curr
-            while (!curr || curr.split(' ').length === 2)
-              curr = faker.finance.currencyCode()
+            while (!curr || curr.split(' ').length === 2) curr = faker.finance.currencyCode()
 
             decr.currency = curr
           }
@@ -281,9 +265,7 @@ module.exports = {
         }
         decr.isDraft = Math.random() < 0.01
         decr.tags =
-          Math.random() < 0.4
-            ? [Array(_.random(1, 3)).keys()].map(() => _.sample(tagsChoices))
-            : []
+          Math.random() < 0.4 ? [Array(_.random(1, 3)).keys()].map(() => _.sample(tagsChoices)) : []
 
         return { ...buildBaseEntity(walletId), decr }
       })
@@ -301,9 +283,7 @@ module.exports = {
     }
 
     const encrypted = await Promise.all(
-        entitiesDecr.map((ent) =>
-          encrypt(ent.id, ent.walletId, ent.decr, encryptionKey),
-        ),
+        entitiesDecr.map((ent) => encrypt(ent.id, ent.walletId, ent.decr, encryptionKey)),
       ),
       toSave = entitiesDecr.map((ent, i) => ({
         ...ent,

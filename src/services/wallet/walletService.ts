@@ -7,13 +7,7 @@ import { AccessLevels } from '@/models/walletAccess.model'
 import { publishWalletDestroy, publishWalletUpdate } from './walletEvents'
 
 export class WalletService {
-  static async getWalletByUserAndId({
-    userId,
-    walletId,
-  }: {
-    userId: string
-    walletId: string
-  }) {
+  static async getWalletByUserAndId({ userId, walletId }: { userId: string; walletId: string }) {
     const res = await WalletManager.byIdAndUserId({ userId, walletId })
     if (!res) throw new AccessError()
     return res
@@ -44,9 +38,7 @@ export class WalletService {
 
   static isUserOwner({ wallet, userId }: { wallet: Wallet; userId: string }) {
     return wallet.users.some(
-      (user) =>
-        user.id === userId &&
-        user.WalletAccess.accessLevel === AccessLevels.owner,
+      (user) => user.id === userId && user.WalletAccess.accessLevel === AccessLevels.owner,
     )
   }
 
@@ -74,11 +66,7 @@ export class WalletService {
     })
   }
 
-  static async removeUserWalletAccess(
-    userId: string,
-    walletId: string,
-    clientId: string,
-  ) {
+  static async removeUserWalletAccess(userId: string, walletId: string, clientId: string) {
     await WalletManager.removeUser({
       walletId,
       userId,
@@ -130,8 +118,7 @@ export class WalletService {
       isOwner = this.isUserOwner({ wallet, userId: initiatorId }),
       isRemovingSelf = initiatorId === userToRemoveId,
       // Owner can remove anyone except self; other person can only remove self
-      allowOperation =
-        (isOwner && !isRemovingSelf) || (!isOwner && isRemovingSelf)
+      allowOperation = (isOwner && !isRemovingSelf) || (!isOwner && isRemovingSelf)
 
     if (!allowOperation) throw new RequestError('Operation not allowed')
     return this.removeUserWalletAccess(userToRemoveId, wallet.id, clientId)
@@ -162,12 +149,9 @@ export class WalletService {
         // In case user doesn't update all the chests at once for some reason
         chests.length === userWalletIds.length &&
         // Authorization
-        chests
-          .map((chest) => userWalletIds.includes(chest.walletId))
-          .every(Boolean)
+        chests.map((chest) => userWalletIds.includes(chest.walletId)).every(Boolean)
 
-    if (!allChestsRepresented)
-      throw new RequestError('Not all chests are represented')
+    if (!allChestsRepresented) throw new RequestError('Not all chests are represented')
 
     const walletAccessIdsAndChests = userWallets.map((wall) => {
       const userWa = wall.users.find((u) => u.id === userId)!.WalletAccess
@@ -177,11 +161,7 @@ export class WalletService {
     await WalletManager.bulkUpdate(walletAccessIdsAndChests)
 
     const refetchedWallets = await WalletManager.byIds(userWalletIds)
-    await Promise.all(
-      refetchedWallets.map((wallet) =>
-        publishWalletUpdate({ wallet, clientId }),
-      ),
-    )
+    await Promise.all(refetchedWallets.map((wallet) => publishWalletUpdate({ wallet, clientId })))
     return refetchedWallets
   }
 

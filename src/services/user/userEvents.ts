@@ -10,11 +10,7 @@ type UserDataEvent = { type: MessageTypes.data; data: User }
 
 const callbackKey = 'user'
 
-export const userEventSender = async (
-  userId: string,
-  clientId: string,
-  send: SSESender,
-) => {
+export const userEventSender = async (userId: string, clientId: string, send: SSESender) => {
   const props = {
     channels: [redisPubSub.getUserChannel(userId)],
     clientId,
@@ -29,13 +25,7 @@ export const userEventSender = async (
   return () => redisPubSub.unsubscribe(props)
 }
 
-export const publishUserUpdate = ({
-  clientId,
-  user,
-}: {
-  clientId: string
-  user: User
-}) => {
+export const publishUserUpdate = ({ clientId, user }: { clientId: string; user: User }) => {
   const data: UserDataEvent = {
     data: serializeModel(user, Serializers.userFullNoAssociations),
     type: MessageTypes.data,

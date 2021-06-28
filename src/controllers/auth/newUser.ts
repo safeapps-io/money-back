@@ -29,12 +29,7 @@ export const newUserRouter = Router()
       consumeMode: 'always',
 
       handler: async (req, res) => {
-        const {
-          accessToken,
-          refreshToken,
-          user,
-          isWalletInvite,
-        } = await UserService.signup({
+        const { accessToken, refreshToken, user, isWalletInvite } = await UserService.signup({
           ...(req.body as {
             username: string
             email?: string
@@ -75,8 +70,7 @@ const signinIpUsernameLimiter = createLimiter('signinIpUsername', {
     duration: 60 * 60 * 24,
     blockDuration: 60 * 60 * 24,
   }),
-  signinIpUsernameKeygetter: KeyGetter = (req) =>
-    `${req.ip}-${req.body.usernameOrEmail}`
+  signinIpUsernameKeygetter: KeyGetter = (req) => `${req.ip}-${req.body.usernameOrEmail}`
 /**
  * Username block: for 7 days after 100 failed attempts in a single day
  *
@@ -123,9 +117,7 @@ newUserRouter.use(
 
         res.json(serializeModel(user, Serializers.userFullNoAssociations))
       } catch (error) {
-        await Promise.all(
-          checksAndKeysMap.map(([key, limiter]) => limiter.consume(key)),
-        )
+        await Promise.all(checksAndKeysMap.map(([key, limiter]) => limiter.consume(key)))
         throw error
       }
     }),

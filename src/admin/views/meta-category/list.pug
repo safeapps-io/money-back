@@ -21,10 +21,10 @@ block append content
     .not-published {
       background-color: #f7f7f7;
     }
-
+  
   .level
     .level-left
-      .level-item: h1.title #{categories.length} мета-категорий
+      .level-item: h1.title #{ categories.length } мета-категорий
       .level-item: a.button(href='/meta-category/add') Добавить
 
   .table-container: table.table.is-fullwidth
@@ -35,12 +35,14 @@ block append content
       th Опубликовано
     tbody
       each category in categories
-        tr(class={income: category.isIncome, expense: !category.isIncome, 'not-published': !category.published})
+        tr(
+          class={ income: category.isIncome, expense: !category.isIncome, "not-published": !category.published }
+        )
           td: a(href="/meta-category/" + category.id)
-            span.swatch(style='--accent: ' + category.color)
-            | #{category.name}
+            span.swatch(style="--accent: " + category.color)
+            | #{ category.name }
           td= (category.assignedMcc || {}).length || 0
-          td: input(type="checkbox" disabled checked=!!category.isIncome)
-          td: input(type="checkbox" disabled checked=!!category.published)
+          td: input(type='checkbox', disabled, checked=!!category.isIncome)
+          td: input(type='checkbox', disabled, checked=!!category.published)
       else
         tr: td(colspan=5) Категорий нет

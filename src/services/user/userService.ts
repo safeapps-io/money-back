@@ -5,11 +5,7 @@ import { getTransaction } from '@/models/setup'
 import User, { UserManager } from '@/models/user.model'
 import { RefreshTokenManager } from '@/models/refreshToken.model'
 
-import {
-  runSchemaWithFormError,
-  requiredString,
-  optionalString,
-} from '@/utils/yupHelpers'
+import { runSchemaWithFormError, requiredString, optionalString } from '@/utils/yupHelpers'
 import { decryptAes, encryptAes, signJwt, verifyJwt } from '@/utils/crypto'
 
 import { FormValidationError } from '@/services/errors'
@@ -45,10 +41,7 @@ const usernameScheme = yup.string().required().min(5).max(50),
   emailScheme = yup.string().email().notRequired().nullable()
 
 export class UserService {
-  private static async generateRefreshToken(data: {
-    userId: string
-    description: string
-  }) {
+  private static async generateRefreshToken(data: { userId: string; description: string }) {
     return (await RefreshTokenManager.create(data)).key
   }
 
@@ -82,13 +75,7 @@ export class UserService {
     })
   }
 
-  private static async newSignIn({
-    userId,
-    description,
-  }: {
-    userId: string
-    description: string
-  }) {
+  private static async newSignIn({ userId, description }: { userId: string; description: string }) {
     const refreshToken = await this.generateRefreshToken({
       userId,
       description,
@@ -136,10 +123,7 @@ export class UserService {
       invite: optionalString,
     })
     .noUnknown()
-  private static sourceSchema = yup
-    .array(yup.array().of(requiredString).max(2))
-    .max(10)
-    .nullable()
+  private static sourceSchema = yup.array(yup.array().of(requiredString).max(2)).max(10).nullable()
   static async signup({
     username,
     email,
@@ -183,7 +167,7 @@ export class UserService {
         username,
         password: passwordHashed,
         isSubscribed,
-        source: _source,
+        meta: { source: _source },
         ...parsedInvite?.payload,
       })
 
@@ -275,13 +259,10 @@ export class UserService {
     newToken?: string
   }> {
     try {
-      const { exp: expires, id: userId } = await verifyJwt<JWTMessage>(
-        accessToken,
-        {
-          ignoreExpiration: true,
-          subject: JWTSubjects.session,
-        },
-      )
+      const { exp: expires, id: userId } = await verifyJwt<JWTMessage>(accessToken, {
+        ignoreExpiration: true,
+        subject: JWTSubjects.session,
+      })
       if (!expires) throw new InvalidToken()
 
       // Issuing a new access token if the previous one is expired
@@ -302,15 +283,8 @@ export class UserService {
     }
   }
 
-  static async getUserDataFromTokens(
-    accessToken: string,
-    refreshToken: string,
-    fetchUser = true,
-  ) {
-    const { userId, newToken } = await this.getUserIdFromAccessToken(
-      accessToken,
-      refreshToken,
-    )
+  static async getUserDataFromTokens(accessToken: string, refreshToken: string, fetchUser = true) {
+    const { userId, newToken } = await this.getUserIdFromAccessToken(accessToken, refreshToken)
 
     const res: {
       user?: User
@@ -350,8 +324,7 @@ export class UserService {
     currentKey: string
     toDeleteId: string | null
   }) {
-    if (toDeleteId)
-      return RefreshTokenManager.destroyById({ userId, id: toDeleteId })
+    if (toDeleteId) return RefreshTokenManager.destroyById({ userId, id: toDeleteId })
     else
       return RefreshTokenManager.destroyAllButOneKey({
         userId,
@@ -381,8 +354,7 @@ export class UserService {
   }
 
   static async updateEmail(user: User, email: string) {
-    if (user.email && !email)
-      throw new FormValidationError(UserServiceFormErrors.cantDeleteEmail)
+    if (user.email && !email) throw new FormValidationError(UserServiceFormErrors.cantDeleteEmail)
 
     runSchemaWithFormError(emailScheme, email)
     await ValidateEmailService.triggerEmailValidation(user, email)
@@ -487,9 +459,7 @@ export class UserService {
         newStatus: false,
       })
     } catch (error) {
-      throw new FormValidationError(
-        UserServiceFormErrors.invalidUnsubscribeToken,
-      )
+      throw new FormValidationError(UserServiceFormErrors.invalidUnsubscribeToken)
     }
   }
 
@@ -528,13 +498,7 @@ export class UserService {
     await UserManager.deleteUserById(userId)
   }
 
-  static logout({
-    userId,
-    refreshToken,
-  }: {
-    userId: string
-    refreshToken: string
-  }) {
+  static logout({ userId, refreshToken }: { userId: string; refreshToken: string }) {
     runSchemaWithFormError(requiredString, refreshToken)
 
     return RefreshTokenManager.destroy({ userId, key: refreshToken })

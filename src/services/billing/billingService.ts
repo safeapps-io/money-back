@@ -28,10 +28,7 @@ import { publishChargeUpdate } from './billingEvents'
 import * as LimitService from './limitService'
 
 export class BillingService {
-  private static async updatePlanAccordingToCharge(
-    plan: Plan,
-    charge: ChargeEvent,
-  ) {
+  private static async updatePlanAccordingToCharge(plan: Plan, charge: ChargeEvent) {
     const now = new Date(),
       expiredOld = plan.expires
     let expiredNew: Date | null = null
@@ -95,10 +92,7 @@ export class BillingService {
         ? ProductManager.getBySlug('money:early_bird_no_trial')
         : ProductManager.getDefaultProduct())
 
-      const planBeforeSettingExpires = await PlanManager.create(
-        user.id,
-        product!.id,
-      )
+      const planBeforeSettingExpires = await PlanManager.create(user.id, product!.id)
       return product!.trialDuration
         ? (await this.updatePlanAccordingToCharge(
             planBeforeSettingExpires,
@@ -116,9 +110,7 @@ export class BillingService {
     const isPlanActive = wallet?.users.some(
       (user) =>
         user.WalletAccess.accessLevel == AccessLevels.owner &&
-        user.plans.some(
-          (plan) => plan.expires && isAfter(plan.expires, new Date()),
-        ),
+        user.plans.some((plan) => plan.expires && isAfter(plan.expires, new Date())),
     )
     if (isPlanActive) return null
 
@@ -131,10 +123,7 @@ export class BillingService {
     return remaining < 0 ? 0 : remaining
   }
 
-  static async getPlanByUserId(
-    userId: string,
-    productType = ProductType.money,
-  ) {
+  static async getPlanByUserId(userId: string, productType = ProductType.money) {
     return getTransaction(async () => {
       let plan = await PlanManager.byUserId(userId, productType)
       if (!plan) plan = await this.createPlan((await UserManager.byId(userId))!)
@@ -143,10 +132,7 @@ export class BillingService {
     })
   }
 
-  static async getFullPlanDataByUserId(
-    userId: string,
-    productType = ProductType.money,
-  ) {
+  static async getFullPlanDataByUserId(userId: string, productType = ProductType.money) {
     return getTransaction(async () => {
       let res = await PlanManager.byUserId(userId, productType, true)
       if (!res) {
@@ -170,10 +156,7 @@ export class BillingService {
     })
   }
 
-  private static async informUserAboutCharge(
-    userId: string,
-    chargeEvent: ChargeEvent,
-  ) {
+  private static async informUserAboutCharge(userId: string, chargeEvent: ChargeEvent) {
     const userWallets = await WalletService.getUserWallets(userId),
       relatedUserIds = [
         ...new Set(
@@ -188,30 +171,17 @@ export class BillingService {
     })
   }
 
-  static async createCharge(
-    userId: string,
-    provider: string,
-    productType = ProductType.money,
-  ) {
+  static async createCharge(userId: string, provider: string, productType = ProductType.money) {
     return getTransaction(async () => {
       const plan = await this.getPlanByUserId(userId, productType)
 
-      let providerResult: Await<ReturnType<
-        | typeof tinkoffProvider['createCharge']
-        | typeof coinbaseProvider['createCharge']
-      >>
+      let providerResult: Await<
+        ReturnType<typeof tinkoffProvider['createCharge'] | typeof coinbaseProvider['createCharge']>
+      >
       if (provider === ChargeProviders.coinbase)
-        providerResult = await coinbaseProvider.createCharge(
-          plan.product,
-          userId,
-          plan.id,
-        )
+        providerResult = await coinbaseProvider.createCharge(plan.product, userId, plan.id)
       else if (provider === ChargeProviders.tinkoff)
-        providerResult = await tinkoffProvider.createCharge(
-          plan.product,
-          userId,
-          plan.id,
-        )
+        providerResult = await tinkoffProvider.createCharge(plan.product, userId, plan.id)
       else throw new Error('Unknown provider')
 
       const result = (await this.createChargeEvent(
@@ -253,9 +223,7 @@ export class BillingService {
 
     if (!remoteChargeData) return
 
-    const plan = await PlanManager.byRemoteChargeId(
-      remoteChargeData!.remoteChargeId,
-    )
+    const plan = await PlanManager.byRemoteChargeId(remoteChargeData!.remoteChargeId)
 
     if (!plan)
       return console.log({
@@ -291,11 +259,7 @@ export class BillingService {
         newChargeEvent.charge.eventType === EventTypes.confirmed &&
         newChargeEvent.plan.user?.email
       )
-        promises.push(
-          MessageService.sendSuccessfulPurchaseEmail(
-            newChargeEvent.plan.user.email,
-          ),
-        )
+        promises.push(MessageService.sendSuccessfulPurchaseEmail(newChargeEvent.plan.user.email))
 
       return Promise.all(promises)
     }
@@ -304,8 +268,8 @@ export class BillingService {
   private static isPlanTrial(plan: Plan) {
     return (
       // Charges from new to old
-      _.head(_.reverse(_.sortBy(copy(plan.chargeEvents), ['created'])))
-        ?.chargeType === ChargeTypes.trial
+      _.head(_.reverse(_.sortBy(copy(plan.chargeEvents), ['created'])))?.chargeType ===
+      ChargeTypes.trial
     )
   }
 

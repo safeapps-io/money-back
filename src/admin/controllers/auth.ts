@@ -17,9 +17,7 @@ export const adminAuthRouter = Router()
 
     const { accessToken, refreshToken, user } = await UserService.signin({
       ...body,
-      description: `Admin access: ${getDeviceDescription(
-        req.get('User-Agent') || '',
-      )}`,
+      description: `Admin access: ${getDeviceDescription(req.get('User-Agent') || '')}`,
     })
     sendAuthCookies(res, accessToken, refreshToken)
 

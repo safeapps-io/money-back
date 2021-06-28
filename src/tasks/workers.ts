@@ -3,12 +3,7 @@ import { createTransmission } from '@/services/message/emailTransport'
 import { sendTelegramMessage } from '@/services/message/telegramTransport'
 import { UserService } from '@/services/user/userService'
 
-import {
-  emailQueue,
-  exchangeRateQueue,
-  telegramQueue,
-  userCounterNotificationQueue,
-} from './queue'
+import { emailQueue, exchangeRateQueue, telegramQueue, userCounterNotificationQueue } from './queue'
 
 const setupBillingWorker = async () =>
     Promise.all([

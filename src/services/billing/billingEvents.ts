@@ -10,11 +10,7 @@ type BillingChargeEvent = { type: MessageTypes.charge; data: ChargeEvent }
 
 const callbackKey = 'billing'
 
-export const chargeEventSender = async (
-  userId: string,
-  clientId: string,
-  send: SSESender,
-) => {
+export const chargeEventSender = async (userId: string, clientId: string, send: SSESender) => {
   const props = {
     channels: [redisPubSub.getUserChannel(userId)],
     clientId,

@@ -45,9 +45,7 @@ export const authorizedPasswordRouter = Router()
 
 export const resetPasswordRouter = Router()
   .get('/:token', async (req, res) => {
-    await PasswordService.getUserIdFromPasswordResetToken(
-      req.params.token as string,
-    )
+    await PasswordService.getUserIdFromPasswordResetToken(req.params.token as string)
 
     res.json({})
   })

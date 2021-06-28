@@ -7,8 +7,7 @@ export class MessageService {
   private static async sendEmail(data: BaseEmail) {
     if (process.env.NODE_ENV == 'development')
       console.log(data.templateId, JSON.stringify(data.recepients, null, 2))
-    else
-      await emailQueue.add(data, { attempts: 3, timeout: 5000, backoff: 5000 })
+    else await emailQueue.add(data, { attempts: 3, timeout: 5000, backoff: 5000 })
   }
 
   private static async sendTelegramMessage(message: string) {
@@ -25,13 +24,7 @@ export class MessageService {
       )
   }
 
-  private static getGotoUrl({
-    token,
-    purpose,
-  }: {
-    token: string
-    purpose: string
-  }) {
+  private static getGotoUrl({ token, purpose }: { token: string; purpose: string }) {
     return getFullPath({ path: `/goto/${token}/${purpose}`, includeHost: true })
   }
 
@@ -55,13 +48,7 @@ export class MessageService {
     })
   }
 
-  public static async sendValidationEmail({
-    email,
-    token,
-  }: {
-    email: string
-    token: string
-  }) {
+  public static async sendValidationEmail({ email, token }: { email: string; token: string }) {
     return this.sendEmail({
       templateId: 'validate-email',
       recepients: [
@@ -75,13 +62,7 @@ export class MessageService {
     })
   }
 
-  public static async sendPasswordResetEmail({
-    email,
-    token,
-  }: {
-    email: string
-    token: string
-  }) {
+  public static async sendPasswordResetEmail({ email, token }: { email: string; token: string }) {
     return this.sendEmail({
       templateId: 'reset-password',
       recepients: [
@@ -135,9 +116,7 @@ export class MessageService {
     username: string
     provider: string
   }) {
-    return this.sendTelegramMessage(
-      `Юзер ${username} (#${userId}) совершил покупку — ${provider}`,
-    )
+    return this.sendTelegramMessage(`Юзер ${username} (#${userId}) совершил покупку — ${provider}`)
   }
 
   public static dailySignupStats(signedUpUsernames: Array<string>) {

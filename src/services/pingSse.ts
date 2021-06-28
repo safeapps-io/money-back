@@ -4,11 +4,7 @@ const enum MessageTypes {
 
 type UserDataEvent = { type: MessageTypes.ping; data: { timer: number } }
 
-export const pingEventSender = async (
-  _: string,
-  __: string,
-  send: SSESender,
-) => {
+export const pingEventSender = async (_: string, __: string, send: SSESender) => {
   const timer = 10000,
     data: UserDataEvent = {
       type: MessageTypes.ping,

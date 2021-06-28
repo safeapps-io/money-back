@@ -1,11 +1,4 @@
-import {
-  Table,
-  Column,
-  ForeignKey,
-  DataType,
-  AllowNull,
-  Index,
-} from 'sequelize-typescript'
+import { Table, Column, ForeignKey, DataType, AllowNull, Index } from 'sequelize-typescript'
 
 import { getValue, setValue } from '@/utils/blobAsBase64'
 

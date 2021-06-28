@@ -1,5 +1,5 @@
 mixin form(method='POST', action=null)
-  form(method=method action=action autocomplete=false)
-    input(type="hidden" name="_csrf" value=csrfToken)
+  form(method=method, action=action, autocomplete=false)
+    input(type='hidden', name='_csrf', value=csrfToken)
 
     block

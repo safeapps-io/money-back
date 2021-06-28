@@ -20,9 +20,7 @@ export default class Scheme extends BaseModel {
   @Column
   transformDateFormat!: string
   @Column(DataType.JSON)
-  fieldnameMap!: Array<
-    'amount' | 'datetime' | 'originalAmount' | 'currency' | null
-  >
+  fieldnameMap!: Array<'amount' | 'datetime' | 'originalAmount' | 'currency' | null>
 
   @AllowNull
   @Column(DataType.STRING)
