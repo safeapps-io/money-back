@@ -10,6 +10,8 @@ block append content
           .control
             input.input(type='search', name='q', placeholder='Запрос', value=q)
           .control
+            input.input(type='text', name='tags', placeholder='Теги', value=tags)
+          .control
             input.input(type='date', name='date', placeholder='Дата реги', value=date)
           .control
             button.button.is-success Поиск
@@ -21,6 +23,7 @@ block append content
         th Username
         th Email
         th Ключи установлены
+        th Теги
         th Дата регистрации
     tbody
       each user in users
@@ -29,6 +32,12 @@ block append content
           td= user.username
           td= user.email || "—"
           td: input(type='checkbox', disabled, checked=!!user.b64salt)
+          td
+            if user.meta && user.meta.tags && user.meta.tags.length
+              .tags: each tag in user.meta.tags
+                span.tag= tag
+            else
+              | —
           td= dateFormat(user.created)
       else
         tr: td(colspan=4) Юзеров нет

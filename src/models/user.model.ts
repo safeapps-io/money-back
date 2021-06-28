@@ -10,6 +10,7 @@ import {
   BelongsToMany,
 } from 'sequelize-typescript'
 import sequelize, { Op } from 'sequelize'
+import { endOfDay, startOfDay } from 'date-fns'
 
 import { getValue, setValue } from '@/utils/blobAsBase64'
 
@@ -20,9 +21,16 @@ import WalletAccess from '@/models/walletAccess.model'
 import Plan from './billing/plan.model'
 import Product from './billing/product.model'
 import ChargeEvent from './billing/chargeEvent.model'
-import { endOfDay, startOfDay } from 'date-fns'
 
-@Table
+@Table({
+  indexes: [
+    {
+      // https://github.com/sequelize/sequelize/issues/5155#issuecomment-417189558
+      name: 'meta_tags_index',
+      fields: [sequelize.literal('("meta"->>\'tags\')')],
+    },
+  ],
+})
 export default class User extends BaseModel {
   @Unique
   @Column
@@ -45,7 +53,7 @@ export default class User extends BaseModel {
   isSubscribed!: boolean | null
 
   @AllowNull
-  @Column(DataType.JSON)
+  @Column(DataType.JSONB)
   meta!: {
     source?: { [param: string]: string } | null
     tags?: string[] | null
@@ -269,13 +277,14 @@ export class UserManager {
   static searchByQuery({
     query = null,
     date = null,
+    tags,
   }: {
     query?: string | null
     date?: Date | null
+    tags?: string[]
   }) {
     const where: any = {}
-    let limit: number | undefined = 50
-    if (query) {
+    if (query)
       where[Op.or] = [
         { id: query },
         sequelize.where(
@@ -287,16 +296,19 @@ export class UserManager {
           sequelize.fn('lower', query),
         ),
       ]
-      limit = undefined
-    }
-    if (date) {
+    if (date)
       where.created = {
         [Op.between]: [startOfDay(date), endOfDay(date)],
       }
-      limit = undefined
-    }
+    if (tags?.length)
+      // https://stackoverflow.com/a/22737710/3720087
+      where[Op.and] = sequelize.literal(`meta->'tags' @> '${JSON.stringify(tags)}'`)
 
-    return User.findAll({ where, order: [['created', 'DESC']], limit })
+    return User.findAll({
+      where,
+      order: [['created', 'DESC']],
+      limit: query || date || tags ? undefined : 50,
+    })
   }
 
   static byIdWithAdminDataIncluded(userId: string) {

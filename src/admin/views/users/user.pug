@@ -24,6 +24,18 @@ block append content
                 td: code= e[0]
                 td: code= e[1]
 
+    .my-4: +form('POST', baseReqPath + '/tags')
+      label.label Теги
+      .field.has-addons
+        .control.is-expanded
+          input.input(
+            type='text',
+            name='tags',
+            value=user.meta && user.meta.tags ? user.meta.tags.join(", ") : ""
+          )
+        .control
+          button.button Сохранить
+
     if wallets.length
       .my-4
         p.has-text-weight-bold Кошельки
