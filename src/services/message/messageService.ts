@@ -119,12 +119,14 @@ export class MessageService {
     provider: string
   }) {
     return this.sendTelegramMessage(
-      `[${username}](${userAdminPath(userId)}) совершил покупку — ${provider}`,
+      `<a href="${userAdminPath(userId)}">${username}</a> совершил покупку — ${provider}`,
     )
   }
 
   public static dailySignupStats(signedUpUsernames: Array<[string, string]>) {
-    const list = signedUpUsernames.map(([id, username]) => `[${username}](${userAdminPath(id)})`)
+    const list = signedUpUsernames.map(
+      ([id, username]) => `<a href="${userAdminPath(id)}">${username}</a>`,
+    )
 
     return this.sendTelegramMessage(
       list.length
@@ -137,8 +139,8 @@ export class MessageService {
     const { description } = feedback,
       realDescription = description.length > 500 ? description.slice(0, 500) + '[...]' : description
     return this.sendTelegramMessage(
-      `[${username}](${userAdminPath(feedback.userId)})` +
-        `оставил [фидбек](${feedbackAdminPath(feedback.id)}):` +
+      `<a href="${userAdminPath(feedback.userId)}">${username}</a>` +
+        `оставил <a href="${feedbackAdminPath(feedback.id)}">фидбек</a>:` +
         `\n\n${realDescription}`,
     )
   }
