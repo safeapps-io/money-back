@@ -10,6 +10,7 @@ import { adminUserRouter } from './users'
 import { adminMiscRouter } from './misc'
 import { adminBullRouter } from './bull'
 import { adminMetaCategoryRouter } from './metaCategory'
+import { adminFeedbackRouter } from './feedback'
 
 export const adminRouter = Router()
 
@@ -20,6 +21,7 @@ adminRouter
   .use('/dashboard', adminDashboardRouter)
   .use('/mcc', adminMccRouter)
   .use('/users', adminUserRouter)
+  .use('/feedback', adminFeedbackRouter)
   .use('/misc', adminMiscRouter)
   .use('/meta-category', adminMetaCategoryRouter)
   .use('/bull', adminBullRouter)

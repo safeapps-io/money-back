@@ -8,8 +8,8 @@ import { emailQueue, exchangeRateQueue, telegramQueue, userCounterNotificationQu
 const setupBillingWorker = async () =>
     Promise.all([
       exchangeRateQueue.add(null, {
-        // Daily at 10:00 and 22:00
-        repeat: { cron: '0 10,22 * * *' },
+        // Daily at 10:00
+        repeat: { cron: '0 10 * * *' },
       }),
       exchangeRateQueue.process(ExchangeRateService.updateExchangeRate),
     ]),

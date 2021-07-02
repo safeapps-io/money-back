@@ -1,5 +1,7 @@
+import Feedback from '@/models/feedback.model'
 import { getFullPath } from '@/services/getPath'
 import { emailQueue, telegramQueue } from '@/tasks/queue'
+import { feedbackAdminPath, userAdminPath } from '@/admin/paths'
 
 import { BaseEmail } from './types'
 
@@ -116,16 +118,28 @@ export class MessageService {
     username: string
     provider: string
   }) {
-    return this.sendTelegramMessage(`Юзер ${username} (#${userId}) совершил покупку — ${provider}`)
+    return this.sendTelegramMessage(
+      `[${username}](${userAdminPath(userId)}) совершил покупку — ${provider}`,
+    )
   }
 
-  public static dailySignupStats(signedUpUsernames: Array<string>) {
+  public static dailySignupStats(signedUpUsernames: Array<[string, string]>) {
+    const list = signedUpUsernames.map(([id, username]) => `[${username}](${userAdminPath(id)})`)
+
     return this.sendTelegramMessage(
-      signedUpUsernames.length
-        ? `В прошедшие 24 часа зарегистрировалось ${
-            signedUpUsernames.length
-          } юзеров:\n\n${signedUpUsernames.join('\n')}`
+      list.length
+        ? `В прошедшие 24 часа зарегистрировалось ${list.length} юзеров:\n\n${list.join('\n')}`
         : 'Регистраций в прошедшие 24 часа не было',
+    )
+  }
+
+  public static postFeedback(feedback: Feedback, username: string) {
+    const { description } = feedback,
+      realDescription = description.length > 500 ? description.slice(0, 500) + '[...]' : description
+    return this.sendTelegramMessage(
+      `[${username}](${userAdminPath(feedback.userId)})` +
+        `оставил [фидбек](${feedbackAdminPath(feedback.id)}):` +
+        `\n\n${realDescription}`,
     )
   }
 }
