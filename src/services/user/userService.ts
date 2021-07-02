@@ -508,7 +508,7 @@ export class UserService {
     const end = new Date(),
       start = addHours(end, -24)
     const users = await UserManager.createdBetweenDates(start, end)
-    return MessageService.dailySignupStats(users.map((user) => user.username))
+    return MessageService.dailySignupStats(users.map((user) => [user.id, user.username]))
   }
 }
 

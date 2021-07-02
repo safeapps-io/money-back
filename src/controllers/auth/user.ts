@@ -6,6 +6,7 @@ import { UserService } from '@/services/user/userService'
 import { UserManager } from '@/models/user.model'
 import { serializeModel, Serializers } from '@/models/serializers'
 import * as LimitService from '@/services/billing/limitService'
+import { createFeedback } from '@/services/feedback/feedbackService'
 
 export const userRouter = Router()
 
@@ -78,5 +79,18 @@ userRouter.post<{ unsubscribeToken: string }, {}>(
   ash(async (req, res) => {
     await UserService.useUnsubscribeLink(req.params.unsubscribeToken)
     res.json({})
+  }),
+)
+
+userRouter.post<{ description: string; email?: string }>(
+  '/feedback',
+  isRestAuth(true),
+  ash(async (req, res) => {
+    await createFeedback(
+      { userId: req.userId, ...(req.body as { description: string; email?: string }) },
+      req.user!.username,
+    )
+
+    return res.json({})
   }),
 )

@@ -18,9 +18,18 @@ block content
 
     .navbar-menu
       .navbar-start
-        a.navbar-item(href='/users') Юзеры
-        a.navbar-item(href='/mcc') MCC коды
-        a.navbar-item(href='/meta-category') Мета-категории
+        .navbar-item.has-dropdown.is-hoverable
+          a.navbar-link(href='/users') Юзерское
+          .navbar-dropdown
+            a.navbar-item(href='/users') Все пользователи
+            a.navbar-item(href='/feedback') Фидбек
+
+        .navbar-item.has-dropdown.is-hoverable
+          a.navbar-link Справочники
+          .navbar-dropdown
+            a.navbar-item(href='/mcc') MCC коды
+            a.navbar-item(href='/meta-category') Мета-категории
+
         a.navbar-item(href='/misc') Разное
         a.navbar-item(href='/bull/main') Очереди
       .navbar-end.pr-3

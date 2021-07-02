@@ -1,0 +1,28 @@
+extends /main.pug
+
+block append content
+  .level
+    .level-left
+      .level-item: h1.title Фидбек юзеров
+      .level-item: form(method='GET', autocomplete=false)
+        .field.has-addons
+          .control
+            input.input(type='search', name='q', placeholder='Запрос', value=q)
+          .control
+            button.button.is-success Поиск
+
+  .table-container: table.table.is-fullwidth
+    thead: tr
+      th 
+      th Юзер
+      th Почта для контакта
+      th Описание
+    tbody
+      each feedback in feedbacks
+        tr
+          td: a(href=feedbackAdminPath(feedback.id)) #
+          td: a(href=userAdminPath(feedback.user.id))= feedback.user.username
+          td= feedback.email || feedback.user.email || "—"
+          td: pre: code= feedback.description
+      else
+        tr: td(colspan=5) Фидбека нет
